@@ -215,20 +215,17 @@ export default function ReportEdit() {
                                     </div>
                                     <div>
                                         <label className="label" style={{ fontSize: '0.75rem' }}>現在残数</label>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                            <input
-                                                type="text"
-                                                className="input"
-                                                placeholder="残数"
-                                                value={item.current_amount}
-                                                onChange={(e) => {
-                                                    const newList = [...(formData.medications_check_list || [])];
-                                                    newList[index].current_amount = e.target.value;
-                                                    setFormData({ ...formData, medications_check_list: newList });
-                                                }}
-                                            />
-                                            <span style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{item.unit}</span>
-                                        </div>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="残数"
+                                            value={item.current_amount}
+                                            onChange={(e) => {
+                                                const newList = [...(formData.medications_check_list || [])];
+                                                newList[index].current_amount = e.target.value;
+                                                setFormData({ ...formData, medications_check_list: newList });
+                                            }}
+                                        />
                                     </div>
                                     <div>
                                         <label className="label" style={{ fontSize: '0.75rem' }}>次回必要数</label>
