@@ -118,7 +118,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
 
       <style>{`
         .print-container {
-          padding: 40px;
+          padding: 20px;
           background: white;
           color: black;
           font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
@@ -184,7 +184,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
         @media print {
           @page {
             size: A4;
-            margin: 20mm;
+            margin: 5mm;
           }
           body {
             background: white;
