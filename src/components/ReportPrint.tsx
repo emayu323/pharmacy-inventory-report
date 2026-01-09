@@ -54,7 +54,6 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
                   <th style={{ padding: '0.5rem', textAlign: 'left', width: '30%' }}>薬品名</th>
                   <th style={{ padding: '0.5rem', textAlign: 'center' }}>現在残数</th>
                   <th style={{ padding: '0.5rem', textAlign: 'center' }}>次回必要数</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'center' }}>単位</th>
                   <th style={{ padding: '0.5rem', textAlign: 'left' }}>備考</th>
                 </tr>
               </thead>
@@ -62,9 +61,8 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
                 {report.medications_check_list.map(item => (
                   <tr key={item.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '0.5rem' }}>{item.name}</td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.current_amount}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.current_amount} {item.unit}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.next_required_amount}</td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.unit}</td>
                     <td style={{ padding: '0.5rem', color: '#6b7280' }}>{item.notes}</td>
                   </tr>
                 ))}
