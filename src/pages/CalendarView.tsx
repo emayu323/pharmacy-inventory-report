@@ -10,7 +10,7 @@ import type { Report } from '../types'
 export default function CalendarView() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [reports, setReports] = useState<Report[]>([])
-    const [loading, setLoading] = useState(true)
+    const [, setLoading] = useState(true)
 
     useEffect(() => {
         fetchReports()
