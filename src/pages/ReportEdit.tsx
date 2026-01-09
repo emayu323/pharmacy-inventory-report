@@ -258,11 +258,11 @@ export default function ReportEdit() {
                                         <datalist id={`unit-options-${item.id}`}>
                                             <option value="日分" />
                                             <option value="錠" />
-                                            <option value="包" />
-                                            <option value="枚" />
-                                            <option value="シート" />
                                             <option value="本" />
                                             <option value="g" />
+                                            <option value="枚" />
+                                            <option value="包" />
+                                            <option value="シート" />
                                             <option value="ml" />
                                         </datalist>
                                     </div>
