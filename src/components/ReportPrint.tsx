@@ -174,14 +174,18 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           font-size: 16px;
         }
         .print-row-block {
-          margin-bottom: 10px;
+          margin-bottom: 15px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          padding: 8px;
+          background-color: #fafafa;
         }
         .print-value-block {
-          margin: 5px 0 10px 0;
+          margin: 5px 0 0 0;
           padding: 5px;
           white-space: pre-wrap;
           font-size: 14px;
-          border-bottom: 1px dotted #ccc;
+          min-height: 2em;
         }
         @media print {
           @page {
