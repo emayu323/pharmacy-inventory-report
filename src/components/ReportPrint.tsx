@@ -100,10 +100,12 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             <span className="print-label">服薬指導</span>
             <p className="print-value-block" style={{ minHeight: '100px' }}>{report.medication_instruction}</p>
           </div>
-          <div className="print-row-block">
-            <span className="print-label">副作用確認</span>
-            <p className="print-value-block">{report.side_effects || 'なし'}</p>
-          </div>
+          {report.side_effects && (
+            <div className="print-row-block">
+              <span className="print-label">その他伝達事項</span>
+              <p className="print-value-block">{report.side_effects}</p>
+            </div>
+          )}
         </div>
 
         {/* Plan */}

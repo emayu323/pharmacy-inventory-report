@@ -332,7 +332,7 @@ export default function ReportEdit() {
                             <textarea name="medication_instruction" className="input" rows={4} value={formData.medication_instruction} onChange={handleChange}></textarea>
                         </div>
                         <div>
-                            <label className="label">副作用確認</label>
+                            <label className="label">その他伝達事項</label>
                             <textarea name="side_effects" className="input" rows={2} value={formData.side_effects} onChange={handleChange}></textarea>
                         </div>
                         <div>
