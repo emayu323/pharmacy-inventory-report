@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from 'react' // Import useEffect
 import { useReactToPrint } from 'react-to-print' // Import react-to-print
 import { ReportPrint } from '../components/ReportPrint'
 import { supabase } from '../supabase'
-import { Plus, Trash2 } from 'lucide-react' // Add Plus, Trash2
-import type { Report, MedicationCheckItem } from '../types' // Import Item type
-import { COMMON_DRUGS } from '../data/drug_data'
+import { Plus, Trash2 } from 'lucide-react'
+import type { Report, MedicationCheckItem } from '../types'
+// import { COMMON_DRUGS } from '../data/drug_data' // REMOVED
 
 // Mock for edit, would fetch based on ID in real app
 const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
@@ -33,7 +33,32 @@ export default function ReportEdit() {
 
     // State for form
     const [formData, setFormData] = useState(EMPTY_REPORT)
+    const [drugOptions, setDrugOptions] = useState<string[]>([])
     const printRef = useRef<HTMLDivElement>(null)
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    const handleDrugSearch = (query: string) => {
+        if (!query || query.length < 1) {
+            setDrugOptions([])
+            return
+        }
+
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+
+        searchTimeoutRef.current = setTimeout(async () => {
+            const { data, error } = await supabase
+                .from('medications')
+                .select('name')
+                .ilike('name', `%${query}%`)
+                .limit(20)
+
+            if (error) {
+                console.error('Search error', error)
+            } else if (data) {
+                setDrugOptions(data.map(d => d.name))
+            }
+        }, 300)
+    }
 
     const handlePrint = useReactToPrint({
         contentRef: printRef,
@@ -199,19 +224,16 @@ export default function ReportEdit() {
                                             type="text"
                                             className="input"
                                             placeholder="薬品名"
-                                            list={`drug-options-${item.id}`}
+                                            list="drug-options-shared"
                                             value={item.name}
                                             onChange={(e) => {
+                                                const val = e.target.value;
                                                 const newList = [...(formData.medications_check_list || [])];
-                                                newList[index].name = e.target.value;
+                                                newList[index].name = val;
                                                 setFormData({ ...formData, medications_check_list: newList });
+                                                handleDrugSearch(val);
                                             }}
                                         />
-                                        <datalist id={`drug-options-${item.id}`}>
-                                            {COMMON_DRUGS.map((drug) => (
-                                                <option key={drug} value={drug} />
-                                            ))}
-                                        </datalist>
                                     </div>
                                     <div>
                                         <label className="label" style={{ fontSize: '0.75rem' }}>現在残数</label>
@@ -358,6 +380,12 @@ export default function ReportEdit() {
                 </div>
 
             </form>
+
+            <datalist id="drug-options-shared">
+                {drugOptions.map((drug) => (
+                    <option key={drug} value={drug} />
+                ))}
+            </datalist>
 
             {/* Hidden Print Component */}
             <div style={{ display: 'none' }}>
