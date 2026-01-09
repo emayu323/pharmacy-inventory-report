@@ -14,11 +14,9 @@ CREATE TABLE reports (
   dispensing_date DATE,
   visit_date DATE NOT NULL,
   
-  compliance_status TEXT DEFAULT '',
-  leftover_meds TEXT DEFAULT '',
-  storage_status TEXT DEFAULT '',
+  next_visit_plan TEXT DEFAULT '',
   
-  medication_instruction TEXT DEFAULT '',
+  -- Existing columns but hidden from app:
   side_effects TEXT DEFAULT '',
   
   next_visit_plan TEXT DEFAULT ''

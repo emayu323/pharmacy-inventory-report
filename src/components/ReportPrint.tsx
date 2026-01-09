@@ -72,20 +72,6 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             </table>
           )}
 
-          <div className="print-row">
-            <div className="print-item">
-              <span className="print-label">服薬コンプライアンス</span>
-              <span className="print-value">{report.compliance_status || '特記事項なし'}</span>
-            </div>
-          </div>
-          <div className="print-row-block">
-            <span className="print-label">残薬確認</span>
-            <p className="print-value-block">{report.leftover_meds || 'なし'}</p>
-          </div>
-          <div className="print-row-block">
-            <span className="print-label">保管状況</span>
-            <p className="print-value-block">{report.storage_status || '良好'}</p>
-          </div>
         </div>
 
         {/* Date Row */}
@@ -106,22 +92,6 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           </div>
         </div>
 
-        {/* Medication Status */}
-        <div className="print-section">
-          <h3>薬剤管理状況</h3>
-          <div className="print-row-block">
-            <span className="print-label">服薬コンプライアンス</span>
-            <p className="print-value-block">{report.compliance_status || '特記事項なし'}</p>
-          </div>
-          <div className="print-row-block">
-            <span className="print-label">残薬確認</span>
-            <p className="print-value-block">{report.leftover_meds || 'なし'}</p>
-          </div>
-          <div className="print-row-block">
-            <span className="print-label">保管状況</span>
-            <p className="print-value-block">{report.storage_status || '良好'}</p>
-          </div>
-        </div>
 
         {/* Instructions */}
         <div className="print-section">

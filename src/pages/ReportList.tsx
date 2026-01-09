@@ -149,7 +149,7 @@ export default function ReportList() {
                                                     <div>
                                                         <div style={{ fontWeight: 600 }}>{report.visit_date.replace(/-/g, '/')} 訪問</div>
                                                         <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                                                            担当: {report.pharmacist_name} | {report.compliance_status}
+                                                            担当: {report.pharmacist_name}
                                                         </div>
                                                     </div>
                                                 </div>

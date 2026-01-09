@@ -18,9 +18,6 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     prescription_date: new Date().toISOString().split('T')[0],
     dispensing_date: new Date().toISOString().split('T')[0],
     visit_date: new Date().toISOString().split('T')[0],
-    compliance_status: '',
-    leftover_meds: '',
-    storage_status: '',
     medication_instruction: '',
     side_effects: '',
     next_visit_plan: '',
@@ -320,21 +317,6 @@ export default function ReportEdit() {
                                 <Plus size={18} style={{ marginRight: '0.5rem' }} />
                                 医薬品を追加
                             </button>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gap: '1rem' }}>
-                        <div>
-                            <label className="label">服薬コンプライアンス</label>
-                            <textarea name="compliance_status" className="input" rows={2} placeholder="飲み忘れ、飲み残しの有無など" value={formData.compliance_status} onChange={handleChange}></textarea>
-                        </div>
-                        <div>
-                            <label className="label">残薬確認</label>
-                            <input type="text" name="leftover_meds" className="input" placeholder="残数など" value={formData.leftover_meds} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <label className="label">保管状況</label>
-                            <input type="text" name="storage_status" className="input" placeholder="温度、湿度、整理状況など" value={formData.storage_status} onChange={handleChange} />
                         </div>
                     </div>
                 </section>

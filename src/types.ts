@@ -29,10 +29,7 @@ export interface Report {
   visit_date: string;
 
   // Medication Status
-  compliance_status: string;
-  leftover_meds: string; // Keep for summary/legacy
   medications_check_list?: MedicationCheckItem[]; // Support JSONB
-  storage_status: string;
 
   // Instructions
   medication_instruction: string;

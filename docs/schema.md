@@ -18,9 +18,7 @@ Stores the main report data.
 | prescription_date | date | 処方日 |
 | dispensing_date | date | 調剤日 |
 | visit_date | date | 訪問日 |
-| compliance_status | text | 服薬コンプライアンス (Free text or Enum) |
-| leftover_meds | text | 残薬確認 |
-| storage_status | text | 保管状況 |
+| visit_date | date | 訪問日 |
 | medication_instruction | text | 服薬指導内容 |
 | side_effects | text | 副作用確認 |
 | next_visit_plan | text | 次回訪問予定・計画 |
@@ -55,11 +53,6 @@ export interface Report {
   prescription_date: string;
   dispensing_date: string;
   visit_date: string;
-  
-  // Medication Status
-  compliance_status: string;
-  leftover_meds: string;
-  storage_status: string;
   
   // Instructions
   medication_instruction: string;
