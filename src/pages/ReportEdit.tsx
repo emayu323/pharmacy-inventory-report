@@ -1,12 +1,11 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, Save } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react' // Import useEffect
-import { useReactToPrint } from 'react-to-print' // Import react-to-print
+import { useState, useRef, useEffect } from 'react'
+import { useReactToPrint } from 'react-to-print'
 import { ReportPrint } from '../components/ReportPrint'
 import { supabase } from '../supabase'
-import { Plus, Trash2 } from 'lucide-react'
-import type { Report, MedicationCheckItem } from '../types'
-
+import type { Report } from '../types'
+import MedicationListForm from '../components/MedicationListForm'
 
 // Mock for edit, would fetch based on ID in real app
 const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
@@ -110,7 +109,12 @@ export default function ReportEdit() {
             console.error(error)
             alert('読み込みエラー')
         } else if (data) {
-            setFormData(data)
+            setFormData({
+                ...EMPTY_REPORT,
+                ...data,
+                medications_check_list: data.medications_check_list || [],
+                medications_check_list_prn: data.medications_check_list_prn || []
+            })
         }
     }
 
@@ -212,149 +216,21 @@ export default function ReportEdit() {
                 </section>
 
                 {/* 薬剤管理状況 */}
-                <section className="card" style={{ padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-                        薬剤管理状況
-                    </h3>
+                <MedicationListForm
+                    title="残薬詳細確認 (定期薬)"
+                    items={formData.medications_check_list || []}
+                    onUpdate={(newItems) => setFormData({ ...formData, medications_check_list: newItems })}
+                    onSearchDrug={handleDrugSearch}
+                    drugOptions={drugOptions}
+                />
 
-                    {/* Medication Leftover Details */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <label className="label" style={{ marginBottom: '0.5rem' }}>残薬詳細確認</label>
-                        <div style={{ display: 'grid', gap: '0.5rem' }}>
-                            {(formData.medications_check_list || []).map((item, index) => (
-                                <div key={item.id} style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'minmax(150px, 2fr) 1fr 1fr 1fr 1.5fr auto',
-                                    gap: '0.5rem',
-                                    alignItems: 'end',
-                                    backgroundColor: 'var(--color-bg)',
-                                    padding: '0.75rem',
-                                    borderRadius: '6px'
-                                }}>
-                                    <div>
-                                        <label className="label" style={{ fontSize: '0.75rem' }}>薬品名</label>
-                                        <input
-                                            type="text"
-                                            className="input"
-                                            placeholder="薬品名"
-                                            list="drug-options-shared"
-                                            value={item.name}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                const newList = [...(formData.medications_check_list || [])];
-                                                newList[index].name = val;
-                                                setFormData({ ...formData, medications_check_list: newList });
-                                                handleDrugSearch(val);
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="label" style={{ fontSize: '0.75rem' }}>現在残数</label>
-                                        <input
-                                            type="number"
-                                            className="input"
-                                            placeholder="残数"
-                                            value={item.current_amount}
-                                            onChange={(e) => {
-                                                const newList = [...(formData.medications_check_list || [])];
-                                                newList[index].current_amount = e.target.value;
-                                                setFormData({ ...formData, medications_check_list: newList });
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="label" style={{ fontSize: '0.75rem' }}>次回必要数</label>
-                                        <input
-                                            type="number"
-                                            className="input"
-                                            placeholder="必要数"
-                                            value={item.next_required_amount}
-                                            onChange={(e) => {
-                                                const newList = [...(formData.medications_check_list || [])];
-                                                newList[index].next_required_amount = e.target.value;
-                                                setFormData({ ...formData, medications_check_list: newList });
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="label" style={{ fontSize: '0.75rem' }}>単位</label>
-                                        <input
-                                            type="text"
-                                            list={`unit-options-${item.id}`}
-                                            className="input"
-                                            placeholder="単位"
-                                            value={item.unit}
-                                            onChange={(e) => {
-                                                const newList = [...(formData.medications_check_list || [])];
-                                                newList[index].unit = e.target.value;
-                                                setFormData({ ...formData, medications_check_list: newList });
-                                            }}
-                                        />
-                                        <datalist id={`unit-options-${item.id}`}>
-                                            <option value="日分" />
-                                            <option value="錠" />
-                                            <option value="本" />
-                                            <option value="g" />
-                                            <option value="枚" />
-                                            <option value="包" />
-                                            <option value="シート" />
-                                            <option value="ml" />
-                                        </datalist>
-                                    </div>
-                                    <div>
-                                        <label className="label" style={{ fontSize: '0.75rem' }}>備考</label>
-                                        <input
-                                            type="text"
-                                            className="input"
-                                            placeholder="備考"
-                                            value={item.notes}
-                                            onChange={(e) => {
-                                                const newList = [...(formData.medications_check_list || [])];
-                                                newList[index].notes = e.target.value;
-                                                setFormData({ ...formData, medications_check_list: newList });
-                                            }}
-                                        />
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className="btn btn-ghost"
-                                        style={{ color: 'red', padding: '0.6rem' }}
-                                        onClick={() => {
-                                            const newList = (formData.medications_check_list || []).filter((_, i) => i !== index);
-                                            setFormData({ ...formData, medications_check_list: newList });
-                                        }}
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            ))}
-
-                            <button
-                                type="button"
-                                className="btn btn-ghost"
-                                style={{ border: '1px dashed var(--color-border)', justifyContent: 'center', color: 'var(--color-primary)' }}
-                                onClick={() => {
-                                    const newItem: MedicationCheckItem = {
-                                        id: crypto.randomUUID(),
-                                        name: '',
-                                        current_amount: '',
-                                        next_required_amount: '',
-                                        unit: '日分',
-                                        notes: '',
-                                        checked: false
-                                    };
-                                    setFormData({
-                                        ...formData,
-                                        medications_check_list: [...(formData.medications_check_list || []), newItem]
-                                    });
-                                }}
-                            >
-                                <Plus size={18} style={{ marginRight: '0.5rem' }} />
-                                医薬品を追加
-                            </button>
-                        </div>
-                    </div>
-                </section>
+                <MedicationListForm
+                    title="残薬詳細確認 (臨時薬・その他)"
+                    items={formData.medications_check_list_prn || []}
+                    onUpdate={(newItems) => setFormData({ ...formData, medications_check_list_prn: newItems })}
+                    onSearchDrug={handleDrugSearch}
+                    drugOptions={drugOptions}
+                />
 
                 {/* 指導内容・計画 */}
                 <section className="card" style={{ padding: '1.5rem' }}>
