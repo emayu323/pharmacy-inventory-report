@@ -1,5 +1,15 @@
 export type Gender = 'male' | 'female' | 'other';
 
+export interface Patient {
+  id: string; // UUID
+  created_at: string;
+  name: string;
+  kana?: string;
+  dob: string; // YYYY-MM-DD
+  gender: Gender;
+  memo?: string;
+}
+
 // Medication Check Item
 export interface MedicationCheckItem {
   id: string; // Internal ID for UI key
@@ -15,6 +25,8 @@ export interface Report {
   id: string; // UUID
   created_at: string;
   updated_at: string;
+  patient_id?: string; // Foreign Key to Patient
+
 
   // Basic Info
   patient_name: string;

@@ -84,6 +84,18 @@ export default function ReportEdit() {
                 prescription_date: today,
                 dispensing_date: today,
             })
+        } else if (location.state && location.state.patientId) {
+            // New Report from Patient Chart
+            setFormData({
+                ...formData,
+                patient_name: location.state.patientName,
+                patient_dob: location.state.patientDob,
+                patient_gender: location.state.patientGender,
+                patient_id: location.state.patientId, // Ensure this field exists in your Report type/form
+                visit_date: new Date().toISOString().split('T')[0],
+                prescription_date: new Date().toISOString().split('T')[0],
+                dispensing_date: new Date().toISOString().split('T')[0],
+            })
         }
     }, [id, location.state])
 

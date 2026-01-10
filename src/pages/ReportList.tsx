@@ -1,62 +1,40 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Search, FileText, Copy, Folder, ChevronDown, ChevronRight } from 'lucide-react' // Add Folder and Chevrons
-import type { Report } from '../types'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Search, User, ChevronRight } from 'lucide-react'
+import type { Patient } from '../types'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
 export default function ReportList() {
-    const [reports, setReports] = useState<Report[]>([])
+    const [patients, setPatients] = useState<Patient[]>([])
     const [searchTerm, setSearchTerm] = useState('')
     const [loading, setLoading] = useState(true)
-    const [expandedPatients, setExpandedPatients] = useState<string[]>([])
     const navigate = useNavigate()
 
     useEffect(() => {
-        fetchReports()
+        fetchPatients()
     }, [])
 
-    const fetchReports = async () => {
+    const fetchPatients = async () => {
         try {
             setLoading(true)
             const { data, error } = await supabase
-                .from('reports')
+                .from('patients')
                 .select('*')
-                .order('visit_date', { ascending: false })
+                .order('name', { ascending: true })
 
             if (error) throw error
-            if (data) setReports(data as Report[])
+            if (data) setPatients(data as Patient[])
         } catch (error) {
-            console.error('Error fetching reports:', error)
+            console.error('Error fetching patients:', error)
             alert('データの取得に失敗しました')
         } finally {
             setLoading(false)
         }
     }
 
-    // Grouping Logic
-    const groupedReports = reports.reduce((acc, report) => {
-        const key = report.patient_name
-        if (!acc[key]) {
-            acc[key] = {
-                patient_name: report.patient_name,
-                patient_dob: report.patient_dob,
-                patient_gender: report.patient_gender,
-                reports: []
-            }
-        }
-        acc[key].reports.push(report)
-        return acc
-    }, {} as Record<string, { patient_name: string, patient_dob: string, patient_gender: string, reports: Report[] }>)
-
-    const filteredPatientNames = Object.keys(groupedReports).filter(name =>
-        name.includes(searchTerm)
+    const filteredPatients = patients.filter(p =>
+        p.name.includes(searchTerm) || (p.kana && p.kana.includes(searchTerm))
     )
-
-    const togglePatient = (name: string) => {
-        setExpandedPatients(prev =>
-            prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
-        )
-    }
 
     if (loading) {
         return <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>読み込み中...</div>
@@ -65,11 +43,14 @@ export default function ReportList() {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>報告書一覧（患者別）</h2>
-                <Link to="/reports/new" className="btn btn-primary">
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>患者一覧（カルテ）</h2>
+                <button
+                    onClick={() => alert("Not implemented yet: Create Patient")}
+                    className="btn btn-primary"
+                >
                     <Plus size={18} />
-                    新規作成
-                </Link>
+                    新規患者登録
+                </button>
             </div>
 
             <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
@@ -77,7 +58,7 @@ export default function ReportList() {
                     <Search size={20} />
                     <input
                         type="text"
-                        placeholder="患者名で検索..."
+                        placeholder="氏名で検索..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         style={{ border: 'none', outline: 'none', width: '100%', fontSize: '1rem' }}
@@ -86,93 +67,50 @@ export default function ReportList() {
             </div>
 
             <div style={{ display: 'grid', gap: '1rem' }}>
-                {filteredPatientNames.length === 0 && (
+                {filteredPatients.length === 0 && (
                     <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>
                         該当する患者は見つかりませんでした
                     </div>
                 )}
 
-                {filteredPatientNames.map(name => {
-                    const group = groupedReports[name]
-                    const isExpanded = expandedPatients.includes(name)
-                    const lastReportDate = group.reports[0]?.visit_date.replace(/-/g, '/') || '-'
-
-                    return (
-                        <div key={name} className="card" style={{ overflow: 'hidden' }}>
-                            {/* Patient Header (Clickable) */}
-                            <div
-                                onClick={() => togglePatient(name)}
-                                style={{
-                                    padding: '1.25rem',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    backgroundColor: isExpanded ? 'var(--color-bg)' : 'transparent',
-                                    transition: 'background-color 0.2s'
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <Folder size={24} color="var(--color-primary)" fill={isExpanded ? "var(--color-primary)" : "none"} style={{ opacity: isExpanded ? 0.2 : 1 }} />
-                                    <div>
-                                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            {group.patient_name} 様
-                                        </h3>
-                                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
-                                            {group.patient_gender === 'male' ? '男性' : '女性'} / {group.patient_dob.replace(/-/g, '/')}生
-                                        </div>
-                                    </div>
+                {filteredPatients.map(patient => (
+                    <div key={patient.id} className="card" style={{ overflow: 'hidden' }}>
+                        <div
+                            onClick={() => navigate(`/patients/${patient.id}`)}
+                            style={{
+                                padding: '1.25rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                transition: 'background-color 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{
+                                    width: '40px', height: '40px',
+                                    borderRadius: '50%',
+                                    backgroundColor: 'var(--color-primary)',
+                                    color: 'white',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                }}>
+                                    <User size={20} />
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <div style={{ textAlign: 'right', fontSize: '0.875rem' }}>
-                                        <div style={{ fontWeight: 600 }}>{group.reports.length}件の報告書</div>
-                                        <div style={{ color: 'var(--color-text-muted)' }}>最終訪問: {lastReportDate}</div>
+                                <div>
+                                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        {patient.name} 様
+                                    </h3>
+                                    <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                                        {patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'} / {patient.dob.replace(/-/g, '/')}生
                                     </div>
-                                    {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                                 </div>
                             </div>
-
-                            {/* Reports List (Accordion Body) */}
-                            {isExpanded && (
-                                <div style={{ borderTop: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
-                                    {group.reports.map(report => (
-                                        <div key={report.id} style={{
-                                            padding: '1rem 1.25rem',
-                                            borderBottom: '1px solid var(--color-border)',
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center'
-                                        }}>
-                                            <Link to={`/reports/${report.id}`} style={{ flex: 1 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                    <FileText size={18} color="var(--color-text-muted)" />
-                                                    <div>
-                                                        <div style={{ fontWeight: 600 }}>{report.visit_date.replace(/-/g, '/')} 訪問</div>
-                                                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                                                            担当: {report.pharmacist_name}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Link>
-
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault()
-                                                    navigate('/reports/new', { state: { copyFrom: report } })
-                                                }}
-                                                className="btn btn-ghost"
-                                                title="この内容で新規作成"
-                                                style={{ padding: '0.5rem' }}
-                                            >
-                                                <Copy size={16} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            <ChevronRight size={20} color="var(--color-text-muted)" />
                         </div>
-                    )
-                })}
+                    </div>
+                ))}
             </div>
         </div>
     )

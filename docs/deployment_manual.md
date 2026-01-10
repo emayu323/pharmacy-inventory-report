@@ -24,6 +24,29 @@ CREATE POLICY "Allow public read access" ON medications FOR SELECT USING (true);
 
 -- Allow public insert access (Only needed for initial upload script)
 CREATE POLICY "Allow public insert access" ON medications FOR INSERT WITH CHECK (true);
+
+-- Create patients table (Medical Chart)
+CREATE TABLE IF NOT EXISTS patients (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  
+  name TEXT NOT NULL,
+  kana TEXT DEFAULT '',
+  dob DATE NOT NULL,
+  gender TEXT NOT NULL,
+  memo TEXT DEFAULT '', 
+  
+  UNIQUE(name, dob)
+);
+
+ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read access" ON patients FOR SELECT USING (true);
+CREATE POLICY "Allow public insert access" ON patients FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update access" ON patients FOR UPDATE USING (true);
+
+-- Add relation to reports
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS patient_id UUID REFERENCES patients(id);
 ```
 
 ### Data Import (Drug Master)
