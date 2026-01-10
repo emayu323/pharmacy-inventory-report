@@ -5,6 +5,7 @@ import App from './App'
 import ReportList from './pages/ReportList'
 import ReportEdit from './pages/ReportEdit'
 import PatientDetail from './pages/PatientDetail'
+import PatientCreate from './pages/PatientCreate' // Import PatientCreate
 import CalendarView from './pages/CalendarView' // Import CalendarView
 import './index.css'
 
@@ -18,6 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="reports/new" element={<ReportEdit />} />
           <Route path="reports/:id" element={<ReportEdit />} />
           <Route path="reports/:id/edit" element={<ReportEdit />} />
+          <Route path="patients/new" element={<PatientCreate />} />
           <Route path="patients/:id" element={<PatientDetail />} />
           <Route path="calendar" element={<CalendarView />} /> {/* Add Calendar Route */}
         </Route>

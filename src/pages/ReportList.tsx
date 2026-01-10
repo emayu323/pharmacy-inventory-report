@@ -45,7 +45,7 @@ export default function ReportList() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>患者一覧（カルテ）</h2>
                 <button
-                    onClick={() => alert("Not implemented yet: Create Patient")}
+                    onClick={() => navigate('/patients/new')}
                     className="btn btn-primary"
                 >
                     <Plus size={18} />
