@@ -116,7 +116,7 @@ export default function CalendarView() {
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                                 {dayReports.map(r => (
-                                    <Link key={r.id} to={`/reports/${r.id}`} style={{
+                                    <Link key={r.id} to={r.patient_id ? `/patients/${r.patient_id}` : `#`} style={{
                                         display: 'block',
                                         fontSize: '0.75rem',
                                         backgroundColor: 'var(--color-bg)',

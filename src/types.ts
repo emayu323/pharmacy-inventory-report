@@ -41,7 +41,8 @@ export interface Report {
   visit_date: string;
 
   // Medication Status
-  medications_check_list?: MedicationCheckItem[]; // Support JSONB
+  medications_check_list?: MedicationCheckItem[];
+  medications_check_list_prn?: MedicationCheckItem[]; // PRN Medications
 
   // Instructions
   medication_instruction: string;

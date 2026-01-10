@@ -46,30 +46,62 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
         <div className="print-section">
           <h3 className="section-title">薬剤管理状況</h3>
 
-          {/* Medication Detail Table */}
+          {/* Medication Detail Table (Regular) */}
           {report.medications_check_list && report.medications_check_list.length > 0 && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', fontSize: '0.875rem' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ padding: '0.5rem', textAlign: 'left', width: '30%' }}>薬品名</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'center' }}>現在残数</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'center' }}>次回必要数</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'center' }}>単位</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'left' }}>備考</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.medications_check_list.map(item => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '0.5rem' }}>{item.name}</td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.current_amount}</td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.next_required_amount}</td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.unit}</td>
-                    <td style={{ padding: '0.5rem', color: '#6b7280' }}>{item.notes}</td>
+            <div style={{ marginBottom: '1rem' }}>
+              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem', color: '#4b5563' }}>定期薬</h4>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
+                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '30%' }}>薬品名</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>現在残数</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>次回必要数</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>単位</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'left' }}>備考</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {report.medications_check_list.map(item => (
+                    <tr key={item.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '0.5rem' }}>{item.name}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.current_amount}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.next_required_amount}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.unit}</td>
+                      <td style={{ padding: '0.5rem', color: '#6b7280' }}>{item.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Medication Detail Table (PRN/Other) */}
+          {report.medications_check_list_prn && report.medications_check_list_prn.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem', color: '#4b5563' }}>臨時薬・その他</h4>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
+                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '30%' }}>薬品名</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>現在残数</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>次回必要数</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>単位</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'left' }}>備考</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.medications_check_list_prn.map(item => (
+                    <tr key={item.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '0.5rem' }}>{item.name}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.current_amount}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.next_required_amount}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.unit}</td>
+                      <td style={{ padding: '0.5rem', color: '#6b7280' }}>{item.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
         </div>

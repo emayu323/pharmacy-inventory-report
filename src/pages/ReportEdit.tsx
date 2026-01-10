@@ -6,7 +6,7 @@ import { ReportPrint } from '../components/ReportPrint'
 import { supabase } from '../supabase'
 import { Plus, Trash2 } from 'lucide-react'
 import type { Report, MedicationCheckItem } from '../types'
-// import { COMMON_DRUGS } from '../data/drug_data' // REMOVED
+
 
 // Mock for edit, would fetch based on ID in real app
 const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
@@ -22,7 +22,8 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     side_effects: '',
     next_visit_plan: '',
     next_visit_date: '',
-    medications_check_list: []
+    medications_check_list: [],
+    medications_check_list_prn: []
 }
 
 export default function ReportEdit() {
@@ -250,7 +251,7 @@ export default function ReportEdit() {
                                     <div>
                                         <label className="label" style={{ fontSize: '0.75rem' }}>現在残数</label>
                                         <input
-                                            type="text"
+                                            type="number"
                                             className="input"
                                             placeholder="残数"
                                             value={item.current_amount}
@@ -264,7 +265,7 @@ export default function ReportEdit() {
                                     <div>
                                         <label className="label" style={{ fontSize: '0.75rem' }}>次回必要数</label>
                                         <input
-                                            type="text"
+                                            type="number"
                                             className="input"
                                             placeholder="必要数"
                                             value={item.next_required_amount}
