@@ -17,6 +17,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="reports" element={<ReportList />} />
           <Route path="reports/new" element={<ReportEdit />} />
           <Route path="reports/:id" element={<ReportEdit />} />
+          <Route path="reports/:id/edit" element={<ReportEdit />} />
           <Route path="patients/:id" element={<PatientDetail />} />
           <Route path="calendar" element={<CalendarView />} /> {/* Add Calendar Route */}
         </Route>
