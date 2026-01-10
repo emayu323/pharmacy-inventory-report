@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, PlusCircle, FileText, Calendar, Edit2, Save, NotebookPen, Clock } from 'lucide-react'
+import { ArrowLeft, User, PlusCircle, FileText, Calendar, Edit2, Save, NotebookPen, Clock, Copy } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import type { Patient, Report } from '../types'
@@ -236,6 +236,14 @@ export default function PatientDetail() {
                         </div>
 
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                                onClick={() => navigate('/reports/new', { state: { copyFrom: report } })}
+                                className="btn btn-ghost"
+                                title="この内容をコピーして新規作成"
+                                style={{ border: '1px solid var(--color-border)', color: 'var(--color-primary)' }}
+                            >
+                                <Copy size={16} />
+                            </button>
                             <Link to={`/reports/${report.id}`} className="btn btn-ghost" style={{ border: '1px solid var(--color-border)' }}>
                                 <FileText size={16} />
                                 詳細・印刷
