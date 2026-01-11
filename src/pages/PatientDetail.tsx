@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, PlusCircle, FileText, Calendar, Edit2, Save, NotebookPen, Clock, Copy, Building2 } from 'lucide-react'
+import { ArrowLeft, User, PlusCircle, Calendar, Edit2, Save, Clock, Copy, Building2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import type { Patient, Report, Institution, InstitutionType } from '../types'
@@ -513,56 +513,104 @@ export default function PatientDetail() {
                                 <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>住所</span>
                                 <span style={{ fontWeight: 500 }}>{patient.address || '-'}</span>
                             </div>
-                            <div>
-                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>医療機関名</span>
-                                <span style={{ fontWeight: 500, display: 'block' }}>{patient.medical_institution_name || '-'}</span>
+                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
+                                <div>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>医療機関名</span>
+                                    <span style={{ fontWeight: 500, display: 'block' }}>{patient.medical_institution_name || '-'}</span>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>主治医</span>
+                                    <span style={{ fontWeight: 500 }}>{patient.primary_doctor || '-'}</span>
+                                </div>
                                 {(() => {
                                     const inst = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
-                                    if (inst) {
+                                    if (inst && (inst.tel || inst.fax)) {
                                         return (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-                                                {inst.tel && <div>TEL: {inst.tel}</div>}
-                                                {inst.fax && <div>FAX: {inst.fax}</div>}
+                                            <div>
+                                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
+                                                <div style={{
+                                                    display: 'inline-flex',
+                                                    gap: '0.75rem',
+                                                    alignItems: 'center',
+                                                    backgroundColor: 'rgba(0,0,0,0.03)',
+                                                    padding: '0.2rem 0.6rem',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.85rem',
+                                                    color: 'var(--color-text-main)',
+                                                    border: '1px solid var(--color-border)'
+                                                }}>
+                                                    {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
+                                                    {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
+                                                    {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+                                                </div>
                                             </div>
                                         );
                                     }
                                     return null;
                                 })()}
                             </div>
-                            <div>
-                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>主治医</span>
-                                <span style={{ fontWeight: 500 }}>{patient.primary_doctor || '-'}</span>
-                            </div>
-                            <div>
-                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>居宅介護支援事業所</span>
-                                <span style={{ fontWeight: 500, display: 'block' }}>{patient.home_care_office || '-'}</span>
+                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
+                                <div>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>居宅介護支援事業所</span>
+                                    <span style={{ fontWeight: 500, display: 'block' }}>{patient.home_care_office || '-'}</span>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>ケアマネージャー</span>
+                                    <span style={{ fontWeight: 500 }}>{patient.care_manager || '-'}</span>
+                                </div>
                                 {(() => {
                                     const inst = institutions.find(i => i.name === patient.home_care_office && i.type === 'care_office');
-                                    if (inst) {
+                                    if (inst && (inst.tel || inst.fax)) {
                                         return (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-                                                {inst.tel && <div>TEL: {inst.tel}</div>}
-                                                {inst.fax && <div>FAX: {inst.fax}</div>}
+                                            <div>
+                                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
+                                                <div style={{
+                                                    display: 'inline-flex',
+                                                    gap: '0.75rem',
+                                                    alignItems: 'center',
+                                                    backgroundColor: 'rgba(0,0,0,0.03)',
+                                                    padding: '0.2rem 0.6rem',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.85rem',
+                                                    color: 'var(--color-text-main)',
+                                                    border: '1px solid var(--color-border)'
+                                                }}>
+                                                    {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
+                                                    {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
+                                                    {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+                                                </div>
                                             </div>
                                         );
                                     }
                                     return null;
                                 })()}
                             </div>
-                            <div>
-                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>ケアマネージャー</span>
-                                <span style={{ fontWeight: 500 }}>{patient.care_manager || '-'}</span>
-                            </div>
-                            <div>
-                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>担当薬局</span>
-                                <span style={{ fontWeight: 500, display: 'block' }}>{patient.pharmacy_name || '-'}</span>
+                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
+                                <div>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>担当薬局</span>
+                                    <span style={{ fontWeight: 500, display: 'block' }}>{patient.pharmacy_name || '-'}</span>
+                                </div>
                                 {(() => {
                                     const inst = institutions.find(i => i.name === patient.pharmacy_name && i.type === 'pharmacy');
-                                    if (inst) {
+                                    if (inst && (inst.tel || inst.fax)) {
                                         return (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-                                                {inst.tel && <div>TEL: {inst.tel}</div>}
-                                                {inst.fax && <div>FAX: {inst.fax}</div>}
+                                            <div>
+                                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
+                                                <div style={{
+                                                    display: 'inline-flex',
+                                                    gap: '0.75rem',
+                                                    alignItems: 'center',
+                                                    backgroundColor: 'rgba(0,0,0,0.03)',
+                                                    padding: '0.2rem 0.6rem',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.85rem',
+                                                    color: 'var(--color-text-main)',
+                                                    border: '1px solid var(--color-border)'
+                                                }}>
+                                                    {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
+                                                    {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
+                                                    {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+                                                </div>
                                             </div>
                                         );
                                     }
@@ -576,7 +624,18 @@ export default function PatientDetail() {
                 <div>
                     {!isEditingProfile && (
                         <button
-                            onClick={() => navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })}
+                            onClick={() => {
+                                // Reports are sorted by visit_date desc (see fetchPatientData)
+                                if (reports.length > 0) {
+                                    const latestReport = reports[0]
+                                    if (window.confirm('直近の報告書の内容を引き継いで作成しますか？')) {
+                                        navigate('/reports/new', { state: { copyFrom: latestReport } })
+                                        return
+                                    }
+                                }
+                                // Default new report
+                                navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })
+                            }}
                             className="btn btn-primary"
                         >
                             <PlusCircle size={18} />
@@ -609,8 +668,7 @@ export default function PatientDetail() {
                         gap: '0.75rem',
                         color: 'var(--color-primary)'
                     }}>
-                        <NotebookPen size={20} />
-                        申し送り事項 / 特記事項
+                        特記事項
                     </h3>
                     {savingMemo && (
                         <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -655,7 +713,7 @@ export default function PatientDetail() {
                             e.currentTarget.style.boxShadow = 'none';
                             e.currentTarget.style.backgroundColor = 'var(--color-bg)';
                         }}
-                        placeholder="・アレルギー情報&#13;&#10;・家族構成やキーパーソン&#13;&#10;・服薬管理の注意点&#13;&#10;など、継続的に確認すべき事項を入力してください。"
+                        placeholder="・アレルギー情報&#13;&#10;・家族構成やキーパーソン&#13;&#10;など、継続的に確認すべき事項を入力してください。"
                         value={memo}
                         onChange={(e) => setMemo(e.target.value)}
                     />
@@ -691,7 +749,21 @@ export default function PatientDetail() {
                 )}
 
                 {reports.map(report => (
-                    <div key={report.id} className="card" style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div
+                        key={report.id}
+                        className="card"
+                        style={{
+                            padding: '1rem 1.5rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                        }}
+                        onClick={() => navigate(`/reports/${report.id}`)}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
                         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                             <div style={{
                                 backgroundColor: 'var(--color-bg)',
@@ -704,15 +776,29 @@ export default function PatientDetail() {
                                 <div style={{ fontWeight: 600, fontSize: '1.125rem' }}>{report.visit_date.replace(/-/g, '/')}</div>
                             </div>
                             <div>
-                                <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>担当: {report.pharmacist_name}</div>
-                                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', gap: '1rem' }}>
+                                {/* <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>担当: {report.pharmacist_name}</div> */}
+                                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
                                     <span>処方: {report.prescription_date?.replace(/-/g, '/') || '-'}</span>
-                                    <span>次回: {report.next_visit_plan || '未定'}</span>
                                 </div>
+                                {report.memo && (
+                                    <div style={{
+                                        fontSize: '0.875rem',
+                                        backgroundColor: '#f0f9ff',
+                                        color: '#0369a1',
+                                        padding: '0.4rem 0.8rem',
+                                        borderRadius: '4px',
+                                        borderLeft: '3px solid #0ea5e9',
+                                        display: 'inline-block',
+                                        maxWidth: '400px',
+                                        whiteSpace: 'pre-wrap'
+                                    }}>
+                                        {report.memo}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem' }} onClick={(e) => e.stopPropagation()}>
                             <button
                                 onClick={() => navigate('/reports/new', { state: { copyFrom: report } })}
                                 className="btn btn-ghost"
@@ -721,10 +807,6 @@ export default function PatientDetail() {
                             >
                                 <Copy size={16} />
                             </button>
-                            <Link to={`/reports/${report.id}`} className="btn btn-ghost" style={{ border: '1px solid var(--color-border)' }}>
-                                <FileText size={16} />
-                                詳細・印刷
-                            </Link>
                             <Link to={`/reports/${report.id}/edit`} className="btn btn-ghost" title="編集">
                                 <Edit2 size={16} />
                             </Link>

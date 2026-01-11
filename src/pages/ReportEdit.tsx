@@ -19,7 +19,6 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     visit_date: new Date().toISOString().split('T')[0],
     medication_instruction: '',
     side_effects: '',
-    next_visit_plan: '',
     next_visit_date: '',
     medications_check_list: [],
     medications_check_list_prn: []
@@ -34,6 +33,7 @@ export default function ReportEdit() {
     // State for form
     const [formData, setFormData] = useState(EMPTY_REPORT)
     const [drugOptions, setDrugOptions] = useState<string[]>([])
+    const [patientMemo, setPatientMemo] = useState('') // New: Patient Memo
     const printRef = useRef<HTMLDivElement>(null)
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -84,6 +84,11 @@ export default function ReportEdit() {
                 prescription_date: today,
                 dispensing_date: today,
             })
+            // If copying from prev report, we might want to copy the memo too, or clear it.
+            // Since it's a "handover" for THAT visit, maybe it makes sense to start empty, or copy.
+            // Let's copy it for now as it's a "Copy" function.
+            if (source.memo) setPatientMemo(source.memo)
+            else setPatientMemo('')
         } else if (location.state && location.state.patientId) {
             // New Report from Patient Chart
             setFormData({
@@ -96,6 +101,23 @@ export default function ReportEdit() {
                 prescription_date: new Date().toISOString().split('T')[0],
                 dispensing_date: new Date().toISOString().split('T')[0],
             })
+            setPatientMemo('') // Start empty for new report
+
+            // Auto-fill medication instruction from latest report
+            const fetchLatest = async () => {
+                const { data } = await supabase
+                    .from('reports')
+                    .select('medication_instruction')
+                    .eq('patient_id', location.state.patientId)
+                    .order('visit_date', { ascending: false })
+                    .limit(1)
+                    .maybeSingle()
+
+                if (data && data.medication_instruction) {
+                    setFormData(prev => ({ ...prev, medication_instruction: data.medication_instruction }))
+                }
+            }
+            fetchLatest()
         }
     }, [id, location.state])
 
@@ -115,6 +137,8 @@ export default function ReportEdit() {
                 medications_check_list: data.medications_check_list || [],
                 medications_check_list_prn: data.medications_check_list_prn || []
             })
+            // Load the snapshot memo if it exists
+            if (data.memo) setPatientMemo(data.memo)
         }
     }
 
@@ -125,12 +149,12 @@ export default function ReportEdit() {
                 // Update Logic
                 const { error: updateError } = await supabase
                     .from('reports')
-                    .update(formData)
+                    .update({ ...formData, memo: patientMemo })
                     .eq('id', id)
                 if (updateError) throw updateError
             } else {
                 // Insert Logic
-                const { error: insertError } = await supabase.from('reports').insert([formData])
+                const { error: insertError } = await supabase.from('reports').insert([{ ...formData, memo: patientMemo }])
                 if (insertError) throw insertError
             }
 
@@ -159,7 +183,17 @@ export default function ReportEdit() {
                 </h2>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '2rem' }}>
+            <form
+                onSubmit={handleSubmit}
+                style={{ display: 'grid', gap: '2rem' }}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        // Allow Enter in Textareas, prevent in Inputs (except submit button which handles itself)
+                        if (e.target instanceof HTMLTextAreaElement) return;
+                        e.preventDefault();
+                    }
+                }}
+            >
 
                 {/* 基本情報 */}
                 <section className="card" style={{ padding: '1.5rem' }}>
@@ -250,9 +284,16 @@ export default function ReportEdit() {
                             <label className="label">次回訪問予定日</label>
                             <input type="date" name="next_visit_date" className="input" value={formData.next_visit_date || ''} onChange={handleChange} />
                         </div>
+
                         <div>
-                            <label className="label">次回訪問予定・計画メモ</label>
-                            <textarea name="next_visit_plan" className="input" rows={2} value={formData.next_visit_plan} onChange={handleChange}></textarea>
+                            <label className="label">申し送り事項</label>
+                            <textarea
+                                className="input"
+                                rows={3}
+                                value={patientMemo}
+                                onChange={(e) => setPatientMemo(e.target.value)}
+                                placeholder="今回の訪問に関する申し送り事項を入力してください（患者詳細の履歴に表示されます）"
+                            ></textarea>
                         </div>
                     </div>
                 </section>

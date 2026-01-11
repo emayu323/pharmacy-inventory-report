@@ -1,5 +1,5 @@
 import type { MedicationCheckItem } from '../types'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 // Removed uuid import
 
 
@@ -43,6 +43,18 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
         onUpdate(newList)
     }
 
+    const handleMove = (index: number, direction: -1 | 1) => {
+        const newList = [...items]
+        const newIndex = index + direction
+
+        if (newIndex >= 0 && newIndex < newList.length) {
+            const temp = newList[index]
+            newList[index] = newList[newIndex]
+            newList[newIndex] = temp
+            onUpdate(newList)
+        }
+    }
+
     return (
         <section className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
@@ -61,7 +73,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                     {items.map((item, index) => (
                         <div key={item.id} style={{
                             display: 'grid',
-                            gridTemplateColumns: 'minmax(150px, 2fr) 1fr 1fr 1fr 1.5fr auto',
+                            gridTemplateColumns: 'minmax(150px, 2fr) 1fr 1fr 1fr 1.5fr auto auto auto',
                             gap: '0.5rem',
                             alignItems: 'end',
                             backgroundColor: 'var(--color-bg)',
@@ -131,10 +143,31 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                                 />
                             </div>
                             <button
+                                onClick={() => handleMove(index, -1)}
+                                disabled={index === 0}
+                                className="btn btn-ghost"
+                                style={{ padding: '0.25rem', opacity: index === 0 ? 0.3 : 1 }}
+                                title="上に移動"
+                                type="button"
+                            >
+                                <ArrowUp size={16} />
+                            </button>
+                            <button
+                                onClick={() => handleMove(index, 1)}
+                                disabled={index === items.length - 1}
+                                className="btn btn-ghost"
+                                style={{ padding: '0.25rem', opacity: index === items.length - 1 ? 0.3 : 1 }}
+                                title="下に移動"
+                                type="button"
+                            >
+                                <ArrowDown size={16} />
+                            </button>
+                            <button
                                 onClick={() => handleRemove(index)}
                                 className="btn btn-ghost"
                                 style={{ color: 'var(--color-error)', padding: '0.5rem' }}
                                 title="削除"
+                                type="button"
                             >
                                 <Trash2 size={16} />
                             </button>
@@ -145,6 +178,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                     onClick={handleAdd}
                     className="btn btn-ghost"
                     style={{ marginTop: '0.5rem', width: '100%', border: '1px dashed var(--color-border)' }}
+                    type="button"
                 >
                     <Plus size={16} /> 薬剤を追加
                 </button>

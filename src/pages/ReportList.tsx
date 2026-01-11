@@ -43,7 +43,7 @@ export default function ReportList() {
     return (
         <div>
             <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>患者一覧（カルテ）</h2>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>患者一覧</h2>
             </div>
 
             <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>

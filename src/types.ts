@@ -61,8 +61,9 @@ export interface Report {
   side_effects: string;
 
   // Plan
-  next_visit_plan: string;
+  // next_visit_plan: string; // Removed per user request
   next_visit_date?: string; // ISO Date string 'YYYY-MM-DD'
+  memo?: string; // Snapshot of patient memo at time of report
 }
 
 export type InstitutionType = 'hospital' | 'pharmacy' | 'care_office';

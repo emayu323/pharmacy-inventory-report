@@ -13,3 +13,8 @@
 
 3. **Deployment**:
    - Always verify locally (`npm run build`, `npm run dev`) before deploying.
+   - **Local Verification First**: Show changes via local server (`localhost`) first. Use Vercel Preview only when explicitly requested or for final checks.
+
+4. **Notification Requirements**:
+   - Always include the localhost URL (e.g., [http://localhost:5173/](http://localhost:5173/)) when notifying the user of completion.
+   - Confirm verification was performed.

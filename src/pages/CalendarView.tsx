@@ -126,7 +126,7 @@ export default function CalendarView() {
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis'
-                                    }} title={`${r.patient_name} 様\n${r.next_visit_plan}`}>
+                                    }} title={`${r.patient_name} 様`}>
                                         {r.patient_name}
                                     </Link>
                                 ))}
