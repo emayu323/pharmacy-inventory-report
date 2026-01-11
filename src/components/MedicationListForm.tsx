@@ -68,80 +68,90 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                 ))}
             </datalist>
 
-            <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'grid', gap: '0.5rem' }}>
-                    {items.map((item, index) => (
-                        <div key={item.id} style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'minmax(150px, 2fr) 1fr 1fr 1fr 1.5fr auto auto auto',
-                            gap: '0.5rem',
-                            alignItems: 'end',
-                            backgroundColor: 'var(--color-bg)',
-                            padding: '0.75rem',
-                            borderRadius: '6px'
-                        }}>
-                            <div>
-                                <label className="label" style={{ fontSize: '0.75rem' }}>薬品名</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="薬品名"
-                                    list="drug-options-shared"
-                                    value={item.name}
-                                    onChange={(e) => handleChange(index, 'name', e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label className="label" style={{ fontSize: '0.75rem' }}>現在残数</label>
-                                <input
-                                    type="number"
-                                    className="input"
-                                    placeholder="残数"
-                                    value={item.current_amount}
-                                    onChange={(e) => handleChange(index, 'current_amount', e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label className="label" style={{ fontSize: '0.75rem' }}>次回必要数</label>
-                                <input
-                                    type="number"
-                                    className="input"
-                                    placeholder="必要数"
-                                    value={item.next_required_amount}
-                                    onChange={(e) => handleChange(index, 'next_required_amount', e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label className="label" style={{ fontSize: '0.75rem' }}>単位</label>
-                                <input
-                                    type="text"
-                                    list={`unit-options-${item.id}`}
-                                    className="input"
-                                    placeholder="単位"
-                                    value={item.unit}
-                                    onChange={(e) => handleChange(index, 'unit', e.target.value)}
-                                />
-                                <datalist id={`unit-options-${item.id}`}>
-                                    <option value="日分" />
-                                    <option value="錠" />
-                                    <option value="本" />
-                                    <option value="g" />
-                                    <option value="枚" />
-                                    <option value="包" />
-                                    <option value="シート" />
-                                    <option value="ml" />
-                                </datalist>
-                            </div>
-                            <div>
-                                <label className="label" style={{ fontSize: '0.75rem' }}>備考</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="備考"
-                                    value={item.notes}
-                                    onChange={(e) => handleChange(index, 'notes', e.target.value)}
-                                />
-                            </div>
+            <div className="mobile-card-view" style={{ display: 'grid', gap: '0.5rem' }}>
+                {items.map((item, index) => (
+                    <div key={item.id} className="mobile-card-item" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(150px, 2fr) 1fr 1fr 1fr 1.5fr auto auto auto',
+                        gap: '0.5rem',
+                        alignItems: 'end',
+                        backgroundColor: 'var(--color-bg)',
+                        padding: '0.75rem',
+                        borderRadius: '6px'
+                    }}>
+                        {/* Drug Name - Full width on mobile */}
+                        <div style={{ gridColumn: '1 / -1' }} className="details-desktop-only">
+                            <label className="label" style={{ fontSize: '0.75rem' }}>薬品名</label>
+                        </div>
+                        <div className="mobile-full-width" style={{ gridColumn: 'span 1' }}>
+                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>薬品名</label>
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="薬品名"
+                                list="drug-options-shared"
+                                value={item.name}
+                                onChange={(e) => handleChange(index, 'name', e.target.value)}
+                            />
+                        </div>
+
+                        {/* Amounts Row on Mobile */}
+                        <div className="mobile-stack-horizontal">
+                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>残数</label>
+                            <input
+                                type="number"
+                                className="input"
+                                placeholder="残数"
+                                value={item.current_amount}
+                                onChange={(e) => handleChange(index, 'current_amount', e.target.value)}
+                            />
+                        </div>
+                        <div className="mobile-stack-horizontal">
+                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>必要数</label>
+                            <input
+                                type="number"
+                                className="input"
+                                placeholder="必要数"
+                                value={item.next_required_amount}
+                                onChange={(e) => handleChange(index, 'next_required_amount', e.target.value)}
+                            />
+                        </div>
+                        <div className="mobile-stack-horizontal">
+                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>単位</label>
+                            <input
+                                type="text"
+                                list={`unit-options-${item.id}`}
+                                className="input"
+                                placeholder="単位"
+                                value={item.unit}
+                                onChange={(e) => handleChange(index, 'unit', e.target.value)}
+                            />
+                            <datalist id={`unit-options-${item.id}`}>
+                                <option value="日分" />
+                                <option value="錠" />
+                                <option value="本" />
+                                <option value="g" />
+                                <option value="枚" />
+                                <option value="包" />
+                                <option value="シート" />
+                                <option value="ml" />
+                            </datalist>
+                        </div>
+
+                        {/* Notes - Full width on mobile */}
+                        <div className="mobile-full-width">
+                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>備考</label>
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="備考"
+                                value={item.notes}
+                                onChange={(e) => handleChange(index, 'notes', e.target.value)}
+                            />
+                        </div>
+
+                        {/* Actions - Flex row on mobile */}
+                        <div className="mobile-actions" style={{ display: 'contents' }}>
                             <button
                                 onClick={() => handleMove(index, -1)}
                                 disabled={index === 0}
@@ -172,17 +182,55 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                                 <Trash2 size={16} />
                             </button>
                         </div>
-                    ))}
-                </div>
-                <button
-                    onClick={handleAdd}
-                    className="btn btn-ghost"
-                    style={{ marginTop: '0.5rem', width: '100%', border: '1px dashed var(--color-border)' }}
-                    type="button"
-                >
-                    <Plus size={16} /> 薬剤を追加
-                </button>
+                    </div>
+                ))}
             </div>
-        </section>
+
+            <style>{`
+                    @media (max-width: 640px) {
+                        .mobile-card-item {
+                             grid-template-columns: 1fr 1fr 1fr !important;
+                             grid-template-rows: auto auto auto auto !important;
+                             gap: 1rem !important;
+                             align-items: start !important;
+                        }
+                        
+                        /* Name takes full width */
+                        .mobile-card-item > div:nth-child(2) {
+                            grid-column: 1 / -1 !important;
+                        }
+                        
+                        /* Notes takes full width */
+                        .mobile-card-item > div:nth-child(6) {
+                            grid-column: 1 / -1 !important;
+                        }
+                        
+                        /* Hide desktop labels inside grid usually, but here we added them inline for mobile */
+                        .details-desktop-only {
+                            display: none !important;
+                        }
+
+                        /* Actions row at the bottom */
+                        .mobile-actions {
+                            display: flex !important;
+                            grid-column: 1 / -1 !important;
+                            justify-content: flex-end;
+                            gap: 1rem;
+                            border-top: 1px dashed var(--color-border);
+                            padding-top: 0.5rem;
+                            margin-top: 0.5rem;
+                        }
+                    }
+                `}</style>
+            <button
+                onClick={handleAdd}
+                className="btn btn-ghost"
+                style={{ marginTop: '0.5rem', width: '100%', border: '1px dashed var(--color-border)' }}
+                type="button"
+            >
+                <Plus size={16} /> 薬剤を追加
+            </button>
+        </div>
+        </section >
     )
 }

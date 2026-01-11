@@ -500,122 +500,127 @@ export default function PatientDetail() {
                         </h2>
                         {patient.kana && <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{patient.kana}</div>}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '1rem 2rem', marginTop: '0.5rem', maxWidth: '600px' }}>
-                            <div>
-                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>性別</span>
-                                <span style={{ fontWeight: 500 }}>{patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'}</span>
-                            </div>
-                            <div>
-                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>生年月日</span>
-                                <span style={{ fontWeight: 500 }}>{patient.dob.replace(/-/g, '/')}</span>
-                            </div>
-                            <div style={{ gridColumn: '1 / -1' }}>
-                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>住所</span>
-                                <span style={{ fontWeight: 500 }}>{patient.address || '-'}</span>
-                            </div>
-                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
+                        <div style={{ marginTop: '0.5rem', maxWidth: '800px' }}>
+                            <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '1rem 2rem' }}>
                                 <div>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>医療機関名</span>
-                                    <span style={{ fontWeight: 500, display: 'block' }}>{patient.medical_institution_name || '-'}</span>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>性別</span>
+                                    <span style={{ fontWeight: 500 }}>{patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'}</span>
                                 </div>
                                 <div>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>主治医</span>
-                                    <span style={{ fontWeight: 500 }}>{patient.primary_doctor || '-'}</span>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>生年月日</span>
+                                    <span style={{ fontWeight: 500 }}>{patient.dob.replace(/-/g, '/')}</span>
                                 </div>
-                                {(() => {
-                                    const inst = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
-                                    if (inst && (inst.tel || inst.fax)) {
-                                        return (
-                                            <div>
-                                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
-                                                <div style={{
-                                                    display: 'inline-flex',
-                                                    gap: '0.75rem',
-                                                    alignItems: 'center',
-                                                    backgroundColor: 'rgba(0,0,0,0.03)',
-                                                    padding: '0.2rem 0.6rem',
-                                                    borderRadius: '4px',
-                                                    fontSize: '0.85rem',
-                                                    color: 'var(--color-text-main)',
-                                                    border: '1px solid var(--color-border)'
-                                                }}>
-                                                    {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
-                                                    {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
-                                                    {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+                                <div style={{ gridColumn: '1 / -1' }}>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>住所</span>
+                                    <span style={{ fontWeight: 500 }}>{patient.address || '-'}</span>
+                                </div>
+
+                                <div className="mobile-stack" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
+                                    <div style={{ flex: 1, minWidth: '200px' }}>
+                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>医療機関名</span>
+                                        <span style={{ fontWeight: 500, display: 'block' }}>{patient.medical_institution_name || '-'}</span>
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: '150px' }}>
+                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>主治医</span>
+                                        <span style={{ fontWeight: 500 }}>{patient.primary_doctor || '-'}</span>
+                                    </div>
+                                    {(() => {
+                                        const inst = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
+                                        if (inst && (inst.tel || inst.fax)) {
+                                            return (
+                                                <div style={{ flex: 0, minWidth: 'auto' }}>
+                                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
+                                                    <div style={{
+                                                        display: 'inline-flex',
+                                                        gap: '0.75rem',
+                                                        alignItems: 'center',
+                                                        backgroundColor: 'rgba(0,0,0,0.03)',
+                                                        padding: '0.2rem 0.6rem',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.85rem',
+                                                        color: 'var(--color-text-main)',
+                                                        border: '1px solid var(--color-border)'
+                                                    }}>
+                                                        {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
+                                                        {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
+                                                        {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
-                            </div>
-                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
-                                <div>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>居宅介護支援事業所</span>
-                                    <span style={{ fontWeight: 500, display: 'block' }}>{patient.home_care_office || '-'}</span>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
-                                <div>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>ケアマネージャー</span>
-                                    <span style={{ fontWeight: 500 }}>{patient.care_manager || '-'}</span>
-                                </div>
-                                {(() => {
-                                    const inst = institutions.find(i => i.name === patient.home_care_office && i.type === 'care_office');
-                                    if (inst && (inst.tel || inst.fax)) {
-                                        return (
-                                            <div>
-                                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
-                                                <div style={{
-                                                    display: 'inline-flex',
-                                                    gap: '0.75rem',
-                                                    alignItems: 'center',
-                                                    backgroundColor: 'rgba(0,0,0,0.03)',
-                                                    padding: '0.2rem 0.6rem',
-                                                    borderRadius: '4px',
-                                                    fontSize: '0.85rem',
-                                                    color: 'var(--color-text-main)',
-                                                    border: '1px solid var(--color-border)'
-                                                }}>
-                                                    {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
-                                                    {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
-                                                    {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+
+                                <div className="mobile-stack" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
+                                    <div style={{ flex: 1, minWidth: '200px' }}>
+                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>居宅介護支援事業所</span>
+                                        <span style={{ fontWeight: 500, display: 'block' }}>{patient.home_care_office || '-'}</span>
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: '150px' }}>
+                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>ケアマネージャー</span>
+                                        <span style={{ fontWeight: 500 }}>{patient.care_manager || '-'}</span>
+                                    </div>
+                                    {(() => {
+                                        const inst = institutions.find(i => i.name === patient.home_care_office && i.type === 'care_office');
+                                        if (inst && (inst.tel || inst.fax)) {
+                                            return (
+                                                <div style={{ flex: 0, minWidth: 'auto' }}>
+                                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
+                                                    <div style={{
+                                                        display: 'inline-flex',
+                                                        gap: '0.75rem',
+                                                        alignItems: 'center',
+                                                        backgroundColor: 'rgba(0,0,0,0.03)',
+                                                        padding: '0.2rem 0.6rem',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.85rem',
+                                                        color: 'var(--color-text-main)',
+                                                        border: '1px solid var(--color-border)'
+                                                    }}>
+                                                        {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
+                                                        {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
+                                                        {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
-                            </div>
-                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
-                                <div>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>担当薬局</span>
-                                    <span style={{ fontWeight: 500, display: 'block' }}>{patient.pharmacy_name || '-'}</span>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
-                                {(() => {
-                                    const inst = institutions.find(i => i.name === patient.pharmacy_name && i.type === 'pharmacy');
-                                    if (inst && (inst.tel || inst.fax)) {
-                                        return (
-                                            <div>
-                                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
-                                                <div style={{
-                                                    display: 'inline-flex',
-                                                    gap: '0.75rem',
-                                                    alignItems: 'center',
-                                                    backgroundColor: 'rgba(0,0,0,0.03)',
-                                                    padding: '0.2rem 0.6rem',
-                                                    borderRadius: '4px',
-                                                    fontSize: '0.85rem',
-                                                    color: 'var(--color-text-main)',
-                                                    border: '1px solid var(--color-border)'
-                                                }}>
-                                                    {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
-                                                    {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
-                                                    {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+
+                                <div className="mobile-stack" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
+                                    <div style={{ flex: 1, minWidth: '200px' }}>
+                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>担当薬局</span>
+                                        <span style={{ fontWeight: 500, display: 'block' }}>{patient.pharmacy_name || '-'}</span>
+                                    </div>
+                                    {(() => {
+                                        const inst = institutions.find(i => i.name === patient.pharmacy_name && i.type === 'pharmacy');
+                                        if (inst && (inst.tel || inst.fax)) {
+                                            return (
+                                                <div style={{ flex: 0, minWidth: 'auto' }}>
+                                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
+                                                    <div style={{
+                                                        display: 'inline-flex',
+                                                        gap: '0.75rem',
+                                                        alignItems: 'center',
+                                                        backgroundColor: 'rgba(0,0,0,0.03)',
+                                                        padding: '0.2rem 0.6rem',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.85rem',
+                                                        color: 'var(--color-text-main)',
+                                                        border: '1px solid var(--color-border)'
+                                                    }}>
+                                                        {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
+                                                        {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
+                                                        {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -758,26 +763,27 @@ export default function PatientDetail() {
                             justifyContent: 'space-between',
                             alignItems: 'center',
                             cursor: 'pointer',
-                            transition: 'background-color 0.2s'
+                            transition: 'background-color 0.2s',
+                            gap: '1rem' // Add gap for mobile stack
                         }}
                         onClick={() => navigate(`/reports/${report.id}`)}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                        <div className="mobile-stack" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', width: '100%' }}>
                             <div style={{
                                 backgroundColor: 'var(--color-bg)',
                                 padding: '0.5rem',
                                 borderRadius: '8px',
                                 textAlign: 'center',
-                                minWidth: '80px'
+                                minWidth: '80px',
+                                flexShrink: 0
                             }}>
                                 <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>訪問日</div>
                                 <div style={{ fontWeight: 600, fontSize: '1.125rem' }}>{report.visit_date.replace(/-/g, '/')}</div>
                             </div>
-                            <div>
-                                {/* <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>担当: {report.pharmacist_name}</div> */}
-                                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                                     <span>処方: {report.prescription_date?.replace(/-/g, '/') || '-'}</span>
                                 </div>
                                 {report.memo && (
@@ -789,7 +795,7 @@ export default function PatientDetail() {
                                         borderRadius: '4px',
                                         borderLeft: '3px solid #0ea5e9',
                                         display: 'inline-block',
-                                        maxWidth: '400px',
+                                        maxWidth: '100%',
                                         whiteSpace: 'pre-wrap'
                                     }}>
                                         {report.memo}
