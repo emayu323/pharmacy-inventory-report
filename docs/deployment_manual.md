@@ -49,6 +49,22 @@ CREATE POLICY "Allow public update access" ON patients FOR UPDATE USING (true);
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS patient_id UUID REFERENCES patients(id);
 ```
 
+### Authentication & Data Segregation (RLS)
+Security policies are required to isolate user data. Run these scripts:
+
+1.  **Secure Patients**:
+    ```sql
+    -- Add user_id and policies
+    -- (Copy content from supabase_auth_segregation.sql)
+    ```
+2.  **Secure Reports**:
+    ```sql
+    -- Limit report access to patient owner
+    -- (Copy content from supabase_auth_reports.sql)
+    ```
+
+*Note: The actual SQL files `supabase_auth_segregation.sql` and `supabase_auth_reports.sql` are included in the repository root.*
+
 ### Data Import (Drug Master)
 To upload the drug master data (e.g., from CSV):
 
