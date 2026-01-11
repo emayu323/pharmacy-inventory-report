@@ -22,9 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for Test Mode Env Var
     const isTestMode = import.meta.env.VITE_ENABLE_TEST_MODE === 'true'
 
-    const [session, setSession] = useState<Session | null>(null)
-    const [user, setUser] = useState<User | null>(null)
-    const [loading, setLoading] = useState(true)
+
 
     // MOCK USER for Testing
     const TEST_USER: User = {
