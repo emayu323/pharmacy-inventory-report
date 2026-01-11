@@ -515,19 +515,21 @@ export default function PatientDetail() {
                             </div>
                             <div>
                                 <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>医療機関名</span>
-                                <span style={{ fontWeight: 500, display: 'block' }}>{patient.medical_institution_name || '-'}</span>
-                                {(() => {
-                                    const inst = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
-                                    if (inst) {
-                                        return (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-                                                {inst.tel && <div>TEL: {inst.tel}</div>}
-                                                {inst.fax && <div>FAX: {inst.fax}</div>}
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: 500 }}>{patient.medical_institution_name || '-'}</span>
+                                    {(() => {
+                                        const inst = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
+                                        if (inst && (inst.tel || inst.fax)) {
+                                            return (
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                    {inst.tel && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>📞 {inst.tel}</span>}
+                                                    {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>📠 {inst.fax}</span>}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
                             </div>
                             <div>
                                 <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>主治医</span>
@@ -535,19 +537,21 @@ export default function PatientDetail() {
                             </div>
                             <div>
                                 <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>居宅介護支援事業所</span>
-                                <span style={{ fontWeight: 500, display: 'block' }}>{patient.home_care_office || '-'}</span>
-                                {(() => {
-                                    const inst = institutions.find(i => i.name === patient.home_care_office && i.type === 'care_office');
-                                    if (inst) {
-                                        return (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-                                                {inst.tel && <div>TEL: {inst.tel}</div>}
-                                                {inst.fax && <div>FAX: {inst.fax}</div>}
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: 500 }}>{patient.home_care_office || '-'}</span>
+                                    {(() => {
+                                        const inst = institutions.find(i => i.name === patient.home_care_office && i.type === 'care_office');
+                                        if (inst && (inst.tel || inst.fax)) {
+                                            return (
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                    {inst.tel && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>📞 {inst.tel}</span>}
+                                                    {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>📠 {inst.fax}</span>}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
                             </div>
                             <div>
                                 <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>ケアマネージャー</span>
@@ -555,19 +559,21 @@ export default function PatientDetail() {
                             </div>
                             <div>
                                 <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>担当薬局</span>
-                                <span style={{ fontWeight: 500, display: 'block' }}>{patient.pharmacy_name || '-'}</span>
-                                {(() => {
-                                    const inst = institutions.find(i => i.name === patient.pharmacy_name && i.type === 'pharmacy');
-                                    if (inst) {
-                                        return (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-                                                {inst.tel && <div>TEL: {inst.tel}</div>}
-                                                {inst.fax && <div>FAX: {inst.fax}</div>}
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: 500 }}>{patient.pharmacy_name || '-'}</span>
+                                    {(() => {
+                                        const inst = institutions.find(i => i.name === patient.pharmacy_name && i.type === 'pharmacy');
+                                        if (inst && (inst.tel || inst.fax)) {
+                                            return (
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                    {inst.tel && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>📞 {inst.tel}</span>}
+                                                    {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>📠 {inst.fax}</span>}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
                             </div>
                         </div>
                     </div>
