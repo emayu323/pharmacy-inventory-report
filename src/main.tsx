@@ -1,29 +1,34 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import App from './App'
+import App from './App' // Now simply the ProtectedLayout
+import Login from './pages/Login'
 import ReportList from './pages/ReportList'
 import ReportEdit from './pages/ReportEdit'
 import PatientDetail from './pages/PatientDetail'
-import PatientCreate from './pages/PatientCreate' // Import PatientCreate
-import CalendarView from './pages/CalendarView' // Import CalendarView
+import PatientCreate from './pages/PatientCreate'
+import CalendarView from './pages/CalendarView'
+import { AuthProvider } from './contexts/AuthProvider'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<App />}>
-          <Route index element={<Navigate to="/reports" replace />} />
-          <Route path="reports" element={<ReportList />} />
-          <Route path="reports/new" element={<ReportEdit />} />
-          <Route path="reports/:id" element={<ReportEdit />} />
-          <Route path="reports/:id/edit" element={<ReportEdit />} />
-          <Route path="patients/new" element={<PatientCreate />} />
-          <Route path="patients/:id" element={<PatientDetail />} />
-          <Route path="calendar" element={<CalendarView />} /> {/* Add Calendar Route */}
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<App />}> {/* App is ProtectedLayout */}
+            <Route index element={<Navigate to="/reports" replace />} />
+            <Route path="reports" element={<ReportList />} />
+            <Route path="reports/new" element={<ReportEdit />} />
+            <Route path="reports/:id" element={<ReportEdit />} />
+            <Route path="reports/:id/edit" element={<ReportEdit />} />
+            <Route path="patients/new" element={<PatientCreate />} />
+            <Route path="patients/:id" element={<PatientDetail />} />
+            <Route path="calendar" element={<CalendarView />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

@@ -1,7 +1,13 @@
-import { Outlet, NavLink } from 'react-router-dom'
-import { FileText, PlusCircle, User, Calendar } from 'lucide-react'
+import { Outlet, NavLink, Navigate } from 'react-router-dom'
+import { FileText, PlusCircle, User, Calendar, LogOut } from 'lucide-react'
+import { useAuth } from './contexts/AuthProvider'
 
-function App() {
+// Components for protected layout
+function ProtectedLayout() {
+  const { user, signOut } = useAuth()
+
+  if (!user) return <Navigate to="/login" replace />
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header style={{
@@ -50,8 +56,19 @@ function App() {
             </NavLink>
           </nav>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <User size={20} color="var(--color-text-muted)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.7 }}>
+              <User size={18} />
+              <span style={{ fontSize: '0.875rem' }}>{user.email}</span>
+            </div>
+            <button
+              onClick={signOut}
+              className="btn btn-ghost"
+              style={{ padding: '0.25rem 0.5rem', height: 'auto', minHeight: 'auto' }}
+              title="ログアウト"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </header>
@@ -65,4 +82,4 @@ function App() {
   )
 }
 
-export default App
+export default ProtectedLayout

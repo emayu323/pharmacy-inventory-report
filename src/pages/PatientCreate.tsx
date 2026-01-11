@@ -30,6 +30,12 @@ export default function PatientCreate() {
 
         try {
             setLoading(true)
+
+            // Get current user id
+            const { data: { user } } = await supabase.auth.getUser()
+
+            if (!user) throw new Error('No authenticated user')
+
             const { data, error } = await supabase
                 .from('patients')
                 .insert([{
@@ -38,7 +44,8 @@ export default function PatientCreate() {
                     kana: formData.kana,
                     dob: formData.dob,
                     gender: formData.gender,
-                    memo: formData.memo
+                    memo: formData.memo,
+                    user_id: user.id
                 }])
                 .select()
                 .single()
