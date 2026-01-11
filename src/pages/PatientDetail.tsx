@@ -135,43 +135,139 @@ export default function PatientDetail() {
                     <div style={{ flex: 1 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                             <div>
-                                <label className="label">氏名</label>
+                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>氏名</label>
                                 <input
                                     className="input"
                                     value={editForm.name}
                                     onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                    style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        padding: '0.625rem 0.875rem',
+                                        fontSize: '1rem',
+                                        lineHeight: '1.5',
+                                        color: 'var(--color-text-main)',
+                                        backgroundColor: '#fff',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: 'var(--radius-md)',
+                                        boxShadow: 'var(--shadow-sm)',
+                                        transition: 'all 0.2s',
+                                        outline: 'none'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.borderColor = 'var(--color-border)';
+                                        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                                    }}
                                 />
                             </div>
                             <div>
-                                <label className="label">カナ</label>
+                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>カナ</label>
                                 <input
                                     className="input"
                                     value={editForm.kana || ''}
                                     placeholder="カナ"
                                     onChange={e => setEditForm({ ...editForm, kana: e.target.value })}
+                                    style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        padding: '0.625rem 0.875rem',
+                                        fontSize: '1rem',
+                                        lineHeight: '1.5',
+                                        color: 'var(--color-text-main)',
+                                        backgroundColor: '#fff',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: 'var(--radius-md)',
+                                        boxShadow: 'var(--shadow-sm)',
+                                        transition: 'all 0.2s',
+                                        outline: 'none'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.borderColor = 'var(--color-border)';
+                                        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                                    }}
                                 />
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                            <div>
-                                <label className="label">性別</label>
-                                <select
-                                    className="input"
-                                    value={editForm.gender}
-                                    onChange={e => setEditForm({ ...editForm, gender: e.target.value as any })}
-                                >
-                                    <option value="male">男性</option>
-                                    <option value="female">女性</option>
-                                    <option value="other">その他</option>
-                                </select>
+                            <div style={{ flex: 1 }}>
+                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>性別</label>
+                                <div style={{ position: 'relative' }}>
+                                    <select
+                                        className="input"
+                                        value={editForm.gender}
+                                        onChange={e => setEditForm({ ...editForm, gender: e.target.value as any })}
+                                        style={{
+                                            display: 'block',
+                                            width: '100%',
+                                            padding: '0.625rem 0.875rem',
+                                            fontSize: '1rem',
+                                            lineHeight: '1.5',
+                                            color: 'var(--color-text-main)',
+                                            backgroundColor: '#fff',
+                                            border: '1px solid var(--color-border)',
+                                            borderRadius: 'var(--radius-md)',
+                                            boxShadow: 'var(--shadow-sm)',
+                                            transition: 'all 0.2s',
+                                            outline: 'none',
+                                            appearance: 'none',
+                                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                            backgroundPosition: 'right 0.5rem center',
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundSize: '1.5em 1.5em',
+                                            paddingRight: '2.5rem'
+                                        }}
+                                        onFocus={(e) => {
+                                            e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
+                                        }}
+                                        onBlur={(e) => {
+                                            e.currentTarget.style.borderColor = 'var(--color-border)';
+                                            e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                                        }}
+                                    >
+                                        <option value="male">男性</option>
+                                        <option value="female">女性</option>
+                                        <option value="other">その他</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label className="label">生年月日</label>
+                            <div style={{ flex: 1 }}>
+                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>生年月日</label>
                                 <input
                                     type="date"
                                     className="input"
                                     value={editForm.dob}
                                     onChange={e => setEditForm({ ...editForm, dob: e.target.value })}
+                                    style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        padding: '0.625rem 0.875rem',
+                                        fontSize: '1rem',
+                                        lineHeight: '1.5',
+                                        color: 'var(--color-text-main)',
+                                        backgroundColor: '#fff',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: 'var(--radius-md)',
+                                        boxShadow: 'var(--shadow-sm)',
+                                        transition: 'all 0.2s',
+                                        outline: 'none'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.currentTarget.style.borderColor = 'var(--color-border)';
+                                        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                                    }}
                                 />
                             </div>
                         </div>
