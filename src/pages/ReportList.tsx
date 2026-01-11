@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, User, ChevronRight } from 'lucide-react'
+import { Search, User, ChevronRight } from 'lucide-react'
 import type { Patient } from '../types'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
@@ -42,15 +42,8 @@ export default function ReportList() {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>患者一覧（カルテ）</h2>
-                <button
-                    onClick={() => navigate('/patients/new')}
-                    className="btn btn-primary"
-                >
-                    <Plus size={18} />
-                    新規患者登録
-                </button>
             </div>
 
             <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>

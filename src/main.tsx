@@ -8,6 +8,8 @@ import ReportEdit from './pages/ReportEdit'
 import PatientDetail from './pages/PatientDetail'
 import PatientCreate from './pages/PatientCreate'
 import CalendarView from './pages/CalendarView'
+import InstitutionList from './pages/InstitutionList'
+import InstitutionEdit from './pages/InstitutionEdit'
 import { AuthProvider } from './contexts/AuthProvider'
 import './index.css'
 
@@ -25,6 +27,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="reports/:id/edit" element={<ReportEdit />} />
             <Route path="patients/new" element={<PatientCreate />} />
             <Route path="patients/:id" element={<PatientDetail />} />
+            <Route path="institutions" element={<InstitutionList />} />
+            <Route path="institutions/new" element={<InstitutionEdit />} />
+            <Route path="institutions/:id/edit" element={<InstitutionEdit />} />
             <Route path="calendar" element={<CalendarView />} />
           </Route>
         </Routes>

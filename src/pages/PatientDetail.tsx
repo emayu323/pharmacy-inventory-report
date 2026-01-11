@@ -1,8 +1,8 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, PlusCircle, FileText, Calendar, Edit2, Save, NotebookPen, Clock, Copy } from 'lucide-react'
+import { ArrowLeft, User, PlusCircle, FileText, Calendar, Edit2, Save, NotebookPen, Clock, Copy, Building2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
-import type { Patient, Report } from '../types'
+import type { Patient, Report, Institution, InstitutionType } from '../types'
 
 export default function PatientDetail() {
     const { id } = useParams()
@@ -17,6 +17,42 @@ export default function PatientDetail() {
     const [isEditingProfile, setIsEditingProfile] = useState(false)
     const [savingProfile, setSavingProfile] = useState(false)
     const [editForm, setEditForm] = useState<Partial<Patient>>({})
+    const [institutions, setInstitutions] = useState<Institution[]>([])
+
+    useEffect(() => {
+        fetchInstitutions()
+    }, [])
+
+    const fetchInstitutions = async () => {
+        const { data } = await supabase
+            .from('institutions')
+            .select('*')
+            .order('name')
+        if (data) setInstitutions(data as Institution[])
+    }
+
+    const handleInstitutionSelect = (type: InstitutionType, institutionId: string) => {
+        const institution = institutions.find(i => i.id === institutionId)
+        if (!institution) return
+
+        if (type === 'hospital') {
+            setEditForm(prev => ({
+                ...prev,
+                medical_institution_name: institution.name,
+                primary_doctor: institution.doctor_name || prev.primary_doctor
+            }))
+        } else if (type === 'pharmacy') {
+            setEditForm(prev => ({
+                ...prev,
+                pharmacy_name: institution.name
+            }))
+        } else if (type === 'care_office') {
+            setEditForm(prev => ({
+                ...prev,
+                home_care_office: institution.name
+            }))
+        }
+    }
 
     const handleSaveProfile = async () => {
         if (!patient || !editForm.name || !editForm.dob || !editForm.gender) {
@@ -31,7 +67,13 @@ export default function PatientDetail() {
                     name: editForm.name,
                     kana: editForm.kana,
                     dob: editForm.dob,
-                    gender: editForm.gender
+                    gender: editForm.gender,
+                    address: editForm.address,
+                    medical_institution_name: editForm.medical_institution_name,
+                    primary_doctor: editForm.primary_doctor,
+                    home_care_office: editForm.home_care_office,
+                    care_manager: editForm.care_manager,
+                    pharmacy_name: editForm.pharmacy_name
                 })
                 .eq('id', patient.id)
 
@@ -196,8 +238,8 @@ export default function PatientDetail() {
                                 />
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                            <div style={{ flex: 1 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                            <div>
                                 <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>性別</label>
                                 <div style={{ position: 'relative' }}>
                                     <select
@@ -217,12 +259,7 @@ export default function PatientDetail() {
                                             boxShadow: 'var(--shadow-sm)',
                                             transition: 'all 0.2s',
                                             outline: 'none',
-                                            appearance: 'none',
-                                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                                            backgroundPosition: 'right 0.5rem center',
-                                            backgroundRepeat: 'no-repeat',
-                                            backgroundSize: '1.5em 1.5em',
-                                            paddingRight: '2.5rem'
+                                            appearance: 'none'
                                         }}
                                         onFocus={(e) => {
                                             e.currentTarget.style.borderColor = 'var(--color-primary)';
@@ -237,9 +274,10 @@ export default function PatientDetail() {
                                         <option value="female">女性</option>
                                         <option value="other">その他</option>
                                     </select>
+                                    <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-text-muted)' }}>▼</div>
                                 </div>
                             </div>
-                            <div style={{ flex: 1 }}>
+                            <div>
                                 <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>生年月日</label>
                                 <input
                                     type="date"
@@ -271,6 +309,157 @@ export default function PatientDetail() {
                                 />
                             </div>
                         </div>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>住所</label>
+                            <input
+                                className="input"
+                                value={editForm.address || ''}
+                                placeholder="住所"
+                                onChange={e => setEditForm({ ...editForm, address: e.target.value })}
+                                style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '0.625rem 0.875rem',
+                                    fontSize: '1rem',
+                                    lineHeight: '1.5',
+                                    color: 'var(--color-text-main)',
+                                    backgroundColor: '#fff',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: 'var(--radius-md)',
+                                    boxShadow: 'var(--shadow-sm)',
+                                    transition: 'all 0.2s',
+                                    outline: 'none'
+                                }}
+                                onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = 'var(--color-border)';
+                                    e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                                }}
+                            />
+                        </div>
+
+                        {/* Relations Info Section */}
+                        <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: 'var(--color-bg-subtle, #f8fafc)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)' }}>
+                                <Building2 size={20} /> 関係機関
+                            </h3>
+
+                            <div style={{ display: 'grid', gap: '1.5rem' }}>
+                                {/* Medical */}
+                                <div style={{ paddingBottom: '1.5rem', borderBottom: '1px dashed var(--color-border)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>医療情報</div>
+                                        <select
+                                            className="input"
+                                            style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', height: 'auto' }}
+                                            onChange={(e) => {
+                                                handleInstitutionSelect('hospital', e.target.value);
+                                                e.target.value = '';
+                                            }}
+                                        >
+                                            <option value="">医療機関を引用...</option>
+                                            {institutions.filter(i => i.type === 'hospital').map(i => (
+                                                <option key={i.id} value={i.id}>{i.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                        <div>
+                                            <input
+                                                className="input"
+                                                value={editForm.medical_institution_name || ''}
+                                                placeholder="医療機関名"
+                                                onChange={e => setEditForm({ ...editForm, medical_institution_name: e.target.value })}
+                                                style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <input
+                                                className="input"
+                                                value={editForm.primary_doctor || ''}
+                                                placeholder="主治医"
+                                                onChange={e => setEditForm({ ...editForm, primary_doctor: e.target.value })}
+                                                style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Pharmacy */}
+                                <div style={{ paddingBottom: '1.5rem', borderBottom: '1px dashed var(--color-border)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>薬局情報</div>
+                                        <select
+                                            className="input"
+                                            style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', height: 'auto' }}
+                                            onChange={(e) => {
+                                                handleInstitutionSelect('pharmacy', e.target.value);
+                                                e.target.value = '';
+                                            }}
+                                        >
+                                            <option value="">薬局を引用...</option>
+                                            {institutions.filter(i => i.type === 'pharmacy').map(i => (
+                                                <option key={i.id} value={i.id}>{i.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <input
+                                            className="input"
+                                            value={editForm.pharmacy_name || ''}
+                                            placeholder="担当薬局"
+                                            onChange={e => setEditForm({ ...editForm, pharmacy_name: e.target.value })}
+                                            style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Care */}
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>介護情報</div>
+                                        <select
+                                            className="input"
+                                            style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', height: 'auto' }}
+                                            onChange={(e) => {
+                                                handleInstitutionSelect('care_office', e.target.value);
+                                                e.target.value = '';
+                                            }}
+                                        >
+                                            <option value="">事業所を引用...</option>
+                                            {institutions.filter(i => i.type === 'care_office').map(i => (
+                                                <option key={i.id} value={i.id}>{i.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                        <div>
+                                            <input
+                                                className="input"
+                                                value={editForm.home_care_office || ''}
+                                                placeholder="居宅介護支援事業所"
+                                                onChange={e => setEditForm({ ...editForm, home_care_office: e.target.value })}
+                                                style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <input
+                                                className="input"
+                                                value={editForm.care_manager || ''}
+                                                placeholder="ケアマネージャー"
+                                                onChange={e => setEditForm({ ...editForm, care_manager: e.target.value })}
+                                                style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button className="btn btn-primary" onClick={handleSaveProfile} disabled={savingProfile}>
                                 <Save size={18} /> 保存
@@ -311,7 +500,7 @@ export default function PatientDetail() {
                         </h2>
                         {patient.kana && <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{patient.kana}</div>}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '1rem 2rem', marginTop: '0.5rem', maxWidth: '400px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '1rem 2rem', marginTop: '0.5rem', maxWidth: '600px' }}>
                             <div>
                                 <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>性別</span>
                                 <span style={{ fontWeight: 500 }}>{patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'}</span>
@@ -319,6 +508,66 @@ export default function PatientDetail() {
                             <div>
                                 <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>生年月日</span>
                                 <span style={{ fontWeight: 500 }}>{patient.dob.replace(/-/g, '/')}</span>
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>住所</span>
+                                <span style={{ fontWeight: 500 }}>{patient.address || '-'}</span>
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>医療機関名</span>
+                                <span style={{ fontWeight: 500, display: 'block' }}>{patient.medical_institution_name || '-'}</span>
+                                {(() => {
+                                    const inst = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
+                                    if (inst) {
+                                        return (
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                                                {inst.tel && <div>TEL: {inst.tel}</div>}
+                                                {inst.fax && <div>FAX: {inst.fax}</div>}
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>主治医</span>
+                                <span style={{ fontWeight: 500 }}>{patient.primary_doctor || '-'}</span>
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>居宅介護支援事業所</span>
+                                <span style={{ fontWeight: 500, display: 'block' }}>{patient.home_care_office || '-'}</span>
+                                {(() => {
+                                    const inst = institutions.find(i => i.name === patient.home_care_office && i.type === 'care_office');
+                                    if (inst) {
+                                        return (
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                                                {inst.tel && <div>TEL: {inst.tel}</div>}
+                                                {inst.fax && <div>FAX: {inst.fax}</div>}
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>ケアマネージャー</span>
+                                <span style={{ fontWeight: 500 }}>{patient.care_manager || '-'}</span>
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>担当薬局</span>
+                                <span style={{ fontWeight: 500, display: 'block' }}>{patient.pharmacy_name || '-'}</span>
+                                {(() => {
+                                    const inst = institutions.find(i => i.name === patient.pharmacy_name && i.type === 'pharmacy');
+                                    if (inst) {
+                                        return (
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                                                {inst.tel && <div>TEL: {inst.tel}</div>}
+                                                {inst.fax && <div>FAX: {inst.fax}</div>}
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                             </div>
                         </div>
                     </div>
@@ -472,6 +721,6 @@ export default function PatientDetail() {
                     </div>
                 ))}
             </div>
-        </div>
+        </div >
     )
 }

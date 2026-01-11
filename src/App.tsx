@@ -1,5 +1,5 @@
 import { Outlet, NavLink, Navigate } from 'react-router-dom'
-import { FileText, PlusCircle, User, Calendar, LogOut } from 'lucide-react'
+import { FileText, PlusCircle, User, Calendar, LogOut, Building2 } from 'lucide-react'
 import { useAuth } from './contexts/AuthProvider'
 
 // Components for protected layout
@@ -54,6 +54,13 @@ function ProtectedLayout() {
               <Calendar size={18} />
               スケジュール
             </NavLink>
+            <NavLink
+              to="/institutions"
+              className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              <Building2 size={18} />
+              関係機関
+            </NavLink>
           </nav>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -71,14 +78,14 @@ function ProtectedLayout() {
             </button>
           </div>
         </div>
-      </header>
+      </header >
 
       <main style={{ flex: 1, padding: '2rem 0' }}>
         <div className="container">
           <Outlet />
         </div>
       </main>
-    </div>
+    </div >
   )
 }
 

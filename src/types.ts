@@ -7,7 +7,13 @@ export interface Patient {
   kana?: string;
   dob: string; // YYYY-MM-DD
   gender: Gender;
+  address?: string;
   memo?: string;
+  medical_institution_name?: string;
+  primary_doctor?: string;
+  home_care_office?: string;
+  care_manager?: string;
+  pharmacy_name?: string;
 }
 
 export interface Pharmacist {
@@ -59,4 +65,15 @@ export interface Report {
   next_visit_date?: string; // ISO Date string 'YYYY-MM-DD'
 }
 
-export type NewReport = Omit<Report, 'id' | 'created_at' | 'updated_at'>;
+export type InstitutionType = 'hospital' | 'pharmacy' | 'care_office';
+
+export interface Institution {
+  id: string;
+  created_at: string;
+  type: InstitutionType;
+  name: string;
+  address?: string;
+  tel?: string;
+  fax?: string;
+  doctor_name?: string;
+}

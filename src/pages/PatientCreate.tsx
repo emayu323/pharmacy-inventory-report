@@ -1,19 +1,74 @@
-import { useState } from 'react'
+
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, User as UserIcon, Building2 } from 'lucide-react'
 import { supabase } from '../supabase'
-import type { Gender } from '../types'
+import type { User } from '@supabase/supabase-js'
+import type { Institution, InstitutionType, Gender } from '../types'
 
 export default function PatientCreate() {
     const navigate = useNavigate()
+    const [user, setUser] = useState<User | null>(null)
+    const [institutions, setInstitutions] = useState<Institution[]>([])
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         name: '',
         kana: '',
         dob: '',
-        gender: 'female' as Gender,
-        memo: ''
+        gender: 'male' as Gender,
+        address: '',
+        memo: '',
+        medical_institution_name: '',
+        primary_doctor: '',
+        home_care_office: '',
+        care_manager: '',
+        pharmacy_name: ''
     })
+
+    useEffect(() => {
+        checkUser()
+        fetchInstitutions()
+    }, [])
+
+    const checkUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            navigate('/login')
+            return
+        }
+        setUser(user as User)
+    }
+
+    const fetchInstitutions = async () => {
+        const { data } = await supabase
+            .from('institutions')
+            .select('*')
+            .order('name')
+        if (data) setInstitutions(data as Institution[])
+    }
+
+    const handleInstitutionSelect = (type: InstitutionType, institutionId: string) => {
+        const institution = institutions.find(i => i.id === institutionId)
+        if (!institution) return
+
+        if (type === 'hospital') {
+            setFormData(prev => ({
+                ...prev,
+                medical_institution_name: institution.name,
+                primary_doctor: institution.doctor_name || prev.primary_doctor
+            }))
+        } else if (type === 'pharmacy') {
+            setFormData(prev => ({
+                ...prev,
+                pharmacy_name: institution.name
+            }))
+        } else if (type === 'care_office') {
+            setFormData(prev => ({
+                ...prev,
+                home_care_office: institution.name
+            }))
+        }
+    }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
@@ -32,8 +87,6 @@ export default function PatientCreate() {
             setLoading(true)
 
             // Get current user id
-            const { data: { user } } = await supabase.auth.getUser()
-
             if (!user) throw new Error('No authenticated user')
 
             const { data, error } = await supabase
@@ -44,7 +97,13 @@ export default function PatientCreate() {
                     kana: formData.kana,
                     dob: formData.dob,
                     gender: formData.gender,
+                    address: formData.address,
                     memo: formData.memo,
+                    medical_institution_name: formData.medical_institution_name,
+                    primary_doctor: formData.primary_doctor,
+                    home_care_office: formData.home_care_office,
+                    care_manager: formData.care_manager,
+                    pharmacy_name: formData.pharmacy_name,
                     user_id: user.id
                 }])
                 .select()
@@ -54,7 +113,7 @@ export default function PatientCreate() {
 
             alert('患者登録を行いました')
             if (data) {
-                navigate(`/patients/${data.id}`)
+                navigate(`/ patients / ${data.id} `)
             } else {
                 navigate('/')
             }
@@ -76,61 +135,210 @@ export default function PatientCreate() {
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>新規患者登録</h2>
             </div>
 
-            <form onSubmit={handleSubmit} className="card" style={{ padding: '2rem', display: 'grid', gap: '1.5rem' }}>
-                <div>
-                    <label className="label">氏名 <span style={{ color: 'red' }}>*</span></label>
-                    <input
-                        type="text"
-                        name="name"
-                        className="input"
-                        placeholder="例: 山田 太郎"
-                        required
-                        value={formData.name}
-                        onChange={handleChange}
-                    />
-                </div>
+            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '2rem' }}>
+                {/* Basic Info Section */}
+                <div className="card" style={{ padding: '2rem' }}>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)' }}>
+                        <UserIcon size={20} /> 基本情報
+                    </h3>
+                    <div style={{ display: 'grid', gap: '1.5rem' }}>
+                        <div>
+                            <label className="label">氏名 <span style={{ color: 'red' }}>*</span></label>
+                            <input
+                                type="text"
+                                name="name"
+                                className="input"
+                                placeholder="例: 山田 太郎"
+                                required
+                                value={formData.name}
+                                onChange={handleChange}
+                            />
+                        </div>
 
-                <div>
-                    <label className="label">フリガナ</label>
-                    <input
-                        type="text"
-                        name="kana"
-                        className="input"
-                        placeholder="例: ヤマダ タロウ"
-                        value={formData.kana}
-                        onChange={handleChange}
-                    />
-                </div>
+                        <div>
+                            <label className="label">フリガナ</label>
+                            <input
+                                type="text"
+                                name="kana"
+                                className="input"
+                                placeholder="例: ヤマダ タロウ"
+                                value={formData.kana}
+                                onChange={handleChange}
+                            />
+                        </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-                    <div>
-                        <label className="label">生年月日 <span style={{ color: 'red' }}>*</span></label>
-                        <input
-                            type="date"
-                            name="dob"
-                            className="input"
-                            required
-                            value={formData.dob}
-                            onChange={handleChange}
-                        />
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                            <div>
+                                <label className="label">生年月日 <span style={{ color: 'red' }}>*</span></label>
+                                <input
+                                    type="date"
+                                    name="dob"
+                                    className="input"
+                                    required
+                                    value={formData.dob}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div>
+                                <label className="label">性別</label>
+                                <div style={{ position: 'relative' }}>
+                                    <select
+                                        name="gender"
+                                        className="input"
+                                        value={formData.gender}
+                                        onChange={handleChange}
+                                        style={{ appearance: 'none' }}
+                                    >
+                                        <option value="male">男性</option>
+                                        <option value="female">女性</option>
+                                        <option value="other">その他</option>
+                                    </select>
+                                    <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-text-muted)' }}>▼</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="label">住所</label>
+                            <input
+                                type="text"
+                                name="address"
+                                className="input"
+                                placeholder="例: 東京都渋谷区..."
+                                value={formData.address}
+                                onChange={handleChange}
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label className="label">性別</label>
-                        <select
-                            name="gender"
-                            className="input"
-                            value={formData.gender}
-                            onChange={handleChange}
-                        >
-                            <option value="male">男性</option>
-                            <option value="female">女性</option>
-                            <option value="other">その他</option>
-                        </select>
+                </div>
+
+                {/* Relations Section */}
+                <div className="card" style={{ padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)' }}>
+                        <Building2 size={20} /> 関係機関
+                    </h3>
+
+                    <div style={{ display: 'grid', gap: '1.5rem' }}>
+                        {/* Medical */}
+                        <div style={{ paddingBottom: '1.5rem', borderBottom: '1px dashed var(--color-border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>医療情報</div>
+                                <select
+                                    className="input"
+                                    style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', height: 'auto', borderColor: 'var(--color-primary-light)' }}
+                                    onChange={(e) => {
+                                        handleInstitutionSelect('hospital', e.target.value);
+                                        e.target.value = '';
+                                    }}
+                                >
+                                    <option value="">医療機関を引用...</option>
+                                    {institutions.filter(i => i.type === 'hospital').map(i => (
+                                        <option key={i.id} value={i.id}>{i.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                <div>
+                                    <input
+                                        type="text"
+                                        name="medical_institution_name"
+                                        className="input"
+                                        placeholder="医療機関名"
+                                        value={formData.medical_institution_name}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div>
+                                    <input
+                                        type="text"
+                                        name="primary_doctor"
+                                        className="input"
+                                        placeholder="主治医"
+                                        value={formData.primary_doctor}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Pharmacy */}
+                        <div style={{ paddingBottom: '1.5rem', borderBottom: '1px dashed var(--color-border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>薬局情報</div>
+                                <select
+                                    className="input"
+                                    style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', height: 'auto', borderColor: 'var(--color-primary-light)' }}
+                                    onChange={(e) => {
+                                        handleInstitutionSelect('pharmacy', e.target.value);
+                                        e.target.value = '';
+                                    }}
+                                >
+                                    <option value="">薬局を引用...</option>
+                                    {institutions.filter(i => i.type === 'pharmacy').map(i => (
+                                        <option key={i.id} value={i.id}>{i.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <input
+                                    type="text"
+                                    name="pharmacy_name"
+                                    className="input"
+                                    placeholder="担当薬局"
+                                    value={formData.pharmacy_name}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Care */}
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>介護情報</div>
+                                <select
+                                    className="input"
+                                    style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', height: 'auto', borderColor: 'var(--color-primary-light)' }}
+                                    onChange={(e) => {
+                                        handleInstitutionSelect('care_office', e.target.value);
+                                        e.target.value = '';
+                                    }}
+                                >
+                                    <option value="">事業所を引用...</option>
+                                    {institutions.filter(i => i.type === 'care_office').map(i => (
+                                        <option key={i.id} value={i.id}>{i.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                <div>
+                                    <input
+                                        type="text"
+                                        name="home_care_office"
+                                        className="input"
+                                        placeholder="居宅介護支援事業所"
+                                        value={formData.home_care_office}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div>
+                                    <input
+                                        type="text"
+                                        name="care_manager"
+                                        className="input"
+                                        placeholder="ケアマネージャー"
+                                        value={formData.care_manager}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <label className="label">申し送り事項・メモ</label>
+
+                {/* Memo Section */}
+                <div className="card" style={{ padding: '2rem' }}>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--color-primary)' }}>申し送り事項・メモ</h3>
                     <textarea
                         name="memo"
                         className="input"
@@ -146,13 +354,13 @@ export default function PatientCreate() {
                         type="submit"
                         className="btn btn-primary"
                         disabled={loading}
-                        style={{ padding: '0.75rem 2rem' }}
+                        style={{ padding: '0.75rem 3rem', fontSize: '1.1rem' }}
                     >
-                        <Save size={18} />
+                        <Save size={20} />
                         {loading ? '登録中...' : '登録する'}
                     </button>
                 </div>
-            </form>
+            </form >
 
             <style>{`
                 .label {
@@ -175,6 +383,6 @@ export default function PatientCreate() {
                     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
                 }
             `}</style>
-        </div>
+        </div >
     )
 }

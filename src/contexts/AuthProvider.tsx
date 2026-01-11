@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-// import { supabase } from '../supabase'
+import { supabase } from '../supabase'
 
 type AuthContextType = {
     session: Session | null
@@ -19,9 +19,16 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+    // Check for Test Mode Env Var
+    const isTestMode = import.meta.env.VITE_ENABLE_TEST_MODE === 'true'
+
+    const [session, setSession] = useState<Session | null>(null)
+    const [user, setUser] = useState<User | null>(null)
+    const [loading, setLoading] = useState(true)
+
     // MOCK USER for Testing
     const TEST_USER: User = {
-        id: 'test-user-1',
+        id: '11111111-1111-1111-1111-111111111111',
         email: 'test-user-1@example.com',
         app_metadata: { provider: 'email' },
         user_metadata: {},
@@ -29,24 +36,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         created_at: new Date().toISOString()
     } as User
 
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    const [session, _setSession] = useState<Session | null>({ user: TEST_USER } as Session)
-    const [user, _setUser] = useState<User | null>(TEST_USER)
-    const [loading, _setLoading] = useState(false)
-    /* eslint-enable @typescript-eslint/no-unused-vars */
+    // Synchronous Update for Test Mode
+    const [session, setSession] = useState<Session | null>(isTestMode ? { user: TEST_USER } as Session : null)
+    const [user, setUser] = useState<User | null>(isTestMode ? TEST_USER : null)
+    // If Test Mode, loading is FALSE immediately
+    const [loading, setLoading] = useState(!isTestMode)
 
     useEffect(() => {
-        // In a real app, we would listen to Supabase here.
-        // For "Test User 1" mode, we just ignore actual Supabase Auth state 
-        // and correctly persist our mock user.
+        if (isTestMode) {
+            console.log('AuthProvider: Test Mode ENABLED (Sync). Logged in as:', TEST_USER.id)
+            return
+        }
 
-        // Optional: Log that we are in Test Mode
-        console.log('AuthProvider: Running in TEST MODE as', TEST_USER.id)
-    }, [])
+        // Real Supabase Auth
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session)
+            setUser(session?.user ?? null)
+            setLoading(false)
+        })
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session)
+            setUser(session?.user ?? null)
+            setLoading(false)
+        })
+
+        return () => subscription.unsubscribe()
+    }, [isTestMode])
 
     const signOut = async () => {
-        // Mock SignOut - maybe just reload or do nothing
-        alert('テストモードのためログアウトできません')
+        if (isTestMode) {
+            alert('テストモードのためログアウトできません')
+            return
+        }
+        await supabase.auth.signOut()
     }
 
     return (
