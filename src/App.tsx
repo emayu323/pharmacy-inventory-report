@@ -41,11 +41,11 @@ function ProtectedLayout() {
               一覧
             </NavLink>
             <NavLink
-              to="/reports/new"
+              to="/patients/new"
               className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-ghost'}`}
             >
               <PlusCircle size={18} />
-              新規作成
+              新規患者登録
             </NavLink>
             <NavLink
               to="/calendar"
