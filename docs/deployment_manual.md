@@ -50,20 +50,15 @@ ALTER TABLE reports ADD COLUMN IF NOT EXISTS patient_id UUID REFERENCES patients
 ```
 
 ### Authentication & Data Segregation (RLS)
-Security policies are required to isolate user data. Run these scripts:
+> [!WARNING]
+> **DEBUG MODE ACTIVE**: The current deployment is configured to **mock authentication** ("Test User 1") and requires relaxed database security.
+> To enable this mode:
+> 1. Run `supabase_bypass_auth.sql`  in Supabase SQL Editor.
+> 2. The app will auto-login as "Test User 1".
 
-1.  **Secure Patients**:
-    ```sql
-    -- Add user_id and policies
-    -- (Copy content from supabase_auth_segregation.sql)
-    ```
-2.  **Secure Reports**:
-    ```sql
-    -- Limit report access to patient owner
-    -- (Copy content from supabase_auth_reports.sql)
-    ```
-
-*Note: The actual SQL files `supabase_auth_segregation.sql` and `supabase_auth_reports.sql` are included in the repository root.*
+To Restore Real Auth:
+1. Revert `AuthProvider.tsx`.
+2. Run `supabase_auth_segregation.sql` and `supabase_auth_reports.sql`.
 
 ### Data Import (Drug Master)
 To upload the drug master data (e.g., from CSV):

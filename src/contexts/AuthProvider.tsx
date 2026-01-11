@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from '../supabase'
+// import { supabase } from '../supabase'
 
 type AuthContextType = {
     session: Session | null
@@ -19,28 +19,33 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [session, setSession] = useState<Session | null>(null)
-    const [user, setUser] = useState<User | null>(null)
-    const [loading, setLoading] = useState(true)
+    // MOCK USER for Testing
+    const TEST_USER: User = {
+        id: 'test-user-1',
+        app_metadata: { provider: 'email' },
+        user_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
+    } as User
+
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    const [session, _setSession] = useState<Session | null>({ user: TEST_USER } as Session)
+    const [user, _setUser] = useState<User | null>(TEST_USER)
+    const [loading, _setLoading] = useState(false)
+    /* eslint-enable @typescript-eslint/no-unused-vars */
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session)
-            setUser(session?.user ?? null)
-            setLoading(false)
-        })
+        // In a real app, we would listen to Supabase here.
+        // For "Test User 1" mode, we just ignore actual Supabase Auth state 
+        // and correctly persist our mock user.
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session)
-            setUser(session?.user ?? null)
-            setLoading(false)
-        })
-
-        return () => subscription.unsubscribe()
+        // Optional: Log that we are in Test Mode
+        console.log('AuthProvider: Running in TEST MODE as', TEST_USER.id)
     }, [])
 
     const signOut = async () => {
-        await supabase.auth.signOut()
+        // Mock SignOut - maybe just reload or do nothing
+        alert('テストモードのためログアウトできません')
     }
 
     return (
