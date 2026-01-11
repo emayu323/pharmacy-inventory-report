@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { ReportPrint } from '../components/ReportPrint'
 import { supabase } from '../supabase'
-import type { Report } from '../types'
+import type { Report, Pharmacist } from '../types'
 import MedicationListForm from '../components/MedicationListForm'
 
 // Mock for edit, would fetch based on ID in real app
@@ -34,6 +34,7 @@ export default function ReportEdit() {
     // State for form
     const [formData, setFormData] = useState(EMPTY_REPORT)
     const [drugOptions, setDrugOptions] = useState<string[]>([])
+    const [pharmacists, setPharmacists] = useState<Pharmacist[]>([])
     const printRef = useRef<HTMLDivElement>(null)
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -68,6 +69,21 @@ export default function ReportEdit() {
     // Hack: We need a full Report object for ReportPrint but formData is Partial
     const reportForPrint = { ...formData, id: id || 'preview', created_at: '', updated_at: '' } as Report
 
+    // Fetch Pharmacists on mount
+    useEffect(() => {
+        const fetchPharmacists = async () => {
+            const { data, error } = await supabase
+                .from('pharmacists')
+                .select('*')
+                .order('name')
+
+            if (!error && data) {
+                setPharmacists(data)
+            }
+        }
+        fetchPharmacists()
+    }, [])
+
     useEffect(() => {
         if (id) {
             fetchReport(id)
@@ -91,7 +107,7 @@ export default function ReportEdit() {
                 patient_name: location.state.patientName,
                 patient_dob: location.state.patientDob,
                 patient_gender: location.state.patientGender,
-                patient_id: location.state.patientId, // Ensure this field exists in your Report type/form
+                patient_id: location.state.patientId,
                 visit_date: new Date().toISOString().split('T')[0],
                 prescription_date: new Date().toISOString().split('T')[0],
                 dispensing_date: new Date().toISOString().split('T')[0],
@@ -202,7 +218,22 @@ export default function ReportEdit() {
                         </div>
                         <div>
                             <label className="label">担当薬剤師</label>
-                            <input type="text" name="pharmacist_name" className="input" required value={formData.pharmacist_name} onChange={handleChange} />
+                            <select
+                                name="pharmacist_name"
+                                className="input"
+                                required
+                                value={formData.pharmacist_name}
+                                onChange={handleChange}
+                            >
+                                <option value="">選択してください</option>
+                                {pharmacists.map(p => (
+                                    <option key={p.id} value={p.name}>{p.name}</option>
+                                ))}
+                                {/* Fallback if current value is not in list */}
+                                {formData.pharmacist_name && !pharmacists.find(p => p.name === formData.pharmacist_name) && (
+                                    <option value={formData.pharmacist_name}>{formData.pharmacist_name}</option>
+                                )}
+                            </select>
                         </div>
                         <div>
                             <label className="label">処方日</label>

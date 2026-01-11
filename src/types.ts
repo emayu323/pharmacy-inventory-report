@@ -10,6 +10,12 @@ export interface Patient {
   memo?: string;
 }
 
+export interface Pharmacist {
+  id: string;
+  created_at: string;
+  name: string;
+}
+
 // Medication Check Item
 export interface MedicationCheckItem {
   id: string; // Internal ID for UI key
