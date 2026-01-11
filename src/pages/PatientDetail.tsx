@@ -621,10 +621,16 @@ export default function PatientDetail() {
 
                 <div style={{ padding: '1.5rem' }}>
                     <textarea
+                        ref={(el) => {
+                            if (el) {
+                                el.style.height = 'auto';
+                                el.style.height = el.scrollHeight + 'px';
+                            }
+                        }}
                         style={{
                             width: '100%',
                             minHeight: '120px',
-                            resize: 'vertical',
+                            resize: 'none', // Disable manual resize as we auto-resize
                             border: '1px solid var(--color-border)',
                             borderRadius: '8px',
                             padding: '1rem',
@@ -632,7 +638,12 @@ export default function PatientDetail() {
                             lineHeight: '1.6',
                             outline: 'none',
                             backgroundColor: 'var(--color-bg)',
-                            transition: 'border-color 0.2s, box-shadow 0.2s'
+                            transition: 'border-color 0.2s, box-shadow 0.2s',
+                            overflow: 'hidden' // Hide scrollbar
+                        }}
+                        onInput={(e) => {
+                            e.currentTarget.style.height = 'auto';
+                            e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
                         }}
                         onFocus={(e) => {
                             e.currentTarget.style.borderColor = 'var(--color-primary)';
