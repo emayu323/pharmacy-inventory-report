@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // MOCK USER for Testing
     const TEST_USER: User = {
         id: 'test-user-1',
+        email: 'test-user-1@example.com',
         app_metadata: { provider: 'email' },
         user_metadata: {},
         aud: 'authenticated',
