@@ -11,19 +11,22 @@ DROP POLICY IF EXISTS "Allow public update access" ON patients;
 -- Enable RLS (already enabled but good to ensure)
 ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
 
--- 1. SELECT: Users can only see their own patients
+-- 1. SELECT
+DROP POLICY IF EXISTS "Users can only see their own patients" ON patients;
 CREATE POLICY "Users can only see their own patients"
 ON patients FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
 
--- 2. INSERT: Users can insert patients, user_id must match (or default to it)
+-- 2. INSERT
+DROP POLICY IF EXISTS "Users can insert their own patients" ON patients;
 CREATE POLICY "Users can insert their own patients"
 ON patients FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id);
 
--- 3. UPDATE: Users can update their own patients
+-- 3. UPDATE
+DROP POLICY IF EXISTS "Users can update their own patients" ON patients;
 CREATE POLICY "Users can update their own patients"
 ON patients FOR UPDATE
 TO authenticated
