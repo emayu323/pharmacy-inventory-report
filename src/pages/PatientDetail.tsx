@@ -13,6 +13,41 @@ export default function PatientDetail() {
     const [loading, setLoading] = useState(true)
     const [savingMemo, setSavingMemo] = useState(false)
 
+    // Profile Edit State
+    const [isEditingProfile, setIsEditingProfile] = useState(false)
+    const [savingProfile, setSavingProfile] = useState(false)
+    const [editForm, setEditForm] = useState<Partial<Patient>>({})
+
+    const handleSaveProfile = async () => {
+        if (!patient || !editForm.name || !editForm.dob || !editForm.gender) {
+            alert('必須項目を入力してください')
+            return
+        }
+        try {
+            setSavingProfile(true)
+            const { error } = await supabase
+                .from('patients')
+                .update({
+                    name: editForm.name,
+                    kana: editForm.kana,
+                    dob: editForm.dob,
+                    gender: editForm.gender
+                })
+                .eq('id', patient.id)
+
+            if (error) throw error
+
+            setPatient({ ...patient, ...editForm } as Patient)
+            setIsEditingProfile(false)
+            alert('基本情報を更新しました')
+        } catch (error) {
+            console.error('Error updating profile:', error)
+            alert('更新に失敗しました')
+        } finally {
+            setSavingProfile(false)
+        }
+    }
+
     useEffect(() => {
         if (id) fetchPatientData(id)
     }, [id])
@@ -94,29 +129,104 @@ export default function PatientDetail() {
                 }}>
                     <User size={40} />
                 </div>
-                <div style={{ flex: 1 }}>
-                    <h2 style={{ fontSize: '1.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        {patient.name} <span style={{ fontSize: '1rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>様</span>
-                    </h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '1rem 2rem', marginTop: '0.5rem', maxWidth: '400px' }}>
-                        <div>
-                            <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>性別</span>
-                            <span style={{ fontWeight: 500 }}>{patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'}</span>
+
+                {isEditingProfile ? (
+                    // EDIT MODE
+                    <div style={{ flex: 1 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                            <div>
+                                <label className="label">氏名</label>
+                                <input
+                                    className="input"
+                                    value={editForm.name}
+                                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="label">カナ</label> // Although original didn't show kana, we should allow editing it if it exists in DB
+                                <input
+                                    className="input"
+                                    value={editForm.kana || ''}
+                                    placeholder="カナ"
+                                    onChange={e => setEditForm({ ...editForm, kana: e.target.value })}
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>生年月日</span>
-                            <span style={{ fontWeight: 500 }}>{patient.dob.replace(/-/g, '/')}</span>
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                            <div>
+                                <label className="label">性別</label>
+                                <select
+                                    className="input"
+                                    value={editForm.gender}
+                                    onChange={e => setEditForm({ ...editForm, gender: e.target.value as any })}
+                                >
+                                    <option value="male">男性</option>
+                                    <option value="female">女性</option>
+                                    <option value="other">その他</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="label">生年月日</label>
+                                <input
+                                    type="date"
+                                    className="input"
+                                    value={editForm.dob}
+                                    onChange={e => setEditForm({ ...editForm, dob: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="btn btn-primary" onClick={handleSaveProfile} disabled={savingProfile}>
+                                <Save size={18} /> 保存
+                            </button>
+                            <button className="btn btn-ghost" onClick={() => setIsEditingProfile(false)} disabled={savingProfile}>
+                                キャンセル
+                            </button>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    // VIEW MODE
+                    <div style={{ flex: 1 }}>
+                        <h2 style={{ fontSize: '1.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            {patient.name}
+                            <span style={{ fontSize: '1rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>様</span>
+                            <button
+                                onClick={() => {
+                                    setEditForm(patient)
+                                    setIsEditingProfile(true)
+                                }}
+                                className="btn btn-ghost"
+                                style={{ padding: '0.25rem 0.5rem', height: 'auto' }}
+                                title="基本情報を編集"
+                            >
+                                <Edit2 size={16} color="var(--color-text-muted)" />
+                            </button>
+                        </h2>
+                        {patient.kana && <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{patient.kana}</div>}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '1rem 2rem', marginTop: '0.5rem', maxWidth: '400px' }}>
+                            <div>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>性別</span>
+                                <span style={{ fontWeight: 500 }}>{patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'}</span>
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>生年月日</span>
+                                <span style={{ fontWeight: 500 }}>{patient.dob.replace(/-/g, '/')}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div>
-                    <button
-                        onClick={() => navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })}
-                        className="btn btn-primary"
-                    >
-                        <PlusCircle size={18} />
-                        報告書作成
-                    </button>
+                    {!isEditingProfile && (
+                        <button
+                            onClick={() => navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })}
+                            className="btn btn-primary"
+                        >
+                            <PlusCircle size={18} />
+                            報告書作成
+                        </button>
+                    )}
                 </div>
             </div>
 
