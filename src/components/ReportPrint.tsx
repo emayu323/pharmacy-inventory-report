@@ -141,13 +141,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
         </div>
 
         {/* Plan */}
-        <div className="print-section">
-          <h3>次回計画</h3>
-          <div className="print-row-block">
-            <span className="print-label">次回訪問予定</span>
-            <p className="print-value-block">{report.next_visit_plan}</p>
-          </div>
-        </div>
+
       </div>
 
       <style>{`
