@@ -18,6 +18,7 @@ export default function PatientDetail() {
     const [savingProfile, setSavingProfile] = useState(false)
     const [editForm, setEditForm] = useState<Partial<Patient>>({})
     const [institutions, setInstitutions] = useState<Institution[]>([])
+    const [showCreateReportModal, setShowCreateReportModal] = useState(false)
 
     useEffect(() => {
         fetchInstitutions()
@@ -630,16 +631,12 @@ export default function PatientDetail() {
                     {!isEditingProfile && (
                         <button
                             onClick={() => {
-                                // Reports are sorted by visit_date desc (see fetchPatientData)
                                 if (reports.length > 0) {
-                                    const latestReport = reports[0]
-                                    if (window.confirm('直近の報告書の内容を引き継いで作成しますか？')) {
-                                        navigate('/reports/new', { state: { copyFrom: latestReport } })
-                                        return
-                                    }
+                                    setShowCreateReportModal(true)
+                                } else {
+                                    // Default new report if no history
+                                    navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })
                                 }
-                                // Default new report
-                                navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })
                             }}
                             className="btn btn-primary"
                         >
@@ -649,6 +646,72 @@ export default function PatientDetail() {
                     )}
                 </div>
             </div>
+
+            {/* Create Report Modal */}
+            {showCreateReportModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 100,
+                    padding: '1rem'
+                }}>
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        padding: '1.5rem',
+                        maxWidth: '400px',
+                        width: '100%',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                    }}>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
+                            報告書の作成
+                        </h3>
+                        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                            直近の報告書（{reports[0]?.visit_date?.replace(/-/g, '/')}）の内容を引き継いで作成しますか？
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <button
+                                onClick={() => {
+                                    const latestReport = reports[0]
+                                    navigate('/reports/new', { state: { copyFrom: latestReport } })
+                                    setShowCreateReportModal(false)
+                                }}
+                                className="btn btn-primary"
+                                style={{ justifyContent: 'center', width: '100%' }}
+                            >
+                                <Copy size={18} />
+                                直近の内容を引き継いで作成
+                            </button>
+                            <button
+                                onClick={() => {
+                                    navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })
+                                    setShowCreateReportModal(false)
+                                }}
+                                className="btn btn-ghost"
+                                style={{ justifyContent: 'center', width: '100%', border: '1px solid var(--color-border)' }}
+                            >
+                                <PlusCircle size={18} />
+                                新規作成（引き継がない）
+                            </button>
+                            <button
+                                onClick={() => setShowCreateReportModal(false)}
+                                className="btn btn-ghost"
+                                style={{ justifyContent: 'center', width: '100%', color: 'var(--color-text-muted)' }}
+                            >
+                                キャンセル
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {/* Memo Section - Enhanced Design */}
             <div className="card" style={{

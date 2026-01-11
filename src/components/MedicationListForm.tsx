@@ -230,7 +230,6 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
             >
                 <Plus size={16} /> 薬剤を追加
             </button>
-        </div>
-        </section >
+        </section>
     )
 }
