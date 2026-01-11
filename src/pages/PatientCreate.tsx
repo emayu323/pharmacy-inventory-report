@@ -3,12 +3,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, User as UserIcon, Building2 } from 'lucide-react'
 import { supabase } from '../supabase'
-import type { User } from '@supabase/supabase-js'
+import { useAuth } from '../contexts/AuthProvider'
 import type { Institution, InstitutionType, Gender } from '../types'
 
 export default function PatientCreate() {
     const navigate = useNavigate()
-    const [user, setUser] = useState<User | null>(null)
+    const { user } = useAuth()
     const [institutions, setInstitutions] = useState<Institution[]>([])
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
@@ -26,18 +26,8 @@ export default function PatientCreate() {
     })
 
     useEffect(() => {
-        checkUser()
         fetchInstitutions()
     }, [])
-
-    const checkUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            navigate('/login')
-            return
-        }
-        setUser(user as User)
-    }
 
     const fetchInstitutions = async () => {
         const { data } = await supabase
