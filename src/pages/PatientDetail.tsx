@@ -143,7 +143,7 @@ export default function PatientDetail() {
                                 />
                             </div>
                             <div>
-                                <label className="label">カナ</label> // Although original didn't show kana, we should allow editing it if it exists in DB
+                                <label className="label">カナ</label>
                                 <input
                                     className="input"
                                     value={editForm.kana || ''}
@@ -187,7 +187,7 @@ export default function PatientDetail() {
                 ) : (
                     // VIEW MODE
                     <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: '1.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <h2 style={{ fontSize: '1.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                             {patient.name}
                             <span style={{ fontSize: '1rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>様</span>
                             <button
@@ -196,10 +196,21 @@ export default function PatientDetail() {
                                     setIsEditingProfile(true)
                                 }}
                                 className="btn btn-ghost"
-                                style={{ padding: '0.25rem 0.5rem', height: 'auto' }}
-                                title="基本情報を編集"
+                                style={{
+                                    padding: '0.4rem 0.8rem',
+                                    height: 'auto',
+                                    fontSize: '0.875rem',
+                                    color: 'var(--color-primary)',
+                                    border: '1px solid var(--color-primary-light, #e0e7ff)',
+                                    backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    borderRadius: '6px'
+                                }}
                             >
-                                <Edit2 size={16} color="var(--color-text-muted)" />
+                                <Edit2 size={16} />
+                                基本情報を編集
                             </button>
                         </h2>
                         {patient.kana && <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{patient.kana}</div>}
