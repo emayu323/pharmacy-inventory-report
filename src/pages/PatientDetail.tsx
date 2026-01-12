@@ -147,6 +147,29 @@ export default function PatientDetail() {
         }
     }
 
+    const handleStatusToggle = async () => {
+        if (!patient) return
+        const newStatus = !patient.is_active
+        const confirmMsg = newStatus
+            ? 'この患者を「表示」に戻しますか？'
+            : 'この患者を「完了」（非表示）にしますか？\n（一覧画面で「完了した患者を表示」を選択すると確認できます）'
+
+        if (!window.confirm(confirmMsg)) return
+
+        try {
+            const { error } = await supabase
+                .from('patients')
+                .update({ is_active: newStatus })
+                .eq('id', patient.id)
+
+            if (error) throw error
+            setPatient({ ...patient, is_active: newStatus })
+        } catch (e) {
+            console.error(e)
+            alert('更新に失敗しました')
+        }
+    }
+
     if (loading) return <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>読み込み中...</div>
     if (!patient) return <div className="container">患者が見つかりません</div>
 
@@ -161,11 +184,11 @@ export default function PatientDetail() {
             </div>
 
             {/* Patient Profile Card */}
-            <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
+            <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', gap: '1.5rem', alignItems: 'start', opacity: patient.is_active === false ? 0.8 : 1 }}>
                 <div style={{
                     width: '80px', height: '80px',
                     borderRadius: '50%',
-                    backgroundColor: 'var(--color-primary)',
+                    backgroundColor: patient.is_active === false ? '#9ca3af' : 'var(--color-primary)',
                     color: 'white',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '2rem'
@@ -473,32 +496,62 @@ export default function PatientDetail() {
                 ) : (
                     // VIEW MODE
                     <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: '1.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                             {patient.name}
-                            <span style={{ fontSize: '1rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>様</span>
-                            <button
-                                onClick={() => {
-                                    setEditForm(patient)
-                                    setIsEditingProfile(true)
-                                }}
-                                className="btn btn-ghost"
-                                style={{
-                                    padding: '0.4rem 0.8rem',
-                                    height: 'auto',
-                                    fontSize: '0.875rem',
-                                    color: 'var(--color-primary)',
-                                    border: '1px solid var(--color-primary-light, #e0e7ff)',
-                                    backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    borderRadius: '6px'
-                                }}
-                            >
-                                <Edit2 size={16} />
-                                基本情報を編集
-                            </button>
+                            <span style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>様</span>
+                            {patient.is_active === false && (
+                                <span style={{ fontSize: '1rem', backgroundColor: '#9ca3af', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                                    完了
+                                </span>
+                            )}
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => {
+                                        setEditForm(patient)
+                                        setIsEditingProfile(true)
+                                    }}
+                                    className="btn btn-ghost"
+                                    style={{
+                                        padding: '0.4rem 0.8rem',
+                                        height: 'auto',
+                                        fontSize: '0.875rem',
+                                        color: 'var(--color-primary)',
+                                        border: '1px solid var(--color-primary-light, #e0e7ff)',
+                                        backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        borderRadius: '6px'
+                                    }}
+                                >
+                                    <Edit2 size={16} />
+                                    基本情報を編集
+                                </button>
+                                <button
+                                    onClick={handleStatusToggle}
+                                    className="btn btn-ghost"
+                                    style={{
+                                        padding: '0.4rem 0.8rem',
+                                        height: 'auto',
+                                        fontSize: '0.875rem',
+                                        color: patient.is_active !== false ? 'var(--color-text-muted)' : 'var(--color-primary)',
+                                        border: '1px solid var(--color-border)',
+                                        backgroundColor: patient.is_active !== false ? 'transparent' : '#eff6ff',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        borderRadius: '6px'
+                                    }}
+                                >
+                                    {patient.is_active !== false ? '完了にする' : '表示に戻す'}
+                                </button>
+                            </div>
                         </h2>
+                        {!patient.is_active && (
+                            <div style={{ marginBottom: '1rem', padding: '0.5rem 1rem', backgroundColor: '#f3f4f6', borderRadius: '6px', fontSize: '0.875rem', color: '#4b5563', border: '1px solid #e5e7eb' }}>
+                                ※ この患者は現在「完了」ステータスになっています（一覧で非表示）
+                            </div>
+                        )}
                         {patient.kana && <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{patient.kana}</div>}
 
                         <div style={{ marginTop: '0.5rem', maxWidth: '800px' }}>
@@ -518,33 +571,33 @@ export default function PatientDetail() {
 
                                 <div className="mobile-stack" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
                                     <div style={{ flex: 1, minWidth: '200px' }}>
-                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>医療機関名</span>
-                                        <span style={{ fontWeight: 500, display: 'block' }}>{patient.medical_institution_name || '-'}</span>
+                                        <span style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>医療機関名</span>
+                                        <span style={{ fontWeight: 600, fontSize: '1.125rem', display: 'block' }}>{patient.medical_institution_name || '-'}</span>
                                     </div>
                                     <div style={{ flex: 1, minWidth: '150px' }}>
-                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>主治医</span>
-                                        <span style={{ fontWeight: 500 }}>{patient.primary_doctor || '-'}</span>
+                                        <span style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>主治医</span>
+                                        <span style={{ fontWeight: 600, fontSize: '1.125rem' }}>{patient.primary_doctor || '-'}</span>
                                     </div>
                                     {(() => {
                                         const inst = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
                                         if (inst && (inst.tel || inst.fax)) {
                                             return (
                                                 <div style={{ flex: 0, minWidth: 'auto' }}>
-                                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
+                                                    <span style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>連絡先</span>
                                                     <div style={{
                                                         display: 'inline-flex',
                                                         gap: '0.75rem',
                                                         alignItems: 'center',
                                                         backgroundColor: 'rgba(0,0,0,0.03)',
-                                                        padding: '0.2rem 0.6rem',
+                                                        padding: '0.3rem 0.8rem',
                                                         borderRadius: '4px',
-                                                        fontSize: '0.85rem',
+                                                        fontSize: '1rem',
                                                         color: 'var(--color-text-main)',
                                                         border: '1px solid var(--color-border)'
                                                     }}>
-                                                        {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
+                                                        {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.8rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{inst.tel}</span></a>}
                                                         {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
-                                                        {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
+                                                        {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.8rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{inst.fax}</span></span>}
                                                     </div>
                                                 </div>
                                             );

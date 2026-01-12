@@ -165,7 +165,7 @@ function ProtectedLayout() {
         </div>
       </header >
 
-      <main style={{ flex: 1, padding: '2rem 0' }}>
+      <main style={{ flex: 1, padding: '1rem 0' }}>
         <div className="container">
           <Outlet />
         </div>

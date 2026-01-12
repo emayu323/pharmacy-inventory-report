@@ -81,10 +81,10 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                     }}>
                         {/* Drug Name - Full width on mobile */}
                         <div style={{ gridColumn: '1 / -1' }} className="details-desktop-only">
-                            <label className="label" style={{ fontSize: '0.75rem' }}>薬品名</label>
+                            <label className="label" style={{ fontSize: '0.9rem' }}>薬品名</label>
                         </div>
                         <div className="mobile-full-width" style={{ gridColumn: 'span 1' }}>
-                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>薬品名</label>
+                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>薬品名</label>
                             <input
                                 type="text"
                                 className="input"
@@ -97,7 +97,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
 
                         {/* Amounts Row on Mobile */}
                         <div className="mobile-stack-horizontal">
-                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>残数</label>
+                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>残数</label>
                             <input
                                 type="number"
                                 className="input"
@@ -107,7 +107,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                             />
                         </div>
                         <div className="mobile-stack-horizontal">
-                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>必要数</label>
+                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>必要数</label>
                             <input
                                 type="number"
                                 className="input"
@@ -117,7 +117,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                             />
                         </div>
                         <div className="mobile-stack-horizontal">
-                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>単位</label>
+                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>単位</label>
                             <input
                                 type="text"
                                 list={`unit-options-${item.id}`}
@@ -140,7 +140,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
 
                         {/* Notes - Full width on mobile */}
                         <div className="mobile-full-width">
-                            <label className="label desktop-hidden" style={{ fontSize: '0.75rem' }}>備考</label>
+                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>備考</label>
                             <input
                                 type="text"
                                 className="input"

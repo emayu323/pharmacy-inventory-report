@@ -14,6 +14,7 @@ export interface Patient {
   home_care_office?: string;
   care_manager?: string;
   pharmacy_name?: string;
+  is_active?: boolean;
 }
 
 export interface Pharmacist {

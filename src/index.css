@@ -7,11 +7,11 @@
   --color-text-muted: #64748b;
   --color-border: #e2e8f0;
   --color-danger: #ef4444;
-  
+
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  
+
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
 
@@ -44,16 +44,27 @@ button {
   background: none;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: inherit;
   font-size: 1rem;
 }
 
 /* Utilities */
 .container {
-  max-width: 1024px;
+  max-width: 100%;
+  width: 96%;
+  /* default to almost full width */
   margin: 0 auto;
   padding: 0 1rem;
+}
+
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1400px;
+    /* Cap at 1400px for very large screens */
+  }
 }
 
 .btn {
@@ -61,10 +72,13 @@ input, textarea, select {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.25rem;
+  /* Larger touch target */
   border-radius: var(--radius-md);
-  font-weight: 500;
+  font-weight: 600;
+  /* Bolder */
   transition: all 0.2s;
+  font-size: 1rem;
 }
 
 .btn-primary {
@@ -93,13 +107,40 @@ input, textarea, select {
   overflow: hidden;
 }
 
+/* Typography Utilities */
+.text-lg {
+  font-size: 1.125rem;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+}
+
+.text-2xl {
+  font-size: 1.5rem;
+}
+
+.text-3xl {
+  font-size: 1.875rem;
+}
+
+.font-bold {
+  fontWeight: 700;
+}
+
 /* Mobile Responsive Utilities */
 @media (max-width: 640px) {
+  .container {
+    padding: 0 0.75rem;
+    /* Reduce padding on mobile */
+    width: 100%;
+  }
+
   .mobile-stack {
     flex-direction: column !important;
     align-items: stretch !important;
   }
-  
+
   .mobile-hidden {
     display: none !important;
   }
@@ -111,7 +152,7 @@ input, textarea, select {
   .responsive-grid {
     grid-template-columns: 1fr !important;
   }
-  
+
   .responsive-flex {
     flex-direction: column;
     gap: 1rem;
@@ -121,17 +162,18 @@ input, textarea, select {
   .mobile-full-width {
     width: 100% !important;
   }
-  
+
   /* Stack tables/grids that are too wide */
   .mobile-card-view {
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .mobile-card-item {
     border: 1px solid var(--color-border);
-    padding: 1rem;
+    padding: 1.25rem;
+    /* More breathing room */
     border-radius: var(--radius-md);
     background: var(--color-background);
   }

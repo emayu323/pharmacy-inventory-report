@@ -7,6 +7,7 @@ import { supabase } from '../supabase'
 export default function ReportList() {
     const [patients, setPatients] = useState<Patient[]>([])
     const [searchTerm, setSearchTerm] = useState('')
+    const [showFinished, setShowFinished] = useState(false)
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
 
@@ -32,9 +33,11 @@ export default function ReportList() {
         }
     }
 
-    const filteredPatients = patients.filter(p =>
-        p.name.includes(searchTerm) || (p.kana && p.kana.includes(searchTerm))
-    )
+    const filteredPatients = patients.filter(p => {
+        const matchesSearch = p.name.includes(searchTerm) || (p.kana && p.kana.includes(searchTerm))
+        const matchesStatus = showFinished ? true : (p.is_active !== false)
+        return matchesSearch && matchesStatus
+    })
 
     if (loading) {
         return <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>読み込み中...</div>
@@ -59,6 +62,18 @@ export default function ReportList() {
                 </div>
             </div>
 
+            <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                    <input
+                        type="checkbox"
+                        checked={showFinished}
+                        onChange={(e) => setShowFinished(e.target.checked)}
+                        style={{ width: '1rem', height: '1rem' }}
+                    />
+                    完了した患者も表示する
+                </label>
+            </div>
+
             <div style={{ display: 'grid', gap: '1rem' }}>
                 {filteredPatients.length === 0 && (
                     <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>
@@ -67,7 +82,7 @@ export default function ReportList() {
                 )}
 
                 {filteredPatients.map(patient => (
-                    <div key={patient.id} className="card" style={{ overflow: 'hidden' }}>
+                    <div key={patient.id} className="card" style={{ overflow: 'hidden', opacity: patient.is_active === false ? 0.7 : 1 }}>
                         <div
                             onClick={() => navigate(`/patients/${patient.id}`)}
                             style={{
@@ -76,7 +91,8 @@ export default function ReportList() {
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
-                                transition: 'background-color 0.2s'
+                                transition: 'background-color 0.2s',
+                                filter: patient.is_active === false ? 'grayscale(0.5)' : 'none'
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg)'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -85,15 +101,20 @@ export default function ReportList() {
                                 <div style={{
                                     width: '40px', height: '40px',
                                     borderRadius: '50%',
-                                    backgroundColor: 'var(--color-primary)',
+                                    backgroundColor: patient.is_active === false ? '#9ca3af' : 'var(--color-primary)',
                                     color: 'white',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                                 }}>
                                     <User size={20} />
                                 </div>
                                 <div>
-                                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        {patient.name} 様
+                                    <h3 style={{ fontSize: '1.375rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        {patient.name} <span style={{ fontSize: '1rem', fontWeight: 400 }}>様</span>
+                                        {patient.is_active === false && (
+                                            <span style={{ fontSize: '0.875rem', backgroundColor: '#9ca3af', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 500 }}>
+                                                完了
+                                            </span>
+                                        )}
                                     </h3>
                                     <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
                                         {patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'} / {patient.dob.replace(/-/g, '/')}生
