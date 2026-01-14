@@ -101,7 +101,11 @@ export default function ReportList() {
                                 <div style={{
                                     width: '40px', height: '40px',
                                     borderRadius: '50%',
-                                    backgroundColor: patient.is_active === false ? '#9ca3af' : 'var(--color-primary)',
+                                    backgroundColor: patient.is_active === false
+                                        ? '#9ca3af'
+                                        : patient.gender === 'female'
+                                            ? 'var(--color-danger)'
+                                            : 'var(--color-primary)',
                                     color: 'white',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                                 }}>
