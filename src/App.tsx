@@ -1,4 +1,4 @@
-import { Outlet, NavLink, Navigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { FileText, PlusCircle, User, Calendar, LogOut, Building2, Menu, X } from 'lucide-react'
 import { useAuth } from './contexts/AuthProvider'
 import { useState, useEffect } from 'react'
@@ -74,7 +74,7 @@ function ProtectedLayout() {
           <div className="mobile-hidden" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.7 }}>
               <User size={18} />
-              <span style={{ fontSize: '0.875rem' }}>{user.email}</span>
+              <span style={{ fontSize: '0.875rem' }}>{user?.email}</span>
             </div>
             <button
               onClick={signOut}
@@ -149,7 +149,7 @@ function ProtectedLayout() {
               <div style={{ marginTop: 'auto', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', opacity: 0.7 }}>
                   <User size={18} />
-                  <span>{user.email}</span>
+                  <span>{user?.email}</span>
                 </div>
                 <button
                   onClick={signOut}
