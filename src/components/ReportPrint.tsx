@@ -70,7 +70,14 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           {/* Medication Detail Table (Regular) */}
           {report.medications_check_list && report.medications_check_list.length > 0 && (
             <div style={{ marginBottom: '1rem' }}>
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem', color: '#4b5563' }}>定期薬</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.25rem' }}>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: 600, margin: 0, color: '#4b5563' }}>定期薬</h4>
+                {report.regular_medication_supply_until && (
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                    定期薬残: {report.regular_medication_supply_until.replace(/-/g, '/')} まであり
+                  </span>
+                )}
+              </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>

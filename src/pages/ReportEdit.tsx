@@ -26,7 +26,8 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     side_effects: '',
     next_visit_date: '',
     medications_check_list: [],
-    medications_check_list_prn: []
+    medications_check_list_prn: [],
+    regular_medication_supply_until: ''
 }
 
 export default function ReportEdit() {
@@ -266,6 +267,19 @@ export default function ReportEdit() {
                 </section>
 
                 {/* 薬剤管理状況 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '-1rem' }}>
+                    <label className="label" style={{ marginBottom: 0 }}>定期薬残あり:</label>
+                    <input
+                        type="date"
+                        name="regular_medication_supply_until"
+                        className="input"
+                        style={{ width: 'auto' }}
+                        value={formData.regular_medication_supply_until || ''}
+                        onChange={handleChange}
+                    />
+                    <span style={{ fontSize: '0.9rem' }}>まで</span>
+                </div>
+
                 <MedicationListForm
                     title="残薬詳細確認 (定期薬)"
                     items={formData.medications_check_list || []}

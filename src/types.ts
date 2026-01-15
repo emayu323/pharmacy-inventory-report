@@ -57,6 +57,7 @@ export interface Report {
   visit_date: string;
 
   // Medication Status
+  regular_medication_supply_until?: string; // New field: YYYY-MM-DD
   medications_check_list?: MedicationCheckItem[];
   medications_check_list_prn?: MedicationCheckItem[]; // PRN Medications
 
