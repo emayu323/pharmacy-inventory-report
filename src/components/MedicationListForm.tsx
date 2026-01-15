@@ -123,7 +123,15 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                         fontWeight: 'bold',
                         color: 'var(--color-text-secondary)'
                     }}>
-                        {/* Headers removed as per user request */}
+                        <div></div> {/* Handle */}
+                        <div>薬品名</div>
+                        <div>残薬</div>
+                        <div>処方数</div>
+                        <div>現在残数</div>
+                        <div>必要数</div>
+                        <div>単位</div>
+                        <div>備考</div>
+                        <div></div> {/* Actions */}
                     </div>
                     <div className="mobile-card-view" style={{ display: 'grid', gap: '0.5rem' }}>
                         {items.map((item, index) => (
@@ -226,6 +234,7 @@ function SortableItem({ item, index, onChange, onRemove }: {
 
                 {/* Drug Name - Full width on mobile */}
                 <div className="mobile-full-width" style={{ gridColumn: 'span 1' }}>
+                    <label className="medication-row-label">薬品名</label>
                     <input
                         type="text"
                         className="input"
@@ -238,6 +247,7 @@ function SortableItem({ item, index, onChange, onRemove }: {
 
                 {/* Amounts Row on Mobile */}
                 <div className="mobile-stack-horizontal">
+                    <label className="medication-row-label">残薬</label>
                     <input
                         type="number"
                         className="input"
@@ -247,6 +257,7 @@ function SortableItem({ item, index, onChange, onRemove }: {
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
+                    <label className="medication-row-label">処方数</label>
                     <input
                         type="number"
                         className="input"
@@ -256,6 +267,7 @@ function SortableItem({ item, index, onChange, onRemove }: {
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
+                    <label className="medication-row-label">現在残数</label>
                     <input
                         type="text"
                         className="input"
@@ -266,6 +278,7 @@ function SortableItem({ item, index, onChange, onRemove }: {
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
+                    <label className="medication-row-label">必要数</label>
                     <input
                         type="number"
                         className="input"
@@ -275,6 +288,7 @@ function SortableItem({ item, index, onChange, onRemove }: {
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
+                    <label className="medication-row-label">単位</label>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <input
                             type="text"
@@ -326,6 +340,7 @@ function SortableItem({ item, index, onChange, onRemove }: {
 
                 {/* Notes - Full width on mobile */}
                 <div className="mobile-full-width">
+                    <label className="medication-row-label">備考</label>
                     <input
                         type="text"
                         className="input"
