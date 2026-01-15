@@ -10,6 +10,7 @@ import PatientCreate from './pages/PatientCreate'
 import CalendarView from './pages/CalendarView'
 import InstitutionList from './pages/InstitutionList'
 import InstitutionEdit from './pages/InstitutionEdit'
+import Settings from './pages/Settings'
 import { AuthProvider } from './contexts/AuthProvider'
 import './index.css'
 
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="institutions/new" element={<InstitutionEdit />} />
             <Route path="institutions/:id/edit" element={<InstitutionEdit />} />
             <Route path="calendar" element={<CalendarView />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </AuthProvider>

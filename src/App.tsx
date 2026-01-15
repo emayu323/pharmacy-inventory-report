@@ -1,8 +1,7 @@
-import { Outlet, NavLink, useLocation, Route } from 'react-router-dom'
+import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { FileText, PlusCircle, User, Calendar, LogOut, Building2, Menu, X } from 'lucide-react'
 import { useAuth } from './contexts/AuthProvider'
 import { useState, useEffect } from 'react'
-import Settings from './pages/Settings'
 
 // Components for protected layout
 function ProtectedLayout() {
@@ -191,7 +190,7 @@ function ProtectedLayout() {
 
       <main style={{ flex: 1, padding: '1rem 0' }}>
         <div className="container">
-          <Route path="settings" element={<Settings />} />
+
           <Outlet />
         </div>
       </main>
