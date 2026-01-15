@@ -29,9 +29,9 @@ export default function Settings() {
 
             setMessage({ type: 'success', text: '設定を保存しました' })
             // Refresh logic might be handled by AuthProvider subscription automatically
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            setMessage({ type: 'error', text: '保存に失敗しました' })
+            setMessage({ type: 'error', text: `保存に失敗しました: ${error.message}` })
         } finally {
             setIsLoading(false)
         }
