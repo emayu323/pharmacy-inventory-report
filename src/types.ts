@@ -29,6 +29,8 @@ export interface MedicationCheckItem {
   name: string;
   current_amount: string;
   next_required_amount: string;
+  leftover_amount?: string;
+  prescription_amount?: string;
   unit: string;
   notes: string;
   checked: boolean;

@@ -34,6 +34,8 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
             id: crypto.randomUUID(),
             name: '',
             current_amount: '',
+            leftover_amount: '',
+            prescription_amount: '',
             next_required_amount: '',
             unit: '日分',
             notes: '',
@@ -52,6 +54,16 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
         const newList = [...items]
         // @ts-ignore
         newList[index][field] = value
+
+        // Auto-calculate current_amount if leftover or prescription changes
+        if (field === 'leftover_amount' || field === 'prescription_amount') {
+            // @ts-ignore
+            const leftover = parseFloat(newList[index].leftover_amount || '0')
+            // @ts-ignore
+            const prescription = parseFloat(newList[index].prescription_amount || '0')
+            // @ts-ignore
+            newList[index].current_amount = String(leftover + prescription)
+        }
 
         if (field === 'name') {
             onSearchDrug(value as string)
@@ -111,6 +123,26 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                     items={items.map(item => item.id)}
                     strategy={verticalListSortingStrategy}
                 >
+                    <div className="desktop-only" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'auto minmax(150px, 2fr) 1fr 1fr 1fr 1fr 1fr 1.5fr auto auto auto',
+                        gap: '0.5rem',
+                        marginBottom: '0.5rem',
+                        padding: '0 0.75rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold',
+                        color: 'var(--color-text-secondary)'
+                    }}>
+                        <div></div> {/* Handle */}
+                        <div>薬品名</div>
+                        <div>残薬</div>
+                        <div>処方数</div>
+                        <div>現在残数</div>
+                        <div>必要数</div>
+                        <div>単位</div>
+                        <div>備考</div>
+                        <div></div> {/* Actions */}
+                    </div>
                     <div className="mobile-card-view" style={{ display: 'grid', gap: '0.5rem' }}>
                         {items.map((item, index) => (
                             <SortableItem
@@ -149,6 +181,10 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                         /* Hide desktop labels inside grid usually, but here we added them inline for mobile */
                         .details-desktop-only {
                             display: none !important;
+                        }
+
+                        .desktop-only {
+                             display: none !important;
                         }
 
                         /* Actions row at the bottom */
@@ -201,7 +237,7 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
         <div ref={setNodeRef} style={style} className="mobile-card-item" >
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'auto minmax(150px, 2fr) 1fr 1fr 1fr 1.5fr auto auto auto',
+                gridTemplateColumns: 'auto minmax(150px, 2fr) 1fr 1fr 1fr 1fr 1fr 1.5fr auto auto auto',
                 gap: '0.5rem',
                 alignItems: 'end',
                 backgroundColor: 'var(--color-bg)',
@@ -228,13 +264,34 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
 
                 {/* Amounts Row on Mobile */}
                 <div className="mobile-stack-horizontal">
-                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>残数</label>
+                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>残薬</label>
                     <input
                         type="number"
                         className="input"
-                        placeholder="残数"
+                        placeholder="残薬"
+                        value={item.leftover_amount || ''}
+                        onChange={(e) => onChange(index, 'leftover_amount', e.target.value)}
+                    />
+                </div>
+                <div className="mobile-stack-horizontal">
+                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>処方数</label>
+                    <input
+                        type="number"
+                        className="input"
+                        placeholder="処方数"
+                        value={item.prescription_amount || ''}
+                        onChange={(e) => onChange(index, 'prescription_amount', e.target.value)}
+                    />
+                </div>
+                <div className="mobile-stack-horizontal">
+                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>現在残数</label>
+                    <input
+                        type="text"
+                        className="input"
+                        placeholder="現在残数"
                         value={item.current_amount}
-                        onChange={(e) => onChange(index, 'current_amount', e.target.value)}
+                        readOnly
+                        style={{ backgroundColor: 'var(--color-bg-secondary)', cursor: 'not-allowed' }}
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
