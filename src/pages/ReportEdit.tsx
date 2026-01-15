@@ -214,7 +214,6 @@ export default function ReportEdit() {
                         </div>
                         <div>
                             <label className="label">生年月日</label>
-                            <label className="label">生年月日</label>
                             <input type="date" name="patient_dob" className="input" required value={formData.patient_dob} onChange={handleChange} />
                             {formData.patient_dob && (
                                 <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block' }}>
