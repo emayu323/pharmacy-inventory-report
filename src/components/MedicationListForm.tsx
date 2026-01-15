@@ -1,5 +1,22 @@
 import type { MedicationCheckItem } from '../types'
-import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Trash2, ArrowUp, ArrowDown, GripVertical, ChevronDown } from 'lucide-react'
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 // Removed uuid import
 
 
@@ -55,6 +72,23 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
         }
     }
 
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            const oldIndex = items.findIndex((item) => item.id === active.id);
+            const newIndex = items.findIndex((item) => item.id === over.id);
+            onUpdate(arrayMove(items, oldIndex, newIndex));
+        }
+    };
+
     return (
         <section className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
@@ -68,120 +102,30 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                 ))}
             </datalist>
 
-            <div className="mobile-card-view" style={{ display: 'grid', gap: '0.5rem' }}>
-                {items.map((item, index) => (
-                    <div key={item.id} className="mobile-card-item" style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'minmax(150px, 2fr) 1fr 1fr 1fr 1.5fr auto auto auto',
-                        gap: '0.5rem',
-                        alignItems: 'end',
-                        backgroundColor: 'var(--color-bg)',
-                        padding: '0.75rem',
-                        borderRadius: '6px'
-                    }}>
-
-                        <div className="mobile-full-width" style={{ gridColumn: 'span 1' }}>
-                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>薬品名</label>
-                            <input
-                                type="text"
-                                className="input"
-                                placeholder="薬品名"
-                                list="drug-options-shared"
-                                value={item.name}
-                                onChange={(e) => handleChange(index, 'name', e.target.value)}
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext
+                    items={items.map(item => item.id)}
+                    strategy={verticalListSortingStrategy}
+                >
+                    <div className="mobile-card-view" style={{ display: 'grid', gap: '0.5rem' }}>
+                        {items.map((item, index) => (
+                            <SortableItem
+                                key={item.id}
+                                item={item}
+                                index={index}
+                                onChange={handleChange}
+                                onRemove={handleRemove}
+                                onMove={handleMove}
+                                itemsLength={items.length}
                             />
-                        </div>
-
-                        {/* Amounts Row on Mobile */}
-                        <div className="mobile-stack-horizontal">
-                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>残数</label>
-                            <input
-                                type="number"
-                                className="input"
-                                placeholder="残数"
-                                value={item.current_amount}
-                                onChange={(e) => handleChange(index, 'current_amount', e.target.value)}
-                            />
-                        </div>
-                        <div className="mobile-stack-horizontal">
-                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>必要数</label>
-                            <input
-                                type="number"
-                                className="input"
-                                placeholder="必要数"
-                                value={item.next_required_amount}
-                                onChange={(e) => handleChange(index, 'next_required_amount', e.target.value)}
-                            />
-                        </div>
-                        <div className="mobile-stack-horizontal">
-                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>単位</label>
-                            <input
-                                type="text"
-                                list={`unit-options-${item.id}`}
-                                className="input"
-                                placeholder="単位"
-                                value={item.unit}
-                                onChange={(e) => handleChange(index, 'unit', e.target.value)}
-                            />
-                            <datalist id={`unit-options-${item.id}`}>
-                                <option value="日分" />
-                                <option value="錠" />
-                                <option value="本" />
-                                <option value="g" />
-                                <option value="枚" />
-                                <option value="包" />
-                                <option value="シート" />
-                                <option value="ml" />
-                            </datalist>
-                        </div>
-
-                        {/* Notes - Full width on mobile */}
-                        <div className="mobile-full-width">
-                            <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>備考</label>
-                            <input
-                                type="text"
-                                className="input"
-                                placeholder="備考"
-                                value={item.notes}
-                                onChange={(e) => handleChange(index, 'notes', e.target.value)}
-                            />
-                        </div>
-
-                        {/* Actions - Flex row on mobile */}
-                        <div className="mobile-actions" style={{ display: 'contents' }}>
-                            <button
-                                onClick={() => handleMove(index, -1)}
-                                disabled={index === 0}
-                                className="btn btn-ghost"
-                                style={{ padding: '0.25rem', opacity: index === 0 ? 0.3 : 1 }}
-                                title="上に移動"
-                                type="button"
-                            >
-                                <ArrowUp size={16} />
-                            </button>
-                            <button
-                                onClick={() => handleMove(index, 1)}
-                                disabled={index === items.length - 1}
-                                className="btn btn-ghost"
-                                style={{ padding: '0.25rem', opacity: index === items.length - 1 ? 0.3 : 1 }}
-                                title="下に移動"
-                                type="button"
-                            >
-                                <ArrowDown size={16} />
-                            </button>
-                            <button
-                                onClick={() => handleRemove(index)}
-                                className="btn btn-ghost"
-                                style={{ color: 'var(--color-error)', padding: '0.5rem' }}
-                                title="削除"
-                                type="button"
-                            >
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
+                        ))}
                     </div>
-                ))}
-            </div>
+                </SortableContext>
+            </DndContext>
 
             <style>{`
                     @media (max-width: 640px) {
@@ -229,4 +173,176 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
             </button>
         </section>
     )
+}
+
+// Sub-component for Sortable Item
+function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: {
+    item: MedicationCheckItem,
+    index: number,
+    onChange: (index: number, field: keyof MedicationCheckItem, value: any) => void,
+    onRemove: (index: number) => void,
+    onMove: (index: number, direction: -1 | 1) => void,
+    itemsLength: number
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id: item.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="mobile-card-item" >
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'auto minmax(150px, 2fr) 1fr 1fr 1fr 1.5fr auto auto auto',
+                gap: '0.5rem',
+                alignItems: 'end',
+                backgroundColor: 'var(--color-bg)',
+                padding: '0.75rem',
+                borderRadius: '6px'
+            }}>
+                {/* Drag Handle */}
+                <div {...attributes} {...listeners} style={{ cursor: 'grab', display: 'flex', alignItems: 'center', height: '100%', paddingBottom: '0.8rem' }}>
+                    <GripVertical size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                </div>
+
+                {/* Drug Name - Full width on mobile */}
+                <div className="mobile-full-width" style={{ gridColumn: 'span 1' }}>
+                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>薬品名</label>
+                    <input
+                        type="text"
+                        className="input"
+                        placeholder="薬品名"
+                        list="drug-options-shared"
+                        value={item.name}
+                        onChange={(e) => onChange(index, 'name', e.target.value)}
+                    />
+                </div>
+
+                {/* Amounts Row on Mobile */}
+                <div className="mobile-stack-horizontal">
+                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>残数</label>
+                    <input
+                        type="number"
+                        className="input"
+                        placeholder="残数"
+                        value={item.current_amount}
+                        onChange={(e) => onChange(index, 'current_amount', e.target.value)}
+                    />
+                </div>
+                <div className="mobile-stack-horizontal">
+                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>必要数</label>
+                    <input
+                        type="number"
+                        className="input"
+                        placeholder="必要数"
+                        value={item.next_required_amount}
+                        onChange={(e) => onChange(index, 'next_required_amount', e.target.value)}
+                    />
+                </div>
+                <div className="mobile-stack-horizontal">
+                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>単位</label>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder="単位"
+                            value={item.unit}
+                            onChange={(e) => onChange(index, 'unit', e.target.value)}
+                            style={{ paddingRight: '2rem' }}
+                        />
+                        <div style={{
+                            position: 'absolute',
+                            right: '0.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            pointerEvents: 'none',
+                            color: 'var(--color-text-secondary)'
+                        }}>
+                            <ChevronDown size={14} />
+                        </div>
+                        <select
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                opacity: 0,
+                                cursor: 'pointer'
+                            }}
+                            value=""
+                            onChange={(e) => {
+                                if (e.target.value) {
+                                    onChange(index, 'unit', e.target.value);
+                                }
+                            }}
+                        >
+                            <option value="" disabled>単位を選択</option>
+                            <option value="日分">日分</option>
+                            <option value="錠">錠</option>
+                            <option value="本">本</option>
+                            <option value="g">g</option>
+                            <option value="枚">枚</option>
+                            <option value="包">包</option>
+                            <option value="シート">シート</option>
+                            <option value="ml">ml</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Notes - Full width on mobile */}
+                <div className="mobile-full-width">
+                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>備考</label>
+                    <input
+                        type="text"
+                        className="input"
+                        placeholder="備考"
+                        value={item.notes}
+                        onChange={(e) => onChange(index, 'notes', e.target.value)}
+                    />
+                </div>
+
+                {/* Actions - Flex row on mobile */}
+                <div className="mobile-actions" style={{ display: 'contents' }}>
+                    <button
+                        onClick={() => onMove(index, -1)}
+                        disabled={index === 0}
+                        className="btn btn-ghost"
+                        style={{ padding: '0.25rem', opacity: index === 0 ? 0.3 : 1 }}
+                        title="上に移動"
+                        type="button"
+                    >
+                        <ArrowUp size={16} />
+                    </button>
+                    <button
+                        onClick={() => onMove(index, 1)}
+                        disabled={index === itemsLength - 1}
+                        className="btn btn-ghost"
+                        style={{ padding: '0.25rem', opacity: index === itemsLength - 1 ? 0.3 : 1 }}
+                        title="下に移動"
+                        type="button"
+                    >
+                        <ArrowDown size={16} />
+                    </button>
+                    <button
+                        onClick={() => onRemove(index)}
+                        className="btn btn-ghost"
+                        style={{ color: 'var(--color-error)', padding: '0.5rem' }}
+                        title="削除"
+                        type="button"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 }
