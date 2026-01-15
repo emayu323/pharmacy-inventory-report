@@ -160,7 +160,18 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
             </DndContext>
 
             <style>{`
+                    /* Default: hidden on desktop */
+                    .desktop-hidden {
+                        display: none;
+                    }
+
                     @media (max-width: 640px) {
+                        /* Show on mobile */
+                        .desktop-hidden {
+                             display: block;
+                             margin-bottom: 0.25rem;
+                        }
+
                         .mobile-card-item {
                              grid-template-columns: 1fr 1fr 1fr !important;
                              grid-template-rows: auto auto auto auto !important;
