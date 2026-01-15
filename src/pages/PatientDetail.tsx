@@ -921,6 +921,11 @@ export default function PatientDetail() {
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                                     <span>処方: {report.prescription_date?.replace(/-/g, '/') || '-'}</span>
+                                    {report.regular_medication_supply_until && (
+                                        <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                                            定期薬残: {report.regular_medication_supply_until.replace(/-/g, '/')} まで
+                                        </span>
+                                    )}
                                 </div>
                                 {report.memo && (
                                     <div style={{
