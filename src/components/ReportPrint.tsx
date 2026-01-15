@@ -32,7 +32,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           </div>
           <div className="print-row">
             <div className="print-item">
-              <span className="print-label">主治医</span>
+              <span className="print-label">処方医</span>
               <span className="print-value">{report.doctor_name}</span>
             </div>
             <div className="print-item">

@@ -18,7 +18,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
             name: '',
             current_amount: '',
             next_required_amount: '',
-            unit: '錠',
+            unit: '日分',
             notes: '',
             checked: false
         }
@@ -118,24 +118,20 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                         </div>
                         <div className="mobile-stack-horizontal">
                             <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>単位</label>
-                            <input
-                                type="text"
-                                list={`unit-options-${item.id}`}
+                            <select
                                 className="input"
-                                placeholder="単位"
                                 value={item.unit}
                                 onChange={(e) => handleChange(index, 'unit', e.target.value)}
-                            />
-                            <datalist id={`unit-options-${item.id}`}>
-                                <option value="日分" />
-                                <option value="錠" />
-                                <option value="本" />
-                                <option value="g" />
-                                <option value="枚" />
-                                <option value="包" />
-                                <option value="シート" />
-                                <option value="ml" />
-                            </datalist>
+                            >
+                                <option value="日分">日分</option>
+                                <option value="錠">錠</option>
+                                <option value="本">本</option>
+                                <option value="g">g</option>
+                                <option value="枚">枚</option>
+                                <option value="包">包</option>
+                                <option value="シート">シート</option>
+                                <option value="ml">ml</option>
+                            </select>
                         </div>
 
                         {/* Notes - Full width on mobile */}

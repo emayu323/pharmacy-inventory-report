@@ -218,7 +218,7 @@ export default function ReportEdit() {
                             </select>
                         </div>
                         <div>
-                            <label className="label">主治医</label>
+                            <label className="label">処方医</label>
                             <input type="text" name="doctor_name" className="input" value={formData.doctor_name} onChange={handleChange} />
                         </div>
                     </div>
