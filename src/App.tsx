@@ -1,7 +1,8 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useLocation, Route } from 'react-router-dom'
 import { FileText, PlusCircle, User, Calendar, LogOut, Building2, Menu, X } from 'lucide-react'
 import { useAuth } from './contexts/AuthProvider'
 import { useState, useEffect } from 'react'
+import Settings from './pages/Settings'
 
 // Components for protected layout
 function ProtectedLayout() {
@@ -72,10 +73,24 @@ function ProtectedLayout() {
 
           {/* Desktop User Menu */}
           <div className="mobile-hidden" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.7 }}>
-              <User size={18} />
-              <span style={{ fontSize: '0.875rem' }}>{user?.email}</span>
-            </div>
+            <NavLink to="/settings" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <div style={{
+                  width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', color: 'white',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem'
+                }}>
+                  <User size={18} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                    {user?.user_metadata?.display_name || 'ゲスト'}
+                  </span>
+                  {user?.user_metadata?.display_name && (
+                    <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{user?.email}</span>
+                  )}
+                </div>
+              </div>
+            </NavLink>
             <button
               onClick={signOut}
               className="btn btn-ghost"
@@ -147,14 +162,23 @@ function ProtectedLayout() {
               </nav>
 
               <div style={{ marginTop: 'auto', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', opacity: 0.7 }}>
-                  <User size={18} />
-                  <span>{user?.email}</span>
+                <NavLink
+                  to="/settings"
+                  className={({ isActive }) => `btn ${isActive ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ justifyContent: 'flex-start', padding: '1rem', width: '100%', marginBottom: '0.5rem' }}
+                >
+                  <User size={20} />
+                  設定・プロフィール
+                </NavLink>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', opacity: 0.7, padding: '0 1rem' }}>
+                  <span style={{ fontSize: '0.875rem' }}>
+                    {user?.user_metadata?.display_name || user?.email}
+                  </span>
                 </div>
                 <button
                   onClick={signOut}
                   className="btn btn-ghost"
-                  style={{ width: '100%', justifyContent: 'flex-start', color: 'var(--color-danger)' }}
+                  style={{ width: '100%', justifyContent: 'flex-start', color: 'var(--color-danger)', padding: '1rem' }}
                 >
                   <LogOut size={20} />
                   ログアウト
@@ -167,6 +191,7 @@ function ProtectedLayout() {
 
       <main style={{ flex: 1, padding: '1rem 0' }}>
         <div className="container">
+          <Route path="settings" element={<Settings />} />
           <Outlet />
         </div>
       </main>

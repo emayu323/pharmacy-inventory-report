@@ -6,6 +6,7 @@ import { ReportPrint } from '../components/ReportPrint'
 import { supabase } from '../supabase'
 import type { Report } from '../types'
 import MedicationListForm from '../components/MedicationListForm'
+import { useAuth } from '../contexts/AuthProvider'
 
 // Mock for edit, would fetch based on ID in real app
 const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
@@ -29,6 +30,7 @@ export default function ReportEdit() {
     const { id } = useParams()
     const navigate = useNavigate()
     const location = useLocation()
+    const { user } = useAuth()
     // const isEdit = Boolean(id) // Unused for now
 
     // State for form
@@ -101,6 +103,7 @@ export default function ReportEdit() {
                 visit_date: new Date().toISOString().split('T')[0],
                 prescription_date: new Date().toISOString().split('T')[0],
                 dispensing_date: new Date().toISOString().split('T')[0],
+                pharmacist_name: user?.user_metadata?.display_name || ''
             })
             setPatientMemo('') // Start empty for new report
 
