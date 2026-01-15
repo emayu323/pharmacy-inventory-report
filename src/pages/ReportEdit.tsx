@@ -17,6 +17,7 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     prescription_date: new Date().toISOString().split('T')[0],
     dispensing_date: new Date().toISOString().split('T')[0],
     visit_date: new Date().toISOString().split('T')[0],
+    chief_complaint: '',
     medication_instruction: '',
     side_effects: '',
     next_visit_date: '',
@@ -272,6 +273,10 @@ export default function ReportEdit() {
                         指導内容・計画
                     </h3>
                     <div style={{ display: 'grid', gap: '1rem' }}>
+                        <div>
+                            <label className="label">主訴等</label>
+                            <textarea name="chief_complaint" className="input" rows={2} value={formData.chief_complaint || ''} onChange={handleChange}></textarea>
+                        </div>
                         <div>
                             <label className="label">服薬指導内容</label>
                             <textarea name="medication_instruction" className="input" rows={4} value={formData.medication_instruction} onChange={handleChange}></textarea>

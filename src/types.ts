@@ -58,6 +58,7 @@ export interface Report {
   medications_check_list_prn?: MedicationCheckItem[]; // PRN Medications
 
   // Instructions
+  chief_complaint?: string; // New field
   medication_instruction: string;
   side_effects: string;
 

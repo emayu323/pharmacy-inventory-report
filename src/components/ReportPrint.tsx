@@ -129,6 +129,12 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
         <div className="print-section">
           <h3>指導内容</h3>
           <div className="print-row-block">
+            {report.chief_complaint && (
+              <div className="print-row-block" style={{ marginBottom: '15px' }}>
+                <span className="print-label">主訴等</span>
+                <p className="print-value-block">{report.chief_complaint}</p>
+              </div>
+            )}
             <span className="print-label">服薬指導</span>
             <p className="print-value-block" style={{ minHeight: '100px' }}>{report.medication_instruction}</p>
           </div>
