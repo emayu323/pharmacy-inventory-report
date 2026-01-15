@@ -65,7 +65,7 @@ export default function ReportEdit() {
 
     const handlePrint = useReactToPrint({
         contentRef: printRef,
-        documentTitle: `訪問薬剤管理指導報告書_${formData.patient_name || '名称未設定'}`,
+        documentTitle: `居宅療養管理指導報告書_${formData.patient_name || '名称未設定'}`,
     })
 
     // Hack: We need a full Report object for ReportPrint but formData is Partial

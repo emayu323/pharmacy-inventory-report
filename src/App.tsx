@@ -34,7 +34,7 @@ function ProtectedLayout() {
             }}>
               <FileText size={20} />
             </div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 600 }}>訪問薬剤管理指導報告書</h1>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 600 }}>居宅療養管理指導報告書</h1>
           </div>
 
           {/* Desktop Nav */}

@@ -9,7 +9,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
   return (
     <div ref={ref} className="print-container">
       <div className="print-header">
-        <h1>訪問薬剤管理指導報告書</h1>
+        <h1>居宅療養管理指導報告書</h1>
         <div className="print-date">作成日: {new Date().toLocaleDateString('ja-JP')}</div>
       </div>
 
