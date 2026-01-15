@@ -19,6 +19,9 @@ export default function PatientCreate() {
         dob: '',
         gender: 'male' as Gender,
         address: '',
+        contact1: '',
+        contact2: '',
+        contact2_memo: '',
         memo: '',
         medical_institution_name: '',
         primary_doctor: '',
@@ -90,6 +93,9 @@ export default function PatientCreate() {
                     dob: formData.dob,
                     gender: formData.gender,
                     address: formData.address,
+                    contact1: formData.contact1,
+                    contact2: formData.contact2,
+                    contact2_memo: formData.contact2_memo,
                     memo: formData.memo,
                     medical_institution_name: formData.medical_institution_name,
                     primary_doctor: formData.primary_doctor,
@@ -203,8 +209,45 @@ export default function PatientCreate() {
                                 className="input"
                                 placeholder="例: 東京都渋谷区..."
                                 value={formData.address}
-                                onChange={handleChange}
                             />
+                        </div>
+
+                        {/* Contact Info */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                            <div>
+                                <label className="label">連絡先1</label>
+                                <input
+                                    type="text"
+                                    name="contact1"
+                                    className="input"
+                                    placeholder="電話番号など"
+                                    value={formData.contact1}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div>
+                                <label className="label">連絡先2</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input
+                                        type="text"
+                                        name="contact2"
+                                        className="input"
+                                        placeholder="電話番号など"
+                                        value={formData.contact2}
+                                        onChange={handleChange}
+                                        style={{ flex: 1 }}
+                                    />
+                                    <input
+                                        type="text"
+                                        name="contact2_memo"
+                                        className="input"
+                                        placeholder="メモ(家族等)"
+                                        value={formData.contact2_memo}
+                                        onChange={handleChange}
+                                        style={{ width: '120px' }}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

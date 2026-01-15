@@ -73,6 +73,9 @@ export default function PatientDetail() {
                     dob: editForm.dob,
                     gender: editForm.gender,
                     address: editForm.address,
+                    contact1: editForm.contact1,
+                    contact2: editForm.contact2,
+                    contact2_memo: editForm.contact2_memo,
                     medical_institution_name: editForm.medical_institution_name,
                     primary_doctor: editForm.primary_doctor,
                     home_care_office: editForm.home_care_office,
@@ -380,6 +383,39 @@ export default function PatientDetail() {
                             />
                         </div>
 
+                        {/* Contact Info */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                            <div>
+                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>連絡先1</label>
+                                <input
+                                    className="input"
+                                    value={editForm.contact1 || ''}
+                                    placeholder="電話番号など"
+                                    onChange={e => setEditForm({ ...editForm, contact1: e.target.value })}
+                                    style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                />
+                            </div>
+                            <div>
+                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>連絡先2</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input
+                                        className="input"
+                                        value={editForm.contact2 || ''}
+                                        placeholder="電話番号など"
+                                        onChange={e => setEditForm({ ...editForm, contact2: e.target.value })}
+                                        style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', flex: 1 }}
+                                    />
+                                    <input
+                                        className="input"
+                                        value={editForm.contact2_memo || ''}
+                                        placeholder="メモ"
+                                        onChange={e => setEditForm({ ...editForm, contact2_memo: e.target.value })}
+                                        style={{ display: 'block', width: '100px', padding: '0.625rem 0.5rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Relations Info Section */}
                         <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: 'var(--color-bg-subtle, #f8fafc)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)' }}>
@@ -587,6 +623,17 @@ export default function PatientDetail() {
                                 <div style={{ gridColumn: '1 / -1' }}>
                                     <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>住所</span>
                                     <span style={{ fontWeight: 500 }}>{patient.address || '-'}</span>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先1</span>
+                                    <span style={{ fontWeight: 500 }}>{patient.contact1 || '-'}</span>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先2</span>
+                                    <span style={{ fontWeight: 500 }}>
+                                        {patient.contact2 || '-'}
+                                        {patient.contact2_memo && <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>({patient.contact2_memo})</span>}
+                                    </span>
                                 </div>
 
                                 <div className="mobile-stack" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
