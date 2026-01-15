@@ -146,6 +146,12 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
               <p className="print-value-block">{report.side_effects}</p>
             </div>
           )}
+          {report.next_visit_date && (
+            <div className="print-row-block">
+              <span className="print-label">次回訪問予定日</span>
+              <p className="print-value-block" style={{ minHeight: 'auto' }}>{report.next_visit_date.replace(/-/g, '/')}</p>
+            </div>
+          )}
         </div>
 
         {/* Plan */}
