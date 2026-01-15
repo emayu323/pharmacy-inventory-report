@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, ChevronDown, ChevronRight } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { ReportPrint } from '../components/ReportPrint'
@@ -40,7 +40,8 @@ export default function ReportEdit() {
     // State for form
     const [formData, setFormData] = useState(EMPTY_REPORT)
     const [drugOptions, setDrugOptions] = useState<string[]>([])
-    const [patientMemo, setPatientMemo] = useState('') // New: Patient Memo
+    const [patientMemo, setPatientMemo] = useState('')
+    const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(false) // Default collapsed
     const printRef = useRef<HTMLDivElement>(null)
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -204,41 +205,61 @@ export default function ReportEdit() {
             >
 
                 {/* 基本情報 */}
-                <section className="card" style={{ padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-                        基本情報
-                    </h3>
-                    <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                        <div>
-                            <label className="label">患者氏名</label>
-                            <input type="text" name="patient_name" className="input" required value={formData.patient_name} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <label className="label">生年月日</label>
-                            <input type="date" name="patient_dob" className="input" required value={formData.patient_dob} onChange={handleChange} />
-                            {formData.patient_dob && (
-                                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block' }}>
-                                    {calculateAge(formData.patient_dob)}歳
+                <section className="card" style={{ padding: '0.5rem 1.5rem' }}>
+                    <div
+                        onClick={() => setIsBasicInfoOpen(!isBasicInfoOpen)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer',
+                            padding: '1rem 0'
+                        }}
+                    >
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            基本情報
+                            {!isBasicInfoOpen && (
+                                <span style={{ fontSize: '1rem', fontWeight: 400, color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>
+                                    {formData.patient_name} 様 ({calculateAge(formData.patient_dob)}歳)
                                 </span>
                             )}
-                        </div>
-                        <div>
-                            <label className="label">性別</label>
-                            <select name="patient_gender" className="input" value={formData.patient_gender} onChange={handleChange}>
-                                <option value="male">男性</option>
-                                <option value="female">女性</option>
-                                <option value="other">その他</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="label">処方医</label>
-                            <input type="text" name="doctor_name" className="input" value={formData.doctor_name} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <label className="label">医療機関名</label>
-                            <input type="text" name="medical_institution_name" className="input" value={formData.medical_institution_name || ''} onChange={handleChange} />
-                        </div>
+                        </h3>
+                        {isBasicInfoOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                     </div>
+
+                    {isBasicInfoOpen && (
+                        <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', paddingBottom: '1.5rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
+                            <div>
+                                <label className="label">患者氏名</label>
+                                <input type="text" name="patient_name" className="input" required value={formData.patient_name} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <label className="label">生年月日</label>
+                                <input type="date" name="patient_dob" className="input" required value={formData.patient_dob} onChange={handleChange} />
+                                {formData.patient_dob && (
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block' }}>
+                                        {calculateAge(formData.patient_dob)}歳
+                                    </span>
+                                )}
+                            </div>
+                            <div>
+                                <label className="label">性別</label>
+                                <select name="patient_gender" className="input" value={formData.patient_gender} onChange={handleChange}>
+                                    <option value="male">男性</option>
+                                    <option value="female">女性</option>
+                                    <option value="other">その他</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="label">処方医</label>
+                                <input type="text" name="doctor_name" className="input" value={formData.doctor_name} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <label className="label">医療機関名</label>
+                                <input type="text" name="medical_institution_name" className="input" value={formData.medical_institution_name || ''} onChange={handleChange} />
+                            </div>
+                        </div>
+                    )}
                 </section>
 
                 {/* 訪問情報 */}
