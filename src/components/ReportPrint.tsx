@@ -10,7 +10,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
     <div ref={ref} className="print-container">
       <div className="print-header">
         <h1>居宅療養管理指導報告書</h1>
-        <div className="print-date">作成日: {new Date().toLocaleDateString('ja-JP')}</div>
+
       </div>
 
       <div className="print-grid">
@@ -38,6 +38,20 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             <div className="print-item">
               <span className="print-label">担当薬剤師</span>
               <span className="print-value">{report.pharmacist_name}</span>
+            </div>
+          </div>
+          <div className="print-row">
+            <div className="print-item">
+              <span className="print-label">処方日</span>
+              <span className="print-value">{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</span>
+            </div>
+            <div className="print-item">
+              <span className="print-label">調剤日</span>
+              <span className="print-value">{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</span>
+            </div>
+            <div className="print-item">
+              <span className="print-label">訪問日</span>
+              <span className="print-value">{report.visit_date.replace(/-/g, '/')}</span>
             </div>
           </div>
         </div>
@@ -106,23 +120,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
 
         </div>
 
-        {/* Date Row */}
-        <div className="print-section">
-          <div className="print-row">
-            <div className="print-item">
-              <span className="print-label">訪問日</span>
-              <span className="print-value">{report.visit_date.replace(/-/g, '/')}</span>
-            </div>
-            <div className="print-item">
-              <span className="print-label">処方日</span>
-              <span className="print-value">{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</span>
-            </div>
-            <div className="print-item">
-              <span className="print-label">調剤日</span>
-              <span className="print-value">{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</span>
-            </div>
-          </div>
-        </div>
+
 
 
         {/* Instructions */}
