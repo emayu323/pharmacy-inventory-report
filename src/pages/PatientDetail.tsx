@@ -1,25 +1,21 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, PlusCircle, Calendar, Edit2, Save, Clock, Copy, Building2 } from 'lucide-react'
+import { ArrowLeft, User, PlusCircle, Calendar, Save, Copy, Building2, Edit2, Phone, Printer } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import type { Patient, Report, Institution, InstitutionType } from '../types'
 import toast from 'react-hot-toast'
 import ConfirmToast from '../components/ConfirmToast'
-import { calculateAge } from '../utils'
 
 export default function PatientDetail() {
     const { id } = useParams()
     const navigate = useNavigate()
     const [patient, setPatient] = useState<Patient | null>(null)
     const [reports, setReports] = useState<Report[]>([])
-    const [memo, setMemo] = useState('')
-    const [loading, setLoading] = useState(true)
-    const [savingMemo, setSavingMemo] = useState(false)
-
-    // Profile Edit State
-    const [isEditingProfile, setIsEditingProfile] = useState(false)
-    const [savingProfile, setSavingProfile] = useState(false)
+    // editForm is now the single source of truth for the UI
     const [editForm, setEditForm] = useState<Partial<Patient>>({})
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
     const [institutions, setInstitutions] = useState<Institution[]>([])
     const [showCreateReportModal, setShowCreateReportModal] = useState(false)
 
@@ -58,45 +54,6 @@ export default function PatientDetail() {
         }
     }
 
-    const handleSaveProfile = async () => {
-        if (!patient || !editForm.name || !editForm.dob || !editForm.gender) {
-            toast.error('必須項目を入力してください')
-            return
-        }
-        try {
-            setSavingProfile(true)
-            const { error } = await supabase
-                .from('patients')
-                .update({
-                    name: editForm.name,
-                    kana: editForm.kana,
-                    dob: editForm.dob,
-                    gender: editForm.gender,
-                    address: editForm.address,
-                    contact1: editForm.contact1,
-                    contact2: editForm.contact2,
-                    contact2_memo: editForm.contact2_memo,
-                    medical_institution_name: editForm.medical_institution_name,
-                    primary_doctor: editForm.primary_doctor,
-                    home_care_office: editForm.home_care_office,
-                    care_manager: editForm.care_manager,
-                    pharmacy_name: editForm.pharmacy_name
-                })
-                .eq('id', patient.id)
-
-            if (error) throw error
-
-            setPatient({ ...patient, ...editForm } as Patient)
-            setIsEditingProfile(false)
-            toast.success('基本情報を更新しました')
-        } catch (error) {
-            console.error('Error updating profile:', error)
-            toast.error('更新に失敗しました')
-        } finally {
-            setSavingProfile(false)
-        }
-    }
-
     useEffect(() => {
         if (id) fetchPatientData(id)
     }, [id])
@@ -113,8 +70,9 @@ export default function PatientDetail() {
                 .single()
 
             if (pError) throw pError
-            setPatient(pData as Patient)
-            setMemo(pData.memo || '')
+            const patientData = pData as Patient
+            setPatient(patientData)
+            setEditForm(patientData) // Initialize editForm
 
             // Fetch Reports History
             const { data: rData, error: rError } = await supabase
@@ -134,22 +92,44 @@ export default function PatientDetail() {
         }
     }
 
-    const handleSaveMemo = async () => {
-        if (!patient) return
+    const handleSaveAll = async () => {
+        if (!editForm.name || !editForm.dob || !editForm.gender) {
+            toast.error('氏名、生年月日、性別は必須です')
+            return
+        }
+
         try {
-            setSavingMemo(true)
+            setSaving(true)
             const { error } = await supabase
                 .from('patients')
-                .update({ memo })
-                .eq('id', patient.id)
+                .update({
+                    name: editForm.name,
+                    kana: editForm.kana,
+                    gender: editForm.gender,
+                    dob: editForm.dob,
+                    address: editForm.address,
+                    contact1: editForm.contact1,
+                    contact2: editForm.contact2,
+                    contact2_memo: editForm.contact2_memo,
+                    medical_institution_name: editForm.medical_institution_name,
+                    primary_doctor: editForm.primary_doctor,
+                    home_care_office: editForm.home_care_office,
+                    care_manager: editForm.care_manager,
+                    pharmacy_name: editForm.pharmacy_name,
+                    memo: editForm.memo
+                })
+                .eq('id', patient?.id)
 
             if (error) throw error
-            toast.success('申し送り事項を保存しました')
+
+            setPatient({ ...patient!, ...editForm } as Patient)
+            toast.success('保存しました')
         } catch (error) {
-            console.error('Error saving memo:', error)
+            console.error(error)
             toast.error('保存に失敗しました')
         } finally {
-            setSavingMemo(false)
+            setSaving(false)
+            setIsEditing(false)
         }
     }
 
@@ -201,7 +181,7 @@ export default function PatientDetail() {
                 </Link>
             </div>
 
-            {/* Patient Profile Card */}
+            {/* Patient Profile Card (Always Editable) */}
             <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', gap: '1.5rem', alignItems: 'start', opacity: patient.is_active === false ? 0.8 : 1 }}>
                 <div style={{
                     width: '80px', height: '80px',
@@ -209,214 +189,221 @@ export default function PatientDetail() {
                     backgroundColor: patient.is_active === false ? '#9ca3af' : 'var(--color-primary)',
                     color: 'white',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '2rem'
+                    fontSize: '2rem',
+                    flexShrink: 0
                 }}>
                     <User size={40} />
                 </div>
 
-                {isEditingProfile ? (
-                    // EDIT MODE
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                            <div>
-                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>氏名</label>
-                                <input
-                                    className="input"
-                                    value={editForm.name}
-                                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                <div style={{ flex: 1 }}>
+                    {/* Header with Name and Toggle */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                            基本情報
+                            {patient.is_active === false && (
+                                <span style={{ fontSize: '1rem', backgroundColor: '#9ca3af', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 500 }}>
+                                    完了
+                                </span>
+                            )}
+                        </h2>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            {!isEditing ? (
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="btn btn-ghost"
                                     style={{
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: '0.625rem 0.875rem',
-                                        fontSize: '1rem',
-                                        lineHeight: '1.5',
-                                        color: 'var(--color-text-main)',
-                                        backgroundColor: '#fff',
+                                        padding: '0.4rem 0.8rem',
+                                        height: 'auto',
+                                        fontSize: '0.875rem',
                                         border: '1px solid var(--color-border)',
-                                        borderRadius: 'var(--radius-md)',
-                                        boxShadow: 'var(--shadow-sm)',
-                                        transition: 'all 0.2s',
-                                        outline: 'none'
                                     }}
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = 'var(--color-primary)';
-                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
+                                >
+                                    <Edit2 size={16} />
+                                    編集
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => {
+                                        setIsEditing(false);
+                                        setEditForm(patient || {}); // Revert changes on cancel? User didn't specify cancel logic, but View mode implies reset or show current. I'll just toggle off for now, but resetting is safer.
+                                        // Actually better to just toggle off. If they want to save, they press Save. If they toggle off, maybe they expect cancel.
+                                        setEditForm({ ...patient, memo: editForm.memo }); // Keep memo edits, revert profile? Complex.
+                                        // Let's just toggle isEditing. If they click save later, it saves editForm.
+                                        // Wait, if I change name, toggle view (seeing old name), then click save, it saves NEW name? That's confusing.
+                                        // Standard UX: Cancel reverts.
+                                        setEditForm({ ...patient, memo: editForm.memo }); // Revert profile fields
                                     }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.borderColor = 'var(--color-border)';
-                                        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>カナ</label>
-                                <input
-                                    className="input"
-                                    value={editForm.kana || ''}
-                                    placeholder="カナ"
-                                    onChange={e => setEditForm({ ...editForm, kana: e.target.value })}
+                                    className="btn btn-ghost"
                                     style={{
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: '0.625rem 0.875rem',
-                                        fontSize: '1rem',
-                                        lineHeight: '1.5',
-                                        color: 'var(--color-text-main)',
-                                        backgroundColor: '#fff',
+                                        padding: '0.4rem 0.8rem',
+                                        height: 'auto',
+                                        fontSize: '0.875rem',
                                         border: '1px solid var(--color-border)',
-                                        borderRadius: 'var(--radius-md)',
-                                        boxShadow: 'var(--shadow-sm)',
-                                        transition: 'all 0.2s',
-                                        outline: 'none'
+                                        color: 'var(--color-text-muted)'
                                     }}
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = 'var(--color-primary)';
-                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.borderColor = 'var(--color-border)';
-                                        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                                    }}
-                                />
-                            </div>
+                                >
+                                    キャンセル
+                                </button>
+                            )}
+                            <button
+                                onClick={handleStatusToggle}
+                                className="btn btn-ghost"
+                                style={{
+                                    padding: '0.4rem 0.8rem',
+                                    height: 'auto',
+                                    fontSize: '0.875rem',
+                                    color: patient.is_active !== false ? 'var(--color-text-muted)' : 'var(--color-primary)',
+                                    border: '1px solid var(--color-border)',
+                                    backgroundColor: patient.is_active !== false ? 'transparent' : '#eff6ff',
+                                    borderRadius: '6px'
+                                }}
+                            >
+                                {patient.is_active !== false ? '完了にする' : '表示に戻す'}
+                            </button>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                            <div>
-                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>性別</label>
-                                <div style={{ position: 'relative' }}>
-                                    <select
+                    </div>
+
+                    {isEditing ? (
+                        <div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>氏名</label>
+                                    <input
                                         className="input"
-                                        value={editForm.gender}
-                                        onChange={e => setEditForm({ ...editForm, gender: e.target.value as any })}
-                                        style={{
-                                            display: 'block',
-                                            width: '100%',
-                                            padding: '0.625rem 0.875rem',
-                                            fontSize: '1rem',
-                                            lineHeight: '1.5',
-                                            color: 'var(--color-text-main)',
-                                            backgroundColor: '#fff',
-                                            border: '1px solid var(--color-border)',
-                                            borderRadius: 'var(--radius-md)',
-                                            boxShadow: 'var(--shadow-sm)',
-                                            transition: 'all 0.2s',
-                                            outline: 'none',
-                                            appearance: 'none'
-                                        }}
-                                        onFocus={(e) => {
-                                            e.currentTarget.style.borderColor = 'var(--color-primary)';
-                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
-                                        }}
-                                        onBlur={(e) => {
-                                            e.currentTarget.style.borderColor = 'var(--color-border)';
-                                            e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                                        }}
-                                    >
-                                        <option value="male">男性</option>
-                                        <option value="female">女性</option>
-                                        <option value="other">その他</option>
-                                    </select>
-                                    <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-text-muted)' }}>▼</div>
+                                        value={editForm.name || ''}
+                                        onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                        style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>カナ</label>
+                                    <input
+                                        className="input"
+                                        value={editForm.kana || ''}
+                                        placeholder="カナ"
+                                        onChange={e => setEditForm({ ...editForm, kana: e.target.value })}
+                                        style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                    />
                                 </div>
                             </div>
-                            <div>
-                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>生年月日</label>
-                                <input
-                                    type="date"
-                                    className="input"
-                                    value={editForm.dob}
-                                    onChange={e => setEditForm({ ...editForm, dob: e.target.value })}
-                                    style={{
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: '0.625rem 0.875rem',
-                                        fontSize: '1rem',
-                                        lineHeight: '1.5',
-                                        color: 'var(--color-text-main)',
-                                        backgroundColor: '#fff',
-                                        border: '1px solid var(--color-border)',
-                                        borderRadius: 'var(--radius-md)',
-                                        boxShadow: 'var(--shadow-sm)',
-                                        transition: 'all 0.2s',
-                                        outline: 'none'
-                                    }}
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = 'var(--color-primary)';
-                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.borderColor = 'var(--color-border)';
-                                        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                                    }}
-                                />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>性別</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <select
+                                            className="input"
+                                            value={editForm.gender}
+                                            onChange={e => setEditForm({ ...editForm, gender: e.target.value as any })}
+                                            style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', appearance: 'none' }}
+                                        >
+                                            <option value="male">男性</option>
+                                            <option value="female">女性</option>
+                                            <option value="other">その他</option>
+                                        </select>
+                                        <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-text-muted)' }}>▼</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>生年月日</label>
+                                    <input
+                                        type="date"
+                                        className="input"
+                                        value={editForm.dob || ''}
+                                        onChange={e => setEditForm({ ...editForm, dob: e.target.value })}
+                                        style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>住所</label>
-                            <input
-                                className="input"
-                                value={editForm.address || ''}
-                                placeholder="住所"
-                                onChange={e => setEditForm({ ...editForm, address: e.target.value })}
-                                style={{
-                                    display: 'block',
-                                    width: '100%',
-                                    padding: '0.625rem 0.875rem',
-                                    fontSize: '1rem',
-                                    lineHeight: '1.5',
-                                    color: 'var(--color-text-main)',
-                                    backgroundColor: '#fff',
-                                    border: '1px solid var(--color-border)',
-                                    borderRadius: 'var(--radius-md)',
-                                    boxShadow: 'var(--shadow-sm)',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--color-primary)';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--color-border)';
-                                    e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                                }}
-                            />
-                        </div>
-
-                        {/* Contact Info */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                            <div>
-                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>連絡先1</label>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>住所</label>
                                 <input
                                     className="input"
-                                    value={editForm.contact1 || ''}
-                                    placeholder="電話番号など"
-                                    onChange={e => setEditForm({ ...editForm, contact1: e.target.value })}
+                                    value={editForm.address || ''}
+                                    placeholder="住所"
+                                    onChange={e => setEditForm({ ...editForm, address: e.target.value })}
                                     style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
                                 />
                             </div>
-                            <div>
-                                <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>連絡先2</label>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+
+                            {/* Contact Info */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>連絡先1</label>
                                     <input
                                         className="input"
-                                        value={editForm.contact2 || ''}
+                                        value={editForm.contact1 || ''}
                                         placeholder="電話番号など"
-                                        onChange={e => setEditForm({ ...editForm, contact2: e.target.value })}
-                                        style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', flex: 1 }}
+                                        onChange={e => setEditForm({ ...editForm, contact1: e.target.value })}
+                                        style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
                                     />
-                                    <input
-                                        className="input"
-                                        value={editForm.contact2_memo || ''}
-                                        placeholder="メモ"
-                                        onChange={e => setEditForm({ ...editForm, contact2_memo: e.target.value })}
-                                        style={{ display: 'block', width: '100px', padding: '0.625rem 0.5rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
-                                    />
+                                </div>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>連絡先2</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <input
+                                            className="input"
+                                            value={editForm.contact2 || ''}
+                                            placeholder="電話番号など"
+                                            onChange={e => setEditForm({ ...editForm, contact2: e.target.value })}
+                                            style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', flex: 1 }}
+                                        />
+                                        <input
+                                            className="input"
+                                            value={editForm.contact2_memo || ''}
+                                            placeholder="メモ"
+                                            onChange={e => setEditForm({ ...editForm, contact2_memo: e.target.value })}
+                                            style={{ display: 'block', width: '100px', padding: '0.625rem 0.5rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    ) : (
+                        <div style={{ display: 'grid', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>氏名</label>
+                                    <div style={{ fontSize: '1.125rem', fontWeight: 500 }}>
+                                        {patient.name}
+                                        {patient.kana && <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>{patient.kana}</span>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>性別 / 生年月日</label>
+                                    <div style={{ fontSize: '1rem' }}>
+                                        {patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'}
+                                        <span style={{ margin: '0 0.5rem', color: 'var(--color-border)' }}>|</span>
+                                        {patient.dob.replace(/-/g, '/')}
+                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginLeft: '0.25rem' }}>
+                                            ({Math.floor((new Date().getTime() - new Date(patient.dob).getTime()) / 31557600000)}歳)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
 
-                        {/* Relations Info Section */}
+                            <div>
+                                <label className="label" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>住所</label>
+                                <div style={{ fontSize: '1rem' }}>{patient.address || '-'}</div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>連絡先1</label>
+                                    <div style={{ fontSize: '1rem' }}>{patient.contact1 || '-'}</div>
+                                </div>
+                                <div>
+                                    <label className="label" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>連絡先2</label>
+                                    <div style={{ fontSize: '1rem' }}>
+                                        {patient.contact2 || '-'}
+                                        {patient.contact2_memo && <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>({patient.contact2_memo})</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Relations Info Section */}
+                    {isEditing ? (
                         <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: 'var(--color-bg-subtle, #f8fafc)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)' }}>
                                 <Building2 size={20} /> 関係機関
@@ -534,303 +521,156 @@ export default function PatientDetail() {
                             </div>
                         </div>
 
+                    ) : (
+                        (() => {
+                            const hospital = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
+                            const pharmacy = institutions.find(i => i.name === patient.pharmacy_name && i.type === 'pharmacy');
+                            const careOffice = institutions.find(i => i.name === patient.home_care_office && i.type === 'care_office');
 
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="btn btn-primary" onClick={handleSaveProfile} disabled={savingProfile}>
-                                <Save size={18} /> 保存
-                            </button>
-                            <button className="btn btn-ghost" onClick={() => setIsEditingProfile(false)} disabled={savingProfile}>
-                                キャンセル
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    // VIEW MODE
-                    <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: '2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                            {patient.name}
-                            <span style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>様</span>
-                            {patient.is_active === false && (
-                                <span style={{ fontSize: '1rem', backgroundColor: '#9ca3af', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
-                                    完了
-                                </span>
-                            )}
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <button
-                                    onClick={() => {
-                                        setEditForm(patient)
-                                        setIsEditingProfile(true)
-                                    }}
-                                    className="btn btn-ghost"
-                                    style={{
-                                        padding: '0.4rem 0.8rem',
-                                        height: 'auto',
-                                        fontSize: '0.875rem',
-                                        color: 'var(--color-primary)',
-                                        border: '1px solid var(--color-primary-light, #e0e7ff)',
-                                        backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem',
-                                        borderRadius: '6px'
-                                    }}
-                                >
-                                    <Edit2 size={16} />
-                                    基本情報を編集
-                                </button>
-                                <button
-                                    onClick={handleStatusToggle}
-                                    className="btn btn-ghost"
-                                    style={{
-                                        padding: '0.4rem 0.8rem',
-                                        height: 'auto',
-                                        fontSize: '0.875rem',
-                                        color: patient.is_active !== false ? 'var(--color-text-muted)' : 'var(--color-primary)',
-                                        border: '1px solid var(--color-border)',
-                                        backgroundColor: patient.is_active !== false ? 'transparent' : '#eff6ff',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem',
-                                        borderRadius: '6px'
-                                    }}
-                                >
-                                    {patient.is_active !== false ? '完了にする' : '表示に戻す'}
-                                </button>
-                            </div>
-                        </h2>
-                        {!patient.is_active && (
-                            <div style={{ marginBottom: '1rem', padding: '0.5rem 1rem', backgroundColor: '#f3f4f6', borderRadius: '6px', fontSize: '0.875rem', color: '#4b5563', border: '1px solid #e5e7eb' }}>
-                                ※ この患者は現在「完了」ステータスになっています（一覧で非表示）
-                            </div>
-                        )}
-                        {patient.kana && <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{patient.kana}</div>}
-
-                        <div style={{ marginTop: '0.5rem', maxWidth: '800px' }}>
-                            <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '1rem 2rem' }}>
-                                <div>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>性別</span>
-                                    <span style={{ fontWeight: 500 }}>{patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'}</span>
-                                </div>
-                                <div>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>生年月日</span>
-                                    <span style={{ fontWeight: 500 }}>
-                                        {patient.dob.replace(/-/g, '/')}
-                                        <span style={{ marginLeft: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-                                            ({calculateAge(patient.dob)}歳)
-                                        </span>
-                                    </span>
-                                </div>
-                                <div style={{ gridColumn: '1 / -1' }}>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>住所</span>
-                                    <span style={{ fontWeight: 500 }}>{patient.address || '-'}</span>
-                                </div>
-                                <div>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先1</span>
-                                    <span style={{ fontWeight: 500 }}>{patient.contact1 || '-'}</span>
-                                </div>
-                                <div>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先2</span>
-                                    <span style={{ fontWeight: 500 }}>
-                                        {patient.contact2 || '-'}
-                                        {patient.contact2_memo && <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>({patient.contact2_memo})</span>}
-                                    </span>
-                                </div>
-
-                                <div className="mobile-stack" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
-                                    <div style={{ flex: 1, minWidth: '200px' }}>
-                                        <span style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>医療機関名</span>
-                                        <span style={{ fontWeight: 600, fontSize: '1.125rem', display: 'block' }}>{patient.medical_institution_name || '-'}</span>
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: '150px' }}>
-                                        <span style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>主治医</span>
-                                        <span style={{ fontWeight: 600, fontSize: '1.125rem' }}>{patient.primary_doctor || '-'}</span>
-                                    </div>
-                                    {(() => {
-                                        const inst = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
-                                        if (inst && (inst.tel || inst.fax)) {
-                                            return (
-                                                <div style={{ flex: 0, minWidth: 'auto' }}>
-                                                    <span style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>連絡先</span>
-                                                    <div style={{
-                                                        display: 'inline-flex',
-                                                        gap: '0.75rem',
-                                                        alignItems: 'center',
-                                                        backgroundColor: 'rgba(0,0,0,0.03)',
-                                                        padding: '0.3rem 0.8rem',
-                                                        borderRadius: '4px',
-                                                        fontSize: '1rem',
-                                                        color: 'var(--color-text-main)',
-                                                        border: '1px solid var(--color-border)'
-                                                    }}>
-                                                        {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.8rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{inst.tel}</span></a>}
-                                                        {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
-                                                        {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.8rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{inst.fax}</span></span>}
+                            return (
+                                <div style={{ marginTop: '1rem', display: 'grid', gap: '1rem', padding: '1.25rem', backgroundColor: 'var(--color-bg-subtle, #f8fafc)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', columnGap: '2rem', rowGap: '1rem' }}>
+                                        {/* Medical */}
+                                        <div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <Building2 size={13} /> 医療機関
+                                            </div>
+                                            <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.1rem' }}>{patient.medical_institution_name || '-'}</div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.8rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                                {patient.primary_doctor && <span>主治医: {patient.primary_doctor}</span>}
+                                                {hospital && hospital.tel && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                        <Phone size={12} />
+                                                        <a href={`tel:${hospital.tel}`} style={{ color: 'inherit', textDecoration: 'none' }}>{hospital.tel}</a>
                                                     </div>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
-                                </div>
+                                                )}
+                                            </div>
+                                        </div>
 
-                                <div className="mobile-stack" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
-                                    <div style={{ flex: 1, minWidth: '200px' }}>
-                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>居宅介護支援事業所</span>
-                                        <span style={{ fontWeight: 500, display: 'block' }}>{patient.home_care_office || '-'}</span>
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: '150px' }}>
-                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>ケアマネージャー</span>
-                                        <span style={{ fontWeight: 500 }}>{patient.care_manager || '-'}</span>
-                                    </div>
-                                    {(() => {
-                                        const inst = institutions.find(i => i.name === patient.home_care_office && i.type === 'care_office');
-                                        if (inst && (inst.tel || inst.fax)) {
-                                            return (
-                                                <div style={{ flex: 0, minWidth: 'auto' }}>
-                                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
-                                                    <div style={{
-                                                        display: 'inline-flex',
-                                                        gap: '0.75rem',
-                                                        alignItems: 'center',
-                                                        backgroundColor: 'rgba(0,0,0,0.03)',
-                                                        padding: '0.2rem 0.6rem',
-                                                        borderRadius: '4px',
-                                                        fontSize: '0.85rem',
-                                                        color: 'var(--color-text-main)',
-                                                        border: '1px solid var(--color-border)'
-                                                    }}>
-                                                        {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
-                                                        {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
-                                                        {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
-                                                    </div>
+                                        {/* Pharmacy */}
+                                        <div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <Building2 size={13} /> 薬局
+                                            </div>
+                                            <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.1rem' }}>{patient.pharmacy_name || '-'}</div>
+                                            {(pharmacy && (pharmacy.tel || pharmacy.fax)) && (
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.8rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                                    {pharmacy.tel && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                            <Phone size={12} />
+                                                            <a href={`tel:${pharmacy.tel}`} style={{ color: 'inherit', textDecoration: 'none' }}>{pharmacy.tel}</a>
+                                                        </div>
+                                                    )}
+                                                    {pharmacy.fax && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                            <Printer size={12} />
+                                                            <span>{pharmacy.fax}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
-                                </div>
-
-                                <div className="mobile-stack" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
-                                    <div style={{ flex: 1, minWidth: '200px' }}>
-                                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>担当薬局</span>
-                                        <span style={{ fontWeight: 500, display: 'block' }}>{patient.pharmacy_name || '-'}</span>
+                                            )}
+                                        </div>
                                     </div>
-                                    {(() => {
-                                        const inst = institutions.find(i => i.name === patient.pharmacy_name && i.type === 'pharmacy');
-                                        if (inst && (inst.tel || inst.fax)) {
-                                            return (
-                                                <div style={{ flex: 0, minWidth: 'auto' }}>
-                                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>連絡先</span>
-                                                    <div style={{
-                                                        display: 'inline-flex',
-                                                        gap: '0.75rem',
-                                                        alignItems: 'center',
-                                                        backgroundColor: 'rgba(0,0,0,0.03)',
-                                                        padding: '0.2rem 0.6rem',
-                                                        borderRadius: '4px',
-                                                        fontSize: '0.85rem',
-                                                        color: 'var(--color-text-main)',
-                                                        border: '1px solid var(--color-border)'
-                                                    }}>
-                                                        {inst.tel && <a href={`tel:${inst.tel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'inherit', textDecoration: 'none' }} title="電話をかける"><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>TEL</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.tel}</span></a>}
-                                                        {inst.tel && inst.fax && <span style={{ opacity: 0.3 }}>|</span>}
-                                                        {inst.fax && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ opacity: 0.7, fontSize: '0.75rem' }}>FAX</span> <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inst.fax}</span></span>}
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
-                <div>
-                    {!isEditingProfile && (
-                        <button
-                            onClick={() => {
-                                if (reports.length > 0) {
-                                    setShowCreateReportModal(true)
-                                } else {
-                                    // Default new report if no history
-                                    navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })
-                                }
-                            }}
-                            className="btn btn-primary"
-                        >
-                            <PlusCircle size={18} />
-                            報告書作成
-                        </button>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', columnGap: '2rem', rowGap: '1rem', borderTop: '1px dashed var(--color-border)', paddingTop: '1rem' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <Building2 size={13} /> 居宅介護支援事業所
+                                            </div>
+                                            <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.1rem' }}>{patient.home_care_office || '-'}</div>
+                                            {careOffice && careOffice.tel && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                                    <Phone size={12} />
+                                                    <a href={`tel:${careOffice.tel}`} style={{ color: 'inherit', textDecoration: 'none' }}>{careOffice.tel}</a>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <User size={13} /> ケアマネージャー
+                                            </div>
+                                            <div style={{ fontSize: '1rem', fontWeight: 500 }}>{patient.care_manager || '-'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()
                     )}
+
                 </div>
+
+
             </div>
 
+
+
+
             {/* Create Report Modal */}
-            {showCreateReportModal && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 100,
-                    padding: '1rem'
-                }}>
+            {
+                showCreateReportModal && (
                     <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '1.5rem',
-                        maxWidth: '400px',
-                        width: '100%',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 100,
+                        padding: '1rem'
                     }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
-                            報告書の作成
-                        </h3>
-                        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', lineHeight: '1.6' }}>
-                            直近の報告書（{reports[0]?.visit_date?.replace(/-/g, '/')}）の内容を引き継いで作成しますか？
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <button
-                                onClick={() => {
-                                    const latestReport = reports[0]
-                                    navigate('/reports/new', { state: { copyFrom: latestReport } })
-                                    setShowCreateReportModal(false)
-                                }}
-                                className="btn btn-primary"
-                                style={{ justifyContent: 'center', width: '100%' }}
-                            >
-                                <Copy size={18} />
-                                直近の内容を引き継いで作成
-                            </button>
-                            <button
-                                onClick={() => {
-                                    navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })
-                                    setShowCreateReportModal(false)
-                                }}
-                                className="btn btn-ghost"
-                                style={{ justifyContent: 'center', width: '100%', border: '1px solid var(--color-border)' }}
-                            >
-                                <PlusCircle size={18} />
-                                新規作成（引き継がない）
-                            </button>
-                            <button
-                                onClick={() => setShowCreateReportModal(false)}
-                                className="btn btn-ghost"
-                                style={{ justifyContent: 'center', width: '100%', color: 'var(--color-text-muted)' }}
-                            >
-                                キャンセル
-                            </button>
+                        <div style={{
+                            backgroundColor: 'white',
+                            borderRadius: '12px',
+                            padding: '1.5rem',
+                            maxWidth: '400px',
+                            width: '100%',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                        }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
+                                報告書の作成
+                            </h3>
+                            <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                                直近の報告書（{reports[0]?.visit_date?.replace(/-/g, '/')}）の内容を引き継いで作成しますか？
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <button
+                                    onClick={() => {
+                                        const latestReport = reports[0]
+                                        navigate('/reports/new', { state: { copyFrom: latestReport } })
+                                        setShowCreateReportModal(false)
+                                    }}
+                                    className="btn btn-primary"
+                                    style={{ justifyContent: 'center', width: '100%' }}
+                                >
+                                    <Copy size={18} />
+                                    直近の内容を引き継いで作成
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })
+                                        setShowCreateReportModal(false)
+                                    }}
+                                    className="btn btn-ghost"
+                                    style={{ justifyContent: 'center', width: '100%', border: '1px solid var(--color-border)' }}
+                                >
+                                    <PlusCircle size={18} />
+                                    新規作成（引き継がない）
+                                </button>
+                                <button
+                                    onClick={() => setShowCreateReportModal(false)}
+                                    className="btn btn-ghost"
+                                    style={{ justifyContent: 'center', width: '100%', color: 'var(--color-text-muted)' }}
+                                >
+                                    キャンセル
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
 
             {/* Memo Section - Enhanced Design */}
@@ -858,11 +698,6 @@ export default function PatientDetail() {
                     }}>
                         特記事項
                     </h3>
-                    {savingMemo && (
-                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <Clock size={14} /> 保存中...
-                        </span>
-                    )}
                 </div>
 
                 <div style={{ padding: '1.5rem' }}>
@@ -876,7 +711,7 @@ export default function PatientDetail() {
                         style={{
                             width: '100%',
                             minHeight: '120px',
-                            resize: 'none', // Disable manual resize as we auto-resize
+                            resize: 'none',
                             border: '1px solid var(--color-border)',
                             borderRadius: '8px',
                             padding: '1rem',
@@ -885,7 +720,7 @@ export default function PatientDetail() {
                             outline: 'none',
                             backgroundColor: 'var(--color-bg)',
                             transition: 'border-color 0.2s, box-shadow 0.2s',
-                            overflow: 'hidden' // Hide scrollbar
+                            overflow: 'hidden'
                         }}
                         onInput={(e) => {
                             e.currentTarget.style.height = 'auto';
@@ -901,25 +736,10 @@ export default function PatientDetail() {
                             e.currentTarget.style.boxShadow = 'none';
                             e.currentTarget.style.backgroundColor = 'var(--color-bg)';
                         }}
-                        placeholder="・アレルギー情報&#13;&#10;・家族構成やキーパーソン&#13;&#10;など、継続的に確認すべき事項を入力してください。"
-                        value={memo}
-                        onChange={(e) => setMemo(e.target.value)}
+                        placeholder="・訪問時の注意点&#13;&#10;・家族構成やキーパーソン&#13;&#10;など、継続的に確認すべき事項を入力してください。"
+                        value={editForm.memo || ''}
+                        onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
                     />
-
-                    <div style={{ textAlign: 'right', marginTop: '1rem' }}>
-                        <button
-                            onClick={handleSaveMemo}
-                            className="btn btn-primary"
-                            disabled={savingMemo}
-                            style={{
-                                padding: '0.6rem 2rem',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }}
-                        >
-                            <Save size={18} />
-                            変更を保存
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -1008,6 +828,72 @@ export default function PatientDetail() {
                     </div>
                 ))}
             </div>
+            {/* Sticky Footer */}
+            <div style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: 'white',
+                borderTop: '1px solid var(--color-border)',
+                padding: '1rem',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '1rem',
+                boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1)',
+                zIndex: 50
+            }}>
+                <button
+                    onClick={() => {
+                        if (reports.length > 0) {
+                            setShowCreateReportModal(true)
+                        } else {
+                            // Default new report if no history
+                            navigate('/reports/new', { state: { patientId: patient.id, patientName: patient.name, patientDob: patient.dob, patientGender: patient.gender } })
+                        }
+                    }}
+                    className="btn btn-primary"
+                    style={{
+                        padding: '0.75rem 2rem',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        backgroundColor: 'white',
+                        color: 'var(--color-primary)',
+                        border: '2px solid var(--color-primary)',
+                        borderRadius: '0.5rem',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}
+                >
+                    <PlusCircle size={20} />
+                    報告書作成
+                </button>
+                <button
+                    onClick={handleSaveAll}
+                    disabled={saving}
+                    className="btn btn-primary"
+                    style={{
+                        padding: '0.75rem 3rem',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'white',
+                        borderRadius: '0.5rem',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}
+                >
+                    <Save size={20} />
+                    {saving ? '保存中...' : '変更を保存'}
+                </button>
+            </div>
+
+            {/* Spacer for sticky footer */}
+            <div style={{ height: '80px' }} />
         </div >
     )
 }

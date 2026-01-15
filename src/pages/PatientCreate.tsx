@@ -140,48 +140,34 @@ export default function PatientCreate() {
                         <UserIcon size={20} /> 基本情報
                     </h3>
                     <div style={{ display: 'grid', gap: '1.5rem' }}>
-                        <div>
-                            <label className="label">氏名 <span style={{ color: 'red' }}>*</span></label>
-                            <input
-                                type="text"
-                                name="name"
-                                className="input"
-                                placeholder="例: 山田 太郎"
-                                required
-                                value={formData.name}
-                                onChange={handleChange}
-                            />
-                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div>
+                                <label className="label">氏名 <span style={{ color: 'red' }}>*</span></label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    className="input"
+                                    placeholder="例: 山田 太郎"
+                                    required
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                />
+                            </div>
 
-                        <div>
-                            <label className="label">フリガナ</label>
-                            <input
-                                type="text"
-                                name="kana"
-                                className="input"
-                                placeholder="例: ヤマダ タロウ"
-                                value={formData.kana}
-                                onChange={handleChange}
-                            />
+                            <div>
+                                <label className="label">フリガナ</label>
+                                <input
+                                    type="text"
+                                    name="kana"
+                                    className="input"
+                                    placeholder="例: ヤマダ タロウ"
+                                    value={formData.kana}
+                                    onChange={handleChange}
+                                />
+                            </div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-                            <div>
-                                <label className="label">生年月日 <span style={{ color: 'red' }}>*</span></label>
-                                <input
-                                    type="date"
-                                    name="dob"
-                                    className="input"
-                                    required
-                                    value={formData.dob}
-                                    onChange={handleChange}
-                                />
-                                {formData.dob && (
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block' }}>
-                                        {calculateAge(formData.dob)}歳
-                                    </span>
-                                )}
-                            </div>
                             <div>
                                 <label className="label">性別</label>
                                 <div style={{ position: 'relative' }}>
@@ -198,6 +184,22 @@ export default function PatientCreate() {
                                     </select>
                                     <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-text-muted)' }}>▼</div>
                                 </div>
+                            </div>
+                            <div>
+                                <label className="label">生年月日 <span style={{ color: 'red' }}>*</span></label>
+                                <input
+                                    type="date"
+                                    name="dob"
+                                    className="input"
+                                    required
+                                    value={formData.dob}
+                                    onChange={handleChange}
+                                />
+                                {formData.dob && (
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block' }}>
+                                        {calculateAge(formData.dob)}歳
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -378,12 +380,12 @@ export default function PatientCreate() {
 
                 {/* Memo Section */}
                 <div className="card" style={{ padding: '2rem' }}>
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--color-primary)' }}>申し送り事項・メモ</h3>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--color-primary)' }}>特記事項</h3>
                     <textarea
                         name="memo"
                         className="input"
                         rows={4}
-                        placeholder="患者に関する特記事項や申し送り..."
+                        placeholder="・訪問時の注意点&#13;&#10;・家族構成やキーパーソン&#13;&#10;など、継続的に確認すべき事項を入力してください。"
                         value={formData.memo}
                         onChange={handleChange}
                     />

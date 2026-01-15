@@ -1,15 +1,20 @@
 import { useNavigate } from 'react-router-dom'
-import { Search, User, ChevronRight } from 'lucide-react'
-import type { Patient } from '../types'
+import { Search, User, FilePlus, Copy, Plus } from 'lucide-react'
+import type { Patient, Report } from '../types'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import toast from 'react-hot-toast'
+
+import { calculateAge } from '../utils'
 
 export default function ReportList() {
     const [patients, setPatients] = useState<Patient[]>([])
     const [searchTerm, setSearchTerm] = useState('')
     const [showFinished, setShowFinished] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+    const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+    const [latestReport, setLatestReport] = useState<Report | null>(null)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -32,6 +37,70 @@ export default function ReportList() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleCreateReport = async (patient: Patient) => {
+        setSelectedPatient(patient)
+
+        // Fetch latest report for this patient
+        try {
+            const { data, error } = await supabase
+                .from('reports')
+                .select('*')
+                .eq('patient_id', patient.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle()
+
+            if (error) throw error
+
+            if (data) {
+                setLatestReport(data as Report)
+                setConfirmModalOpen(true)
+            } else {
+                // No previous report, create new directly
+                navigate('/reports/new', {
+                    state: {
+                        patientId: patient.id,
+                        patientName: patient.name,
+                        patientDob: patient.dob,
+                        patientGender: patient.gender
+                    }
+                })
+            }
+        } catch (error) {
+            console.error('Error fetching latest report:', error)
+            // On error, just go to new
+            navigate('/reports/new', {
+                state: {
+                    patientId: patient.id,
+                    patientName: patient.name,
+                    patientDob: patient.dob,
+                    patientGender: patient.gender
+                }
+            })
+        }
+    }
+
+    const handleConfirmCopy = () => {
+        if (!selectedPatient || !latestReport) return
+        navigate('/reports/new', {
+            state: {
+                copyFrom: latestReport
+            }
+        })
+    }
+
+    const handleConfirmNew = () => {
+        if (!selectedPatient) return
+        navigate('/reports/new', {
+            state: {
+                patientId: selectedPatient.id,
+                patientName: selectedPatient.name,
+                patientDob: selectedPatient.dob,
+                patientGender: selectedPatient.gender
+            }
+        })
     }
 
     const filteredPatients = patients.filter(p => {
@@ -121,16 +190,129 @@ export default function ReportList() {
                                             </span>
                                         )}
                                     </h3>
-                                    <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
-                                        {patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'} / {patient.dob.replace(/-/g, '/')}生
+                                    <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.9rem', color: 'var(--color-text-muted)', marginTop: '0.35rem', alignItems: 'center' }}>
+                                        <span style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            padding: '0.1rem 0.5rem',
+                                            borderRadius: '4px',
+                                            backgroundColor: patient.gender === 'female' ? '#fee2e2' : patient.gender === 'male' ? '#dbeafe' : '#f3f4f6',
+                                            color: patient.gender === 'female' ? '#991b1b' : patient.gender === 'male' ? '#1e40af' : '#374151',
+                                            fontSize: '0.8rem',
+                                            fontWeight: 500
+                                        }}>
+                                            {patient.gender === 'male' ? '男性' : patient.gender === 'female' ? '女性' : 'その他'}
+                                        </span>
+                                        <span>
+                                            {patient.dob.replace(/-/g, '/')}
+                                            <span style={{ marginLeft: '0.3rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
+                                                ({calculateAge(patient.dob)}歳)
+                                            </span>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                            <ChevronRight size={20} color="var(--color-text-muted)" />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginLeft: 'auto' }}>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleCreateReport(patient)
+                                    }}
+                                    className="btn"
+                                    style={{
+                                        background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark, #1d4ed8))',
+                                        color: 'white',
+                                        padding: '0.6rem 1.2rem',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        borderRadius: '50px',
+                                        border: 'none',
+                                        boxShadow: '0 4px 6px rgba(37, 99, 235, 0.2), 0 1px 3px rgba(37, 99, 235, 0.1)',
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-1px)'
+                                        e.currentTarget.style.boxShadow = '0 6px 8px rgba(37, 99, 235, 0.3), 0 2px 4px rgba(37, 99, 235, 0.15)'
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)'
+                                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(37, 99, 235, 0.2), 0 1px 3px rgba(37, 99, 235, 0.1)'
+                                    }}
+                                >
+                                    <FilePlus size={18} strokeWidth={2.5} />
+                                    <span>報告書作成</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}
             </div>
-        </div>
+
+            {/* Create Report Modal */}
+            {
+                confirmModalOpen && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '1rem'
+                    }} onClick={() => setConfirmModalOpen(false)}>
+                        <div style={{
+                            backgroundColor: 'white', borderRadius: '12px', width: '100%', maxWidth: '400px',
+                            padding: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                            animation: 'fadeIn 0.2s ease-out'
+                        }} onClick={e => e.stopPropagation()}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem', textAlign: 'center' }}>
+                                報告書の作成
+                            </h3>
+                            <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+                                前回の報告書が見つかりました。<br />
+                                内容をコピーして作成しますか？
+                            </p>
+
+                            <div style={{ display: 'grid', gap: '0.75rem' }}>
+                                <button
+                                    onClick={handleConfirmCopy}
+                                    className="btn btn-primary"
+                                    style={{
+                                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        gap: '0.5rem', padding: '0.75rem'
+                                    }}
+                                >
+                                    <Copy size={18} />
+                                    前回の内容をコピーして作成
+                                </button>
+
+                                <button
+                                    onClick={handleConfirmNew}
+                                    className="btn btn-outline"
+                                    style={{
+                                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        gap: '0.5rem', padding: '0.75rem'
+                                    }}
+                                >
+                                    <Plus size={18} />
+                                    新規作成
+                                </button>
+
+                                <button
+                                    onClick={() => setConfirmModalOpen(false)}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', color: 'var(--color-text-muted)',
+                                        background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem',
+                                        marginTop: '0.5rem'
+                                    }}
+                                >
+                                    キャンセル
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     )
 }

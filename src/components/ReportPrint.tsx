@@ -78,24 +78,24 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
                   </span>
                 )}
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
-                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '30%' }}>薬品名</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>現在残数</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>次回必要数</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>単位</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'left' }}>備考</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'left', width: '30%' }}>薬品名</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'center' }}>現在残数</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'center' }}>次回必要数</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'center' }}>単位</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'left' }}>備考</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.medications_check_list.map(item => (
                     <tr key={item.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                      <td style={{ padding: '0.5rem' }}>{item.name}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.current_amount}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.next_required_amount}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.unit}</td>
-                      <td style={{ padding: '0.5rem', color: '#6b7280' }}>{item.notes}</td>
+                      <td style={{ padding: '0.25rem' }}>{item.name}</td>
+                      <td style={{ padding: '0.25rem', textAlign: 'center' }}>{item.current_amount}</td>
+                      <td style={{ padding: '0.25rem', textAlign: 'center' }}>{item.next_required_amount}</td>
+                      <td style={{ padding: '0.25rem', textAlign: 'center' }}>{item.unit}</td>
+                      <td style={{ padding: '0.25rem', color: '#6b7280' }}>{item.notes}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -107,24 +107,24 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           {report.medications_check_list_prn && report.medications_check_list_prn.length > 0 && (
             <div style={{ marginBottom: '1rem' }}>
               <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem', color: '#4b5563' }}>臨時薬・その他</h4>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
-                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '30%' }}>薬品名</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>現在残数</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>次回必要数</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>単位</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'left' }}>備考</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'left', width: '30%' }}>薬品名</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'center' }}>現在残数</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'center' }}>次回必要数</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'center' }}>単位</th>
+                    <th style={{ padding: '0.25rem', textAlign: 'left' }}>備考</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.medications_check_list_prn.map(item => (
                     <tr key={item.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                      <td style={{ padding: '0.5rem' }}>{item.name}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.current_amount}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.next_required_amount}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.unit}</td>
-                      <td style={{ padding: '0.5rem', color: '#6b7280' }}>{item.notes}</td>
+                      <td style={{ padding: '0.25rem' }}>{item.name}</td>
+                      <td style={{ padding: '0.25rem', textAlign: 'center' }}>{item.current_amount}</td>
+                      <td style={{ padding: '0.25rem', textAlign: 'center' }}>{item.next_required_amount}</td>
+                      <td style={{ padding: '0.25rem', textAlign: 'center' }}>{item.unit}</td>
+                      <td style={{ padding: '0.25rem', color: '#6b7280' }}>{item.notes}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -138,30 +138,50 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
 
 
         {/* Instructions */}
-        <div className="print-section">
-          <h3>指導内容</h3>
-          <div className="print-row-block">
+        <div className="print-section" style={{ border: 'none', padding: 0 }}>
+          <h3 style={{
+            fontSize: '13px',
+            borderLeft: '4px solid #333',
+            paddingLeft: '8px',
+            marginBottom: '8px',
+            background: 'transparent'
+          }}>指導内容</h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid #e5e7eb' }}>
             {report.chief_complaint && (
-              <div className="print-row-block" style={{ marginBottom: '15px' }}>
-                <span className="print-label">主訴等</span>
-                <p className="print-value-block">{report.chief_complaint}</p>
+              <div style={{ display: 'flex', padding: '8px 4px', borderBottom: '1px solid #e5e7eb' }}>
+                <div style={{ width: '100px', fontSize: '11px', fontWeight: 'bold', color: '#666', paddingTop: '2px' }}>主訴等</div>
+                <div style={{ flex: 1, fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                  {report.chief_complaint}
+                </div>
               </div>
             )}
-            <span className="print-label">服薬指導</span>
-            <p className="print-value-block" style={{ minHeight: '100px' }}>{report.medication_instruction}</p>
+
+            <div style={{ display: 'flex', padding: '8px 4px', borderBottom: '1px solid #e5e7eb' }}>
+              <div style={{ width: '100px', fontSize: '11px', fontWeight: 'bold', color: '#666', paddingTop: '2px' }}>服薬指導</div>
+              <div style={{ flex: 1, fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: 1.5, minHeight: 'auto' }}>
+                {report.medication_instruction}
+              </div>
+            </div>
+
+            {report.side_effects && (
+              <div style={{ display: 'flex', padding: '8px 4px', borderBottom: '1px solid #e5e7eb' }}>
+                <div style={{ width: '100px', fontSize: '11px', fontWeight: 'bold', color: '#666', paddingTop: '2px' }}>その他伝達事項</div>
+                <div style={{ flex: 1, fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                  {report.side_effects}
+                </div>
+              </div>
+            )}
+
+            {report.next_visit_date && (
+              <div style={{ display: 'flex', padding: '8px 4px', borderBottom: '1px solid #e5e7eb' }}>
+                <div style={{ width: '100px', fontSize: '11px', fontWeight: 'bold', color: '#666' }}>次回訪問予定日</div>
+                <div style={{ flex: 1, fontSize: '12px', fontWeight: 'bold' }}>
+                  {report.next_visit_date.replace(/-/g, '/')}
+                </div>
+              </div>
+            )}
           </div>
-          {report.side_effects && (
-            <div className="print-row-block">
-              <span className="print-label">その他伝達事項</span>
-              <p className="print-value-block">{report.side_effects}</p>
-            </div>
-          )}
-          {report.next_visit_date && (
-            <div className="print-row-block">
-              <span className="print-label">次回訪問予定日</span>
-              <p className="print-value-block" style={{ minHeight: 'auto' }}>{report.next_visit_date.replace(/-/g, '/')}</p>
-            </div>
-          )}
         </div>
 
         {/* Plan */}
@@ -170,72 +190,74 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
 
       <style>{`
         .print-container {
-          padding: 20px;
+          padding: 12px;
           background: white;
           color: black;
           font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+          line-height: 1.3;
         }
         .print-header {
           text-align: center;
-          margin-bottom: 30px;
-          border-bottom: 2px solid #333;
-          padding-bottom: 10px;
+          margin-bottom: 8px;
+          border-bottom: 1px solid #333;
+          padding-bottom: 4px;
           position: relative;
         }
         .print-header h1 {
-          font-size: 24px;
+          font-size: 18px;
           margin: 0;
         }
         .print-date {
           position: absolute;
           right: 0;
-          bottom: 10px;
-          font-size: 12px;
+          bottom: 2px;
+          font-size: 10px;
         }
         .print-section {
-          margin-bottom: 20px;
-          border: 1px solid #ccc;
-          padding: 10px;
+          margin-bottom: 8px;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 8px;
+        }
+        .print-section:last-child {
+            border-bottom: none;
         }
         .print-section h3 {
-          font-size: 16px;
-          margin: 0 0 10px 0;
-          background: #eee;
-          padding: 5px;
-          border-left: 4px solid #666;
+          font-size: 13px;
+          margin: 0 0 6px 0;
+          font-weight: bold;
+          border-left: 3px solid #666;
+          padding-left: 6px;
         }
         .print-row {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 10px;
+          margin-bottom: 4px;
         }
         .print-item {
           display: flex;
-          gap: 10px;
+          gap: 6px;
           align-items: baseline;
         }
         .print-label {
           font-weight: bold;
-          font-size: 14px;
-          color: #444;
-          min-width: 80px;
+          font-size: 11px;
+          color: #333;
+          min-width: 60px;
         }
         .print-value {
-          font-size: 16px;
+          font-size: 13px;
         }
         .print-row-block {
-          margin-bottom: 15px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          padding: 8px;
-          background-color: #fafafa;
+          margin-bottom: 6px;
         }
         .print-value-block {
-          margin: 5px 0 0 0;
-          padding: 5px;
+          margin: 2px 0 0 4px;
+          padding: 0 0 0 8px;
+          border-left: 2px solid #ccc;
           white-space: pre-wrap;
-          font-size: 14px;
-          min-height: 2em;
+          font-size: 12px;
+          min-height: 1.2em;
+          line-height: 1.4;
         }
         @media print {
           @page {
@@ -248,7 +270,6 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           button {
             display: none !important;
           }
-          /* Hide everything else when printing if needed, though react-to-print handles this via portal */
         }
       `}</style>
     </div>
