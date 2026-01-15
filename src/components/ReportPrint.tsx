@@ -18,22 +18,19 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
         {/* Basic Info Row */}
         <div className="print-section">
           <div className="print-row">
-            <div className="print-item">
-              <span className="print-label">患者氏名</span>
-              <span className="print-value">{report.patient_name} 様</span>
-            </div>
-            <div className="print-item">
-              <span className="print-label">生年月日</span>
-              <span className="print-value">
-                {report.patient_dob.replace(/-/g, '/')}
-                <span style={{ fontSize: '14px', marginLeft: '0.5rem' }}>
+            <div className="print-item" style={{ flex: 2, borderRight: 'none', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+              <span className="print-value" style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                {report.patient_name} <span style={{ fontSize: '14px', fontWeight: 'normal' }}>様</span>
+              </span>
+              <span className="print-value" style={{ fontSize: '14px' }}>
+                {report.patient_dob.replace(/-/g, '/')}生
+                <span style={{ marginLeft: '0.5rem' }}>
                   ({calculateAge(report.patient_dob)}歳)
                 </span>
               </span>
-            </div>
-            <div className="print-item">
-              <span className="print-label">性別</span>
-              <span className="print-value">{report.patient_gender === 'male' ? '男性' : report.patient_gender === 'female' ? '女性' : 'その他'}</span>
+              <span className="print-value" style={{ fontSize: '14px' }}>
+                {report.patient_gender === 'male' ? '男性' : report.patient_gender === 'female' ? '女性' : 'その他'}
+              </span>
             </div>
           </div>
           <div className="print-row">
