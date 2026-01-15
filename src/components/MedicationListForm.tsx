@@ -79,10 +79,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                         padding: '0.75rem',
                         borderRadius: '6px'
                     }}>
-                        {/* Drug Name - Full width on mobile */}
-                        <div style={{ gridColumn: '1 / -1' }} className="details-desktop-only">
-                            <label className="label" style={{ fontSize: '0.9rem' }}>薬品名</label>
-                        </div>
+
                         <div className="mobile-full-width" style={{ gridColumn: 'span 1' }}>
                             <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>薬品名</label>
                             <input
@@ -118,20 +115,24 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                         </div>
                         <div className="mobile-stack-horizontal">
                             <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>単位</label>
-                            <select
+                            <input
+                                type="text"
+                                list={`unit-options-${item.id}`}
                                 className="input"
+                                placeholder="単位"
                                 value={item.unit}
                                 onChange={(e) => handleChange(index, 'unit', e.target.value)}
-                            >
-                                <option value="日分">日分</option>
-                                <option value="錠">錠</option>
-                                <option value="本">本</option>
-                                <option value="g">g</option>
-                                <option value="枚">枚</option>
-                                <option value="包">包</option>
-                                <option value="シート">シート</option>
-                                <option value="ml">ml</option>
-                            </select>
+                            />
+                            <datalist id={`unit-options-${item.id}`}>
+                                <option value="日分" />
+                                <option value="錠" />
+                                <option value="本" />
+                                <option value="g" />
+                                <option value="枚" />
+                                <option value="包" />
+                                <option value="シート" />
+                                <option value="ml" />
+                            </datalist>
                         </div>
 
                         {/* Notes - Full width on mobile */}
