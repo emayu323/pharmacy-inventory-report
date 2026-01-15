@@ -46,6 +46,7 @@ export interface Report {
   patient_dob: string; // ISO Date string 'YYYY-MM-DD'
   patient_gender: Gender;
   doctor_name: string;
+  medical_institution_name?: string;
   pharmacist_name: string;
 
   // Dates

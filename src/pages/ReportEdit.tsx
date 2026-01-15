@@ -14,6 +14,7 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     patient_dob: '',
     patient_gender: 'female',
     doctor_name: '',
+    medical_institution_name: '',
     pharmacist_name: '',
     prescription_date: new Date().toISOString().split('T')[0],
     dispensing_date: new Date().toISOString().split('T')[0],
@@ -224,6 +225,10 @@ export default function ReportEdit() {
                         <div>
                             <label className="label">処方医</label>
                             <input type="text" name="doctor_name" className="input" value={formData.doctor_name} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <label className="label">医療機関名</label>
+                            <input type="text" name="medical_institution_name" className="input" value={formData.medical_institution_name || ''} onChange={handleChange} />
                         </div>
                     </div>
                 </section>
