@@ -27,7 +27,11 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     next_visit_date: '',
     medications_check_list: [],
     medications_check_list_prn: [],
-    regular_medication_supply_until: ''
+    regular_medication_supply_until: '',
+    patient_address: '',
+    patient_contact1: '',
+    patient_contact2: '',
+    patient_contact2_memo: ''
 }
 
 export default function ReportEdit() {
@@ -257,6 +261,21 @@ export default function ReportEdit() {
                             <div>
                                 <label className="label">医療機関名</label>
                                 <input type="text" name="medical_institution_name" className="input" value={formData.medical_institution_name || ''} onChange={handleChange} />
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                                <label className="label">住所</label>
+                                <input type="text" name="patient_address" className="input" value={formData.patient_address || ''} onChange={handleChange} placeholder="住所を入力" />
+                            </div>
+                            <div>
+                                <label className="label">連絡先1</label>
+                                <input type="text" name="patient_contact1" className="input" value={formData.patient_contact1 || ''} onChange={handleChange} placeholder="電話番号など" />
+                            </div>
+                            <div>
+                                <label className="label">連絡先2</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input type="text" name="patient_contact2" className="input" value={formData.patient_contact2 || ''} onChange={handleChange} placeholder="電話番号など" style={{ flex: 1 }} />
+                                    <input type="text" name="patient_contact2_memo" className="input" value={formData.patient_contact2_memo || ''} onChange={handleChange} placeholder="メモ (家族/携帯など)" style={{ width: '140px' }} />
+                                </div>
                             </div>
                         </div>
                     )}

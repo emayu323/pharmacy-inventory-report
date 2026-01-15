@@ -34,6 +34,25 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             </div>
           </div>
           <div className="print-row">
+            <div className="print-item" style={{ flex: 1, borderTop: '1px solid #eee', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
+              <span className="print-label" style={{ minWidth: '60px' }}>住所</span>
+              <span className="print-value" style={{ fontSize: '14px' }}>{report.patient_address || '-'}</span>
+            </div>
+          </div>
+          <div className="print-row">
+            <div className="print-item" style={{ marginRight: '2rem' }}>
+              <span className="print-label" style={{ minWidth: '60px' }}>連絡先1</span>
+              <span className="print-value" style={{ fontSize: '14px' }}>{report.patient_contact1 || '-'}</span>
+            </div>
+            <div className="print-item">
+              <span className="print-label" style={{ minWidth: '60px' }}>連絡先2</span>
+              <span className="print-value" style={{ fontSize: '14px' }}>
+                {report.patient_contact2 || '-'}
+                {report.patient_contact2_memo && <span style={{ marginLeft: '0.5rem', fontSize: '0.85em', color: '#666' }}>({report.patient_contact2_memo})</span>}
+              </span>
+            </div>
+          </div>
+          <div className="print-row">
             <div className="print-item">
               <span className="print-label">医療機関名</span>
               <span className="print-value">{report.medical_institution_name}</span>
