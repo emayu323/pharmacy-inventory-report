@@ -1,5 +1,5 @@
 import type { MedicationCheckItem } from '../types'
-import { Plus, Trash2, GripVertical, ChevronDown } from 'lucide-react'
+import { Trash2, GripVertical, ChevronDown } from 'lucide-react'
 import {
     DndContext,
     closestCenter,
@@ -190,7 +190,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                 style={{ marginTop: '0.5rem', width: '100%', border: '1px dashed var(--color-border)' }}
                 type="button"
             >
-                <Plus size={16} /> ＋
+                ＋
             </button>
         </section>
     )
