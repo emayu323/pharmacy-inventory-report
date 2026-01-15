@@ -160,18 +160,8 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
             </DndContext>
 
             <style>{`
-                    /* Default: hidden on desktop */
-                    .desktop-hidden {
-                        display: none;
-                    }
-
                     @media (max-width: 640px) {
-                        /* Show on mobile */
-                        .desktop-hidden {
-                             display: block;
-                             margin-bottom: 0.25rem;
-                        }
-
+                         /* Mobile grid layout adjustments */
                         .mobile-card-item {
                              grid-template-columns: 1fr 1fr 1fr !important;
                              grid-template-rows: auto auto auto auto !important;
@@ -189,11 +179,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                             grid-column: 1 / -1 !important;
                         }
                         
-                        /* Hide desktop labels inside grid usually, but here we added them inline for mobile */
-                        .details-desktop-only {
-                            display: none !important;
-                        }
-
+                        /* Hide desktop header */
                         .desktop-only {
                              display: none !important;
                         }
@@ -262,7 +248,7 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
 
                 {/* Drug Name - Full width on mobile */}
                 <div className="mobile-full-width" style={{ gridColumn: 'span 1' }}>
-                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>薬品名</label>
+                    <label className="medication-row-label">薬品名</label>
                     <input
                         type="text"
                         className="input"
@@ -275,7 +261,7 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
 
                 {/* Amounts Row on Mobile */}
                 <div className="mobile-stack-horizontal">
-                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>残薬</label>
+                    <label className="medication-row-label">残薬</label>
                     <input
                         type="number"
                         className="input"
@@ -285,7 +271,7 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
-                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>処方数</label>
+                    <label className="medication-row-label">処方数</label>
                     <input
                         type="number"
                         className="input"
@@ -295,7 +281,7 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
-                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>現在残数</label>
+                    <label className="medication-row-label">現在残数</label>
                     <input
                         type="text"
                         className="input"
@@ -306,7 +292,7 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
-                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>必要数</label>
+                    <label className="medication-row-label">必要数</label>
                     <input
                         type="number"
                         className="input"
@@ -316,7 +302,7 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
-                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>単位</label>
+                    <label className="medication-row-label">単位</label>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <input
                             type="text"
@@ -368,7 +354,7 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
 
                 {/* Notes - Full width on mobile */}
                 <div className="mobile-full-width">
-                    <label className="label desktop-hidden" style={{ fontSize: '0.9rem' }}>備考</label>
+                    <label className="medication-row-label">備考</label>
                     <input
                         type="text"
                         className="input"

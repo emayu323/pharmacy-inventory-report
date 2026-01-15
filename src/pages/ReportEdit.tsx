@@ -355,6 +355,19 @@ export default function ReportEdit() {
           border-color: var(--color-primary);
           box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
+
+        /* Medication List Row Labels */
+        .medication-row-label {
+          display: none !important; /* Hide on Desktop by default */
+        }
+        @media (max-width: 640px) {
+          .medication-row-label {
+            display: block !important; /* Show on Mobile */
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+          }
+        }
       `}</style>
         </div>
     )
