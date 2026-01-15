@@ -272,8 +272,8 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
                             style={{
                                 position: 'absolute',
                                 top: 0,
-                                left: 0,
-                                width: '100%',
+                                right: 0,
+                                width: '2rem',
                                 height: '100%',
                                 opacity: 0,
                                 cursor: 'pointer'
