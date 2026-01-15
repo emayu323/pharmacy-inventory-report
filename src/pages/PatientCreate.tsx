@@ -5,6 +5,8 @@ import { ArrowLeft, Save, User as UserIcon, Building2 } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../contexts/AuthProvider'
 import type { Institution, InstitutionType, Gender } from '../types'
+import toast from 'react-hot-toast'
+import { calculateAge } from '../utils'
 
 export default function PatientCreate() {
     const navigate = useNavigate()
@@ -69,7 +71,7 @@ export default function PatientCreate() {
         e.preventDefault()
 
         if (!formData.name || !formData.dob) {
-            alert('氏名と生年月日は必須です')
+            toast.error('氏名と生年月日は必須です')
             return
         }
 
@@ -101,15 +103,15 @@ export default function PatientCreate() {
 
             if (error) throw error
 
-            alert('患者登録を行いました')
+            toast.success('患者登録を行いました')
             if (data) {
-                navigate(`/ patients / ${data.id} `)
+                navigate(`/patients/${data.id}`)
             } else {
                 navigate('/')
             }
         } catch (error) {
             console.error('Error creating patient:', error)
-            alert('登録に失敗しました')
+            toast.error('登録に失敗しました')
         } finally {
             setLoading(false)
         }
@@ -168,6 +170,11 @@ export default function PatientCreate() {
                                     value={formData.dob}
                                     onChange={handleChange}
                                 />
+                                {formData.dob && (
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block' }}>
+                                        {calculateAge(formData.dob)}歳
+                                    </span>
+                                )}
                             </div>
                             <div>
                                 <label className="label">性別</label>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, Edit2, Building2, Stethoscope, Contact } from 'lucide-react'
 import { supabase } from '../supabase'
 import type { Institution, InstitutionType } from '../types'
+import toast from 'react-hot-toast'
 
 export default function InstitutionList() {
     const navigate = useNavigate()
@@ -26,7 +27,7 @@ export default function InstitutionList() {
             setInstitutions(data as Institution[])
         } catch (error) {
             console.error('Error fetching institutions:', error)
-            alert('データの取得に失敗しました')
+            toast.error('データの取得に失敗しました')
         } finally {
             setLoading(false)
         }

@@ -3,6 +3,7 @@ import { Search, User, ChevronRight } from 'lucide-react'
 import type { Patient } from '../types'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
+import toast from 'react-hot-toast'
 
 export default function ReportList() {
     const [patients, setPatients] = useState<Patient[]>([])
@@ -27,7 +28,7 @@ export default function ReportList() {
             if (data) setPatients(data as Patient[])
         } catch (error) {
             console.error('Error fetching patients:', error)
-            alert('データの取得に失敗しました')
+            toast.error('データの取得に失敗しました')
         } finally {
             setLoading(false)
         }

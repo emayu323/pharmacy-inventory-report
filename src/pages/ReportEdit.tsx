@@ -7,6 +7,8 @@ import { supabase } from '../supabase'
 import type { Report } from '../types'
 import MedicationListForm from '../components/MedicationListForm'
 import { useAuth } from '../contexts/AuthProvider'
+import toast from 'react-hot-toast'
+import { calculateAge } from '../utils'
 
 // Mock for edit, would fetch based on ID in real app
 const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
@@ -163,11 +165,11 @@ export default function ReportEdit() {
                 if (insertError) throw insertError
             }
 
-            alert('保存しました')
+            toast.success('保存しました')
             navigate('/reports')
         } catch (error) {
             console.error(error)
-            alert('保存に失敗しました')
+            toast.error('保存に失敗しました')
         }
     }
 
@@ -212,7 +214,13 @@ export default function ReportEdit() {
                         </div>
                         <div>
                             <label className="label">生年月日</label>
+                            <label className="label">生年月日</label>
                             <input type="date" name="patient_dob" className="input" required value={formData.patient_dob} onChange={handleChange} />
+                            {formData.patient_dob && (
+                                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block' }}>
+                                    {calculateAge(formData.patient_dob)}歳
+                                </span>
+                            )}
                         </div>
                         <div>
                             <label className="label">性別</label>

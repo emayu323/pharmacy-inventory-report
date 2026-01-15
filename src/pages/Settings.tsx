@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthProvider'
 import { supabase } from '../supabase'
 import { Save, User as UserIcon } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function Settings() {
     const { user } = useAuth()
     const [displayName, setDisplayName] = useState('')
     const [isLoading, setIsLoading] = useState(false)
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
     useEffect(() => {
         if (user?.user_metadata?.display_name) {
@@ -18,7 +18,6 @@ export default function Settings() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
-        setMessage(null)
 
         try {
             const { error } = await supabase.auth.updateUser({
@@ -27,11 +26,11 @@ export default function Settings() {
 
             if (error) throw error
 
-            setMessage({ type: 'success', text: '設定を保存しました' })
+            toast.success('設定を保存しました')
             // Refresh logic might be handled by AuthProvider subscription automatically
         } catch (error: any) {
             console.error(error)
-            setMessage({ type: 'error', text: `保存に失敗しました: ${error.message}` })
+            toast.error(`保存に失敗しました: ${error.message}`)
         } finally {
             setIsLoading(false)
         }
@@ -79,18 +78,6 @@ export default function Settings() {
                             報告書の「担当薬剤師」欄に自動入力されます
                         </p>
                     </div>
-
-                    {message && (
-                        <div style={{
-                            padding: '0.75rem',
-                            borderRadius: '6px',
-                            backgroundColor: message.type === 'success' ? '#ecfdf5' : '#fef2f2',
-                            color: message.type === 'success' ? '#047857' : '#b91c1c',
-                            fontSize: '0.9rem'
-                        }}>
-                            {message.text}
-                        </div>
-                    )}
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <button

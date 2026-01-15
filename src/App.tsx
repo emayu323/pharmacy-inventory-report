@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { FileText, PlusCircle, User, Calendar, LogOut, Building2, Menu, X } from 'lucide-react'
+import { Toaster } from 'react-hot-toast'
 import { useAuth } from './contexts/AuthProvider'
 import { useState, useEffect } from 'react'
 
@@ -16,6 +17,7 @@ function ProtectedLayout() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Toaster position="bottom-center" />
       <header style={{
         backgroundColor: 'var(--color-surface)',
         borderBottom: '1px solid var(--color-border)',

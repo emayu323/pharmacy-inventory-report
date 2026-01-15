@@ -1,5 +1,5 @@
 import type { MedicationCheckItem } from '../types'
-import { Plus, Trash2, ArrowUp, ArrowDown, GripVertical, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, GripVertical, ChevronDown } from 'lucide-react'
 import {
     DndContext,
     closestCenter,
@@ -72,17 +72,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
         onUpdate(newList)
     }
 
-    const handleMove = (index: number, direction: -1 | 1) => {
-        const newList = [...items]
-        const newIndex = index + direction
 
-        if (newIndex >= 0 && newIndex < newList.length) {
-            const temp = newList[index]
-            newList[index] = newList[newIndex]
-            newList[newIndex] = temp
-            onUpdate(newList)
-        }
-    }
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -133,15 +123,7 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                         fontWeight: 'bold',
                         color: 'var(--color-text-secondary)'
                     }}>
-                        <div></div> {/* Handle */}
-                        <div>薬品名</div>
-                        <div>残薬</div>
-                        <div>処方数</div>
-                        <div>現在残数</div>
-                        <div>必要数</div>
-                        <div>単位</div>
-                        <div>備考</div>
-                        <div></div> {/* Actions */}
+                        {/* Headers removed as per user request */}
                     </div>
                     <div className="mobile-card-view" style={{ display: 'grid', gap: '0.5rem' }}>
                         {items.map((item, index) => (
@@ -151,8 +133,6 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                                 index={index}
                                 onChange={handleChange}
                                 onRemove={handleRemove}
-                                onMove={handleMove}
-                                itemsLength={items.length}
                             />
                         ))}
                     </div>
@@ -202,20 +182,18 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                 style={{ marginTop: '0.5rem', width: '100%', border: '1px dashed var(--color-border)' }}
                 type="button"
             >
-                <Plus size={16} /> 薬剤を追加
+                <Plus size={16} /> ＋
             </button>
         </section>
     )
 }
 
 // Sub-component for Sortable Item
-function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: {
+function SortableItem({ item, index, onChange, onRemove }: {
     item: MedicationCheckItem,
     index: number,
     onChange: (index: number, field: keyof MedicationCheckItem, value: any) => void,
-    onRemove: (index: number) => void,
-    onMove: (index: number, direction: -1 | 1) => void,
-    itemsLength: number
+    onRemove: (index: number) => void
 }) {
     const {
         attributes,
@@ -248,7 +226,6 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
 
                 {/* Drug Name - Full width on mobile */}
                 <div className="mobile-full-width" style={{ gridColumn: 'span 1' }}>
-                    <label className="medication-row-label">薬品名</label>
                     <input
                         type="text"
                         className="input"
@@ -261,7 +238,6 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
 
                 {/* Amounts Row on Mobile */}
                 <div className="mobile-stack-horizontal">
-                    <label className="medication-row-label">残薬</label>
                     <input
                         type="number"
                         className="input"
@@ -271,7 +247,6 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
-                    <label className="medication-row-label">処方数</label>
                     <input
                         type="number"
                         className="input"
@@ -281,7 +256,6 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
-                    <label className="medication-row-label">現在残数</label>
                     <input
                         type="text"
                         className="input"
@@ -292,7 +266,6 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
-                    <label className="medication-row-label">必要数</label>
                     <input
                         type="number"
                         className="input"
@@ -302,7 +275,6 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
                     />
                 </div>
                 <div className="mobile-stack-horizontal">
-                    <label className="medication-row-label">単位</label>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <input
                             type="text"
@@ -354,7 +326,6 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
 
                 {/* Notes - Full width on mobile */}
                 <div className="mobile-full-width">
-                    <label className="medication-row-label">備考</label>
                     <input
                         type="text"
                         className="input"
@@ -366,26 +337,6 @@ function SortableItem({ item, index, onChange, onRemove, onMove, itemsLength }: 
 
                 {/* Actions - Flex row on mobile */}
                 <div className="mobile-actions" style={{ display: 'contents' }}>
-                    <button
-                        onClick={() => onMove(index, -1)}
-                        disabled={index === 0}
-                        className="btn btn-ghost"
-                        style={{ padding: '0.25rem', opacity: index === 0 ? 0.3 : 1 }}
-                        title="上に移動"
-                        type="button"
-                    >
-                        <ArrowUp size={16} />
-                    </button>
-                    <button
-                        onClick={() => onMove(index, 1)}
-                        disabled={index === itemsLength - 1}
-                        className="btn btn-ghost"
-                        style={{ padding: '0.25rem', opacity: index === itemsLength - 1 ? 0.3 : 1 }}
-                        title="下に移動"
-                        type="button"
-                    >
-                        <ArrowDown size={16} />
-                    </button>
                     <button
                         onClick={() => onRemove(index)}
                         className="btn btn-ghost"

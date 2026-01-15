@@ -1,5 +1,6 @@
 import type { Report } from '../types'
 import React from 'react'
+import { calculateAge } from '../utils'
 
 interface Props {
   report: Omit<Report, 'id' | 'created_at' | 'updated_at'>
@@ -23,7 +24,12 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             </div>
             <div className="print-item">
               <span className="print-label">生年月日</span>
-              <span className="print-value">{report.patient_dob.replace(/-/g, '/')}</span>
+              <span className="print-value">
+                {report.patient_dob.replace(/-/g, '/')}
+                <span style={{ fontSize: '14px', marginLeft: '0.5rem' }}>
+                  ({calculateAge(report.patient_dob)}歳)
+                </span>
+              </span>
             </div>
             <div className="print-item">
               <span className="print-label">性別</span>

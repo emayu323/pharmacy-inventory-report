@@ -4,6 +4,8 @@ import { ArrowLeft, Save, Trash2 } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../contexts/AuthProvider'
 import type { InstitutionType } from '../types'
+import toast from 'react-hot-toast'
+import ConfirmToast from '../components/ConfirmToast'
 
 export default function InstitutionEdit() {
     const { id } = useParams()
@@ -48,7 +50,7 @@ export default function InstitutionEdit() {
             })
         } catch (error) {
             console.error('Error fetching institution:', error)
-            alert('データの取得に失敗しました')
+            toast.error('データの取得に失敗しました')
             navigate('/institutions')
         } finally {
             setFetching(false)
@@ -58,7 +60,7 @@ export default function InstitutionEdit() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.name) {
-            alert('名称を入力してください')
+            toast.error('名称を入力してください')
             return
         }
 
@@ -94,33 +96,17 @@ export default function InstitutionEdit() {
                 if (error) throw error
             }
 
+            toast.success('保存しました')
             navigate('/institutions')
         } catch (error) {
             console.error('Error saving institution:', error)
-            alert('保存に失敗しました')
+            toast.error('保存に失敗しました')
         } finally {
             setLoading(false)
         }
     }
 
-    const handleDelete = async () => {
-        if (!window.confirm('本当に削除しますか？')) return
 
-        try {
-            setLoading(true)
-            const { error } = await supabase
-                .from('institutions')
-                .delete()
-                .eq('id', id)
-
-            if (error) throw error
-            navigate('/institutions')
-        } catch (error) {
-            console.error('Error deleting institution:', error)
-            alert('削除に失敗しました')
-            setLoading(false)
-        }
-    }
 
 
 
@@ -241,7 +227,30 @@ export default function InstitutionEdit() {
                     {id ? (
                         <button
                             type="button"
-                            onClick={handleDelete}
+                            onClick={() => {
+                                toast((t) => (
+                                    <ConfirmToast
+                                        t={t}
+                                        message="本当にこの機関を削除しますか？"
+                                        confirmText="削除する"
+                                        type="danger"
+                                        onConfirm={async () => {
+                                            try {
+                                                const { error } = await supabase
+                                                    .from('institutions')
+                                                    .delete()
+                                                    .eq('id', id)
+                                                if (error) throw error
+                                                toast.success('削除しました')
+                                                navigate('/institutions')
+                                            } catch (error) {
+                                                console.error('Error deleting institution:', error)
+                                                toast.error('削除に失敗しました')
+                                            }
+                                        }}
+                                    />
+                                ), { duration: Infinity, position: 'top-center' })
+                            }}
                             className="btn btn-ghost"
                             style={{ color: 'red' }}
                         >

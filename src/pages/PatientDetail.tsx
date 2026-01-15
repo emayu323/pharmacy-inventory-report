@@ -3,6 +3,9 @@ import { ArrowLeft, User, PlusCircle, Calendar, Edit2, Save, Clock, Copy, Buildi
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import type { Patient, Report, Institution, InstitutionType } from '../types'
+import toast from 'react-hot-toast'
+import ConfirmToast from '../components/ConfirmToast'
+import { calculateAge } from '../utils'
 
 export default function PatientDetail() {
     const { id } = useParams()
@@ -57,7 +60,7 @@ export default function PatientDetail() {
 
     const handleSaveProfile = async () => {
         if (!patient || !editForm.name || !editForm.dob || !editForm.gender) {
-            alert('必須項目を入力してください')
+            toast.error('必須項目を入力してください')
             return
         }
         try {
@@ -82,10 +85,10 @@ export default function PatientDetail() {
 
             setPatient({ ...patient, ...editForm } as Patient)
             setIsEditingProfile(false)
-            alert('基本情報を更新しました')
+            toast.success('基本情報を更新しました')
         } catch (error) {
             console.error('Error updating profile:', error)
-            alert('更新に失敗しました')
+            toast.error('更新に失敗しました')
         } finally {
             setSavingProfile(false)
         }
@@ -122,7 +125,7 @@ export default function PatientDetail() {
 
         } catch (error) {
             console.error('Error fetching data:', error)
-            alert('データの読み込みに失敗しました')
+            toast.error('データの読み込みに失敗しました')
         } finally {
             setLoading(false)
         }
@@ -138,10 +141,10 @@ export default function PatientDetail() {
                 .eq('id', patient.id)
 
             if (error) throw error
-            alert('申し送り事項を保存しました')
+            toast.success('申し送り事項を保存しました')
         } catch (error) {
             console.error('Error saving memo:', error)
-            alert('保存に失敗しました')
+            toast.error('保存に失敗しました')
         } finally {
             setSavingMemo(false)
         }
@@ -154,20 +157,32 @@ export default function PatientDetail() {
             ? 'この患者を「表示」に戻しますか？'
             : 'この患者を「完了」（非表示）にしますか？\n（一覧画面で「完了した患者を表示」を選択すると確認できます）'
 
-        if (!window.confirm(confirmMsg)) return
+        toast((t) => (
+            <ConfirmToast
+                t={t}
+                message={confirmMsg}
+                confirmText={newStatus ? '戻す' : '完了にする'}
+                type={newStatus ? 'info' : 'danger'}
+                onConfirm={async () => {
+                    try {
+                        const { error } = await supabase
+                            .from('patients')
+                            .update({ is_active: newStatus })
+                            .eq('id', patient.id)
 
-        try {
-            const { error } = await supabase
-                .from('patients')
-                .update({ is_active: newStatus })
-                .eq('id', patient.id)
-
-            if (error) throw error
-            setPatient({ ...patient, is_active: newStatus })
-        } catch (e) {
-            console.error(e)
-            alert('更新に失敗しました')
-        }
+                        if (error) throw error
+                        setPatient({ ...patient, is_active: newStatus })
+                        toast.success(newStatus ? '表示に戻しました' : '完了にしました')
+                    } catch (e) {
+                        console.error(e)
+                        toast.error('更新に失敗しました')
+                    }
+                }}
+            />
+        ), {
+            duration: Infinity,
+            position: 'top-center'
+        })
     }
 
     if (loading) return <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>読み込み中...</div>
@@ -562,7 +577,12 @@ export default function PatientDetail() {
                                 </div>
                                 <div>
                                     <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>生年月日</span>
-                                    <span style={{ fontWeight: 500 }}>{patient.dob.replace(/-/g, '/')}</span>
+                                    <span style={{ fontWeight: 500 }}>
+                                        {patient.dob.replace(/-/g, '/')}
+                                        <span style={{ marginLeft: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                                            ({calculateAge(patient.dob)}歳)
+                                        </span>
+                                    </span>
                                 </div>
                                 <div style={{ gridColumn: '1 / -1' }}>
                                     <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'block' }}>住所</span>
