@@ -332,7 +332,20 @@ export default function ReportEdit() {
                     </div>
                 </section>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <div style={{
+                    position: 'sticky',
+                    bottom: '0',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    padding: '1rem',
+                    margin: '0 -1rem -1rem -1rem', // Negative margin to stretch to edges if container has padding
+                    borderTop: '1px solid var(--color-border)',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: '1rem',
+                    zIndex: 50,
+                    boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.05)'
+                }}>
                     <button type="button" onClick={() => handlePrint()} className="btn btn-ghost" style={{ border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}>
                         <span style={{ marginRight: '0.5rem' }}>🖨️</span> 印刷 / PDFプレビュー
                     </button>
