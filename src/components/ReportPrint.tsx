@@ -77,11 +77,9 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
               </tr>
               <tr>
                 <td className="label-cell">アレルギー</td>
-                <td className="value-cell" colSpan={5}>{report.allergy_history}</td>
-              </tr>
-              <tr>
+                <td className="value-cell" colSpan={2}>{report.allergy_history}</td>
                 <td className="label-cell">相互作用</td>
-                <td className="value-cell" colSpan={5}>{report.interaction_status}</td>
+                <td className="value-cell" colSpan={2}>{report.interaction_status}</td>
               </tr>
             </tbody>
           </table>
