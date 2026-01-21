@@ -39,59 +39,102 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     interaction_status: '併用薬/飲食物による相互作用なし',
 }
 
-const SelectWithCustom = ({ label, name, value, options, onChange }: {
+const EditableSelect = ({ label, name, value, options, onChange }: {
     label: string,
     name: string,
     value: string,
     options: string[],
     onChange: (e: React.ChangeEvent<any>) => void
 }) => {
-    const isCustom = !options.includes(value || '');
-    // If empty string, treat as "preset" if "preset" has empty? No, "preset" usually has "None".
-    // If value is empty, it might be initial state.
-    // If options has "None", and value is "None", isCustom=false.
-    // If value is "", and "" not in options, isCustom=true (but visually might be awkward).
-    // However, our defaults are "None" etc. so it should be fine.
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    // UI Logic:
-    // If isCustom is true, Select shows "custom". Input shows value.
-    // If isCustom is false, Select shows value. Input hidden.
+    // Close on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
-    const selectValue = isCustom ? 'custom' : value;
-
-    const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const val = e.target.value;
-        if (val === 'custom') {
-            onChange({ target: { name, value: '' } } as any);
-        } else {
-            onChange({ target: { name, value: val } } as any);
-        }
+    const handleSelect = (val: string) => {
+        onChange({ target: { name, value: val } } as any);
+        setIsOpen(false);
     };
 
     return (
-        <div>
+        <div ref={containerRef} style={{ position: 'relative' }}>
             <label className="label">{label}</label>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <select
+            <div style={{ position: 'relative' }}>
+                <input
+                    type="text"
+                    name={name}
                     className="input"
-                    value={selectValue}
-                    onChange={handleSelectChange}
-                    style={{ flex: isCustom ? '0 0 auto' : '1', width: isCustom ? 'auto' : '100%', minWidth: '120px' }}
+                    value={value || ''}
+                    onChange={onChange}
+                    onFocus={() => setIsOpen(true)}
+                    placeholder="選択または入力..."
+                    style={{ paddingRight: '2.5rem' }}
+                    autoComplete="off"
+                />
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    style={{
+                        position: 'absolute',
+                        right: '0',
+                        top: '0',
+                        bottom: '0',
+                        padding: '0 0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--color-text-muted)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
                 >
-                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    <option value="custom">自由記載</option>
-                </select>
-                {isCustom && (
-                    <input
-                        type="text"
-                        name={name}
-                        className="input"
-                        value={value || ''}
-                        onChange={onChange}
-                        placeholder="自由に入力してください"
-                        style={{ flex: 1, minWidth: '200px' }}
-                        autoFocus
-                    />
+                    <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+                </button>
+
+                {isOpen && (
+                    <ul style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        backgroundColor: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)',
+                        marginTop: '0.25rem',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        boxShadow: 'var(--shadow-lg)',
+                        zIndex: 100,
+                        listStyle: 'none',
+                        padding: '0.25rem 0'
+                    }}>
+                        {options.map((opt) => (
+                            <li
+                                key={opt}
+                                onClick={() => handleSelect(opt)}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.925rem',
+                                    transition: 'background-color 0.1s',
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-background)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                {opt}
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </div>
         </div>
@@ -362,28 +405,28 @@ export default function ReportEdit() {
                         状況確認
                     </h3>
                     <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-                        <SelectWithCustom
+                        <EditableSelect
                             label="アレルギー/副作用歴"
                             name="allergy_history"
                             value={formData.allergy_history || ''}
                             options={['なし']}
                             onChange={handleChange}
                         />
-                        <SelectWithCustom
+                        <EditableSelect
                             label="指導を受けた人"
                             name="guidance_recipient"
                             value={formData.guidance_recipient || ''}
                             options={['家族', '本人']}
                             onChange={handleChange}
                         />
-                        <SelectWithCustom
+                        <EditableSelect
                             label="服薬状況"
                             name="medication_status"
                             value={formData.medication_status || ''}
                             options={['良好', '問題なし', '不良']}
                             onChange={handleChange}
                         />
-                        <SelectWithCustom
+                        <EditableSelect
                             label="保管状況"
                             name="storage_status"
                             value={formData.storage_status || ''}
@@ -391,7 +434,7 @@ export default function ReportEdit() {
                             onChange={handleChange}
                         />
 
-                        <SelectWithCustom
+                        <EditableSelect
                             label="他科受診"
                             name="other_dept_consultation"
                             value={formData.other_dept_consultation || ''}
@@ -399,7 +442,7 @@ export default function ReportEdit() {
                             onChange={handleChange}
                         />
 
-                        <SelectWithCustom
+                        <EditableSelect
                             label="併用薬"
                             name="concomitant_medications"
                             value={formData.concomitant_medications || ''}
@@ -408,7 +451,7 @@ export default function ReportEdit() {
                         />
 
                         <div style={{ gridColumn: '1 / -1' }}>
-                            <SelectWithCustom
+                            <EditableSelect
                                 label="相互作用"
                                 name="interaction_status"
                                 value={formData.interaction_status || ''}
