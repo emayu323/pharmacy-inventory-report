@@ -310,16 +310,61 @@ export default function ReportEdit() {
         setFormData(prev => ({ ...prev, [name]: value }))
     }
 
+    const scrollToSection = (id: string) => {
+        const element = document.getElementById(id);
+        if (element) {
+            const offset = 80; // Offset for sticky headers if any
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: "smooth"
+            });
+        }
+    }
+
     return (
         <div>
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{
+                marginBottom: '1.5rem',
+                position: 'sticky',
+                top: 0,
+                zIndex: 40,
+                backgroundColor: 'var(--color-background)',
+                margin: '0 -1rem 1.5rem -1rem',
+                padding: '1rem 1rem 0.5rem 1rem',
+                borderBottom: '1px solid var(--color-border)'
+            }}>
                 <button onClick={() => navigate(-1)} className="btn btn-ghost" style={{ paddingLeft: 0, marginBottom: '0.5rem' }}>
                     <ArrowLeft size={18} />
                     戻る
                 </button>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>
-                    {id ? '報告書編集' : '新規報告書作成'}
-                </h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>
+                        {id ? '報告書編集' : '新規報告書作成'}
+                    </h2>
+
+                    {/* Quick Navigation Bar */}
+                    <div style={{
+                        display: 'flex',
+                        gap: '0.5rem',
+                        overflowX: 'auto',
+                        padding: '0.5rem',
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)',
+                        boxShadow: 'var(--shadow-sm)',
+                        maxWidth: '100%',
+                        whiteSpace: 'nowrap'
+                    }} className="no-scrollbar">
+                        <button type="button" onClick={() => scrollToSection('section-basic')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>基本情報</button>
+                        <button type="button" onClick={() => scrollToSection('section-visit')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>訪問・処方</button>
+                        <button type="button" onClick={() => scrollToSection('section-status')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>状況確認</button>
+                        <button type="button" onClick={() => scrollToSection('section-meds-reg')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>残薬(定期)</button>
+                        <button type="button" onClick={() => scrollToSection('section-meds-prn')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>残薬(臨時)</button>
+                        <button type="button" onClick={() => scrollToSection('section-plan')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>指導内容</button>
+                    </div>
+                </div>
             </div>
 
             <form
@@ -335,7 +380,8 @@ export default function ReportEdit() {
             >
 
                 {/* 基本情報 */}
-                <section className="card" style={{ padding: '0.5rem 1.5rem' }}>
+                {/* 基本情報 */}
+                <section id="section-basic" className="card" style={{ padding: '0.5rem 1.5rem' }}>
                     <div
                         onClick={() => setIsBasicInfoOpen(!isBasicInfoOpen)}
                         style={{
@@ -393,7 +439,7 @@ export default function ReportEdit() {
                 </section>
 
                 {/* 訪問情報 */}
-                <section className="card" style={{ padding: '1.5rem' }}>
+                <section id="section-visit" className="card" style={{ padding: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
                         訪問・処方情報
                     </h3>
@@ -418,7 +464,7 @@ export default function ReportEdit() {
                 </section>
 
                 {/* 状況確認 (New Section) */}
-                <section className="card" style={{ padding: '1.5rem' }}>
+                <section id="section-status" className="card" style={{ padding: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
                         状況確認
                     </h3>
@@ -498,24 +544,31 @@ export default function ReportEdit() {
                     <span style={{ fontSize: '0.9rem' }}>まで</span>
                 </div>
 
-                <MedicationListForm
-                    title="残薬詳細確認 (定期薬)"
-                    items={formData.medications_check_list || []}
-                    onUpdate={(newItems) => setFormData({ ...formData, medications_check_list: newItems })}
-                    onSearchDrug={handleDrugSearch}
-                    drugOptions={drugOptions}
-                />
 
-                <MedicationListForm
-                    title="残薬詳細確認 (臨時薬・その他)"
-                    items={formData.medications_check_list_prn || []}
-                    onUpdate={(newItems) => setFormData({ ...formData, medications_check_list_prn: newItems })}
-                    onSearchDrug={handleDrugSearch}
-                    drugOptions={drugOptions}
-                />
+                <div id="section-meds-reg">
+                    <MedicationListForm
+                        title="残薬詳細確認 (定期薬)"
+                        items={formData.medications_check_list || []}
+                        onUpdate={(newItems) => setFormData({ ...formData, medications_check_list: newItems })}
+                        onSearchDrug={handleDrugSearch}
+                        drugOptions={drugOptions}
+                    />
+
+                </div>
+
+                <div id="section-meds-prn">
+                    <MedicationListForm
+                        title="残薬詳細確認 (臨時薬・その他)"
+                        items={formData.medications_check_list_prn || []}
+                        onUpdate={(newItems) => setFormData({ ...formData, medications_check_list_prn: newItems })}
+                        onSearchDrug={handleDrugSearch}
+                        drugOptions={drugOptions}
+                    />
+
+                </div>
 
                 {/* 指導内容・計画 */}
-                <section className="card" style={{ padding: '1.5rem' }}>
+                <section id="section-plan" className="card" style={{ padding: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
                         指導内容・計画
                     </h3>
