@@ -200,6 +200,15 @@ export default function ReportEdit() {
             setFormData({
                 ...EMPTY_REPORT,
                 ...rest,
+                // Ensure defaults for new fields if null in source
+                allergy_history: rest.allergy_history ?? EMPTY_REPORT.allergy_history,
+                guidance_recipient: rest.guidance_recipient ?? EMPTY_REPORT.guidance_recipient,
+                medication_status: rest.medication_status ?? EMPTY_REPORT.medication_status,
+                storage_status: rest.storage_status ?? EMPTY_REPORT.storage_status,
+                other_dept_consultation: rest.other_dept_consultation ?? EMPTY_REPORT.other_dept_consultation,
+                concomitant_medications: rest.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
+                interaction_status: rest.interaction_status ?? EMPTY_REPORT.interaction_status,
+
                 visit_date: today,
                 prescription_date: today,
                 dispensing_date: today,
@@ -255,6 +264,15 @@ export default function ReportEdit() {
             setFormData({
                 ...EMPTY_REPORT,
                 ...data,
+                // Ensure defaults for new fields if null in DB (old records)
+                allergy_history: data.allergy_history ?? EMPTY_REPORT.allergy_history,
+                guidance_recipient: data.guidance_recipient ?? EMPTY_REPORT.guidance_recipient,
+                medication_status: data.medication_status ?? EMPTY_REPORT.medication_status,
+                storage_status: data.storage_status ?? EMPTY_REPORT.storage_status,
+                other_dept_consultation: data.other_dept_consultation ?? EMPTY_REPORT.other_dept_consultation,
+                concomitant_medications: data.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
+                interaction_status: data.interaction_status ?? EMPTY_REPORT.interaction_status,
+
                 medications_check_list: data.medications_check_list || [],
                 medications_check_list_prn: data.medications_check_list_prn || []
             })
