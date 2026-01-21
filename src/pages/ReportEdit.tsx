@@ -363,6 +363,7 @@ export default function ReportEdit() {
                         <button type="button" onClick={() => scrollToSection('section-meds-reg')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>残薬(定期)</button>
                         <button type="button" onClick={() => scrollToSection('section-meds-prn')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>残薬(臨時)</button>
                         <button type="button" onClick={() => scrollToSection('section-plan')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>指導内容</button>
+                        <button type="button" onClick={() => scrollToSection('section-future-plan')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>計画</button>
                     </div>
                 </div>
             </div>
@@ -567,10 +568,10 @@ export default function ReportEdit() {
 
                 </div>
 
-                {/* 指導内容・計画 */}
+                {/* 指導内容 */}
                 <section id="section-plan" className="card" style={{ padding: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-                        指導内容・計画
+                        指導内容
                     </h3>
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         <div>
@@ -585,6 +586,15 @@ export default function ReportEdit() {
                             <label className="label">その他伝達事項</label>
                             <textarea name="side_effects" className="input" rows={2} value={formData.side_effects} onChange={handleChange}></textarea>
                         </div>
+                    </div>
+                </section>
+
+                {/* 計画・申し送り */}
+                <section id="section-future-plan" className="card" style={{ padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
+                        計画・申し送り
+                    </h3>
+                    <div style={{ display: 'grid', gap: '1rem' }}>
                         <div>
                             <label className="label">次回訪問予定日</label>
                             <input type="date" name="next_visit_date" className="input" value={formData.next_visit_date || ''} onChange={handleChange} />
