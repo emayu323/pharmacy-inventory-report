@@ -423,13 +423,7 @@ export default function ReportEdit() {
                         状況確認
                     </h3>
                     <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-                        <EditableSelect
-                            label="アレルギー/副作用歴"
-                            name="allergy_history"
-                            value={formData.allergy_history || ''}
-                            options={['なし']}
-                            onChange={handleChange}
-                        />
+
                         <EditableSelect
                             label="指導を受けた人"
                             name="guidance_recipient"
@@ -467,6 +461,16 @@ export default function ReportEdit() {
                             options={['なし']}
                             onChange={handleChange}
                         />
+
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <EditableSelect
+                                label="アレルギー/副作用歴"
+                                name="allergy_history"
+                                value={formData.allergy_history || ''}
+                                options={['なし']}
+                                onChange={handleChange}
+                            />
+                        </div>
 
                         <div style={{ gridColumn: '1 / -1' }}>
                             <EditableSelect
