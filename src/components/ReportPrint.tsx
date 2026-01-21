@@ -16,93 +16,75 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
 
       <div className="print-grid">
         {/* Basic Info Row */}
-        <div className="print-section">
-          <div className="print-row">
-            <div className="print-item" style={{ flex: 2, borderRight: 'none', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              <span className="print-value" style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                {report.patient_name} <span style={{ fontSize: '14px', fontWeight: 'normal' }}>様</span>
-              </span>
-              <span className="print-value" style={{ fontSize: '14px' }}>
-                {report.patient_dob.replace(/-/g, '/')}生
-                <span style={{ marginLeft: '0.5rem' }}>
-                  ({calculateAge(report.patient_dob)}歳)
-                </span>
-              </span>
-              <span className="print-value" style={{ fontSize: '14px' }}>
-                {report.patient_gender === 'male' ? '男性' : report.patient_gender === 'female' ? '女性' : 'その他'}
-              </span>
-            </div>
-          </div>
-          <div className="print-row">
-            <div className="print-item">
-              <span className="print-label">医療機関名</span>
-              <span className="print-value">{report.medical_institution_name}</span>
-            </div>
-            <div className="print-item">
-              <span className="print-label">処方医</span>
-              <span className="print-value">{report.doctor_name}</span>
-            </div>
-            <div className="print-item">
-              <span className="print-label">担当薬剤師</span>
-              <span className="print-value">{report.pharmacist_name}</span>
-            </div>
-          </div>
-          <div className="print-row">
-            <div className="print-item">
-              <span className="print-label">処方日</span>
-              <span className="print-value">{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</span>
-            </div>
-            <div className="print-item">
-              <span className="print-label">調剤日</span>
-              <span className="print-value">{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</span>
-            </div>
-            <div className="print-item">
-              <span className="print-label">訪問日</span>
-              <span className="print-value">{report.visit_date.replace(/-/g, '/')}</span>
-            </div>
-          </div>
+        {/* Basic Info Table */}
+        <div className="print-section form-container">
+          <table className="form-table">
+            <tbody>
+              <tr>
+                <td className="label-cell" style={{ width: '10%' }}>氏名</td>
+                <td className="value-cell" style={{ width: '40%', fontSize: '16px', fontWeight: 'bold' }}>
+                  {report.patient_name} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>様</span>
+                  <span style={{ fontSize: '12px', fontWeight: 'normal', marginLeft: '1rem' }}>
+                    ({report.patient_dob.replace(/-/g, '/')}生 {calculateAge(report.patient_dob)}歳)
+                    <span style={{ marginLeft: '0.5rem' }}>
+                      {report.patient_gender === 'male' ? '男性' : report.patient_gender === 'female' ? '女性' : ''}
+                    </span>
+                  </span>
+                </td>
+                <td className="label-cell" style={{ width: '10%' }}>訪問日</td>
+                <td className="value-cell" style={{ width: '40%' }}>{report.visit_date.replace(/-/g, '/')}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table className="form-table" style={{ borderTop: 'none' }}>
+            <tbody>
+              <tr>
+                <td className="label-cell" style={{ width: '10%' }}>医療機関</td>
+                <td className="value-cell" style={{ width: '23%' }}>{report.medical_institution_name}</td>
+                <td className="label-cell" style={{ width: '10%' }}>処方医</td>
+                <td className="value-cell" style={{ width: '23%' }}>{report.doctor_name}</td>
+                <td className="label-cell" style={{ width: '10%' }}>薬剤師</td>
+                <td className="value-cell" style={{ width: '24%' }}>{report.pharmacist_name}</td>
+              </tr>
+              <tr>
+                <td className="label-cell">処方日</td>
+                <td className="value-cell">{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</td>
+                <td className="label-cell">調剤日</td>
+                <td className="value-cell" colSpan={3}>{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        {/* 状況確認 (New Section 2025-01-21) */}
-        <div className="print-section">
-          {/* <h3 className="section-title">状況確認</h3> */}
-          {/* Using a grid-like layout for density */}
-          <div className="print-row">
-            <div className="print-item">
-              <span className="print-label">指導対象</span>
-              <span className="print-value">{report.guidance_recipient}</span>
-            </div>
-            <div className="print-item" style={{ marginLeft: '1rem' }}>
-              <span className="print-label">服薬状況</span>
-              <span className="print-value">{report.medication_status}</span>
-            </div>
-            <div className="print-item" style={{ marginLeft: '1rem' }}>
-              <span className="print-label">保管状況</span>
-              <span className="print-value">{report.storage_status}</span>
-            </div>
-          </div>
-          <div className="print-row">
-            <div className="print-item">
-              <span className="print-label">他科受診</span>
-              <span className="print-value">{report.other_dept_consultation}</span>
-            </div>
-            <div className="print-item" style={{ marginLeft: '1rem' }}>
-              <span className="print-label">併用薬</span>
-              <span className="print-value">{report.concomitant_medications}</span>
-            </div>
-          </div>
-          <div className="print-row">
-            <div className="print-item">
-              <span className="print-label" style={{ minWidth: '90px' }}>アレルギー等</span>
-              <span className="print-value">{report.allergy_history}</span>
-            </div>
-          </div>
-          <div className="print-row">
-            <div className="print-item">
-              <span className="print-label">相互作用</span>
-              <span className="print-value">{report.interaction_status}</span>
-            </div>
-          </div>
+        {/* 状況確認 Table */}
+        <div className="print-section form-container" style={{ marginTop: '0.5rem' }}>
+          <table className="form-table">
+            <tbody>
+              <tr>
+                <td className="label-cell" style={{ width: '12%' }}>指導対象</td>
+                <td className="value-cell" style={{ width: '21%' }}>{report.guidance_recipient}</td>
+                <td className="label-cell" style={{ width: '12%' }}>服薬状況</td>
+                <td className="value-cell" style={{ width: '21%' }}>{report.medication_status}</td>
+                <td className="label-cell" style={{ width: '12%' }}>保管状況</td>
+                <td className="value-cell" style={{ width: '22%' }}>{report.storage_status}</td>
+              </tr>
+              <tr>
+                <td className="label-cell">他科受診</td>
+                <td className="value-cell">{report.other_dept_consultation}</td>
+                <td className="label-cell">併用薬</td>
+                <td className="value-cell" colSpan={3}>{report.concomitant_medications}</td>
+              </tr>
+              <tr>
+                <td className="label-cell">アレルギー</td>
+                <td className="value-cell" colSpan={5}>{report.allergy_history}</td>
+              </tr>
+              <tr>
+                <td className="label-cell">相互作用</td>
+                <td className="value-cell" colSpan={5}>{report.interaction_status}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         {/* Medication Status */}
@@ -255,9 +237,37 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           bottom: 2px;
           font-size: 10px;
         }
+
+        /* Form Table Layout */
+        .form-container {
+          margin-bottom: 8px;
+        }
+        .form-table {
+          width: 100%;
+          border-collapse: collapse;
+          border: 1px solid #000;
+          font-size: 12px;
+        }
+        .form-table td {
+          border: 1px solid #000;
+          padding: 4px 6px;
+          vertical-align: middle;
+        }
+        .label-cell {
+          background-color: #f3f4f6; /* Light gray background */
+          font-weight: bold;
+          color: #333;
+          text-align: center;
+          white-space: nowrap;
+        }
+        .value-cell {
+          background-color: #fff;
+          color: #000;
+        }
+
         .print-section {
           margin-bottom: 8px;
-          border-bottom: 1px solid #ddd;
+          /* border-bottom: 1px solid #ddd;  <-- Removed old border style */
           padding-bottom: 8px;
         }
         .print-section:last-child {
