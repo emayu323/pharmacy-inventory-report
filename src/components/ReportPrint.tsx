@@ -63,6 +63,48 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           </div>
         </div>
 
+        {/* 状況確認 (New Section 2025-01-21) */}
+        <div className="print-section">
+          {/* <h3 className="section-title">状況確認</h3> */}
+          {/* Using a grid-like layout for density */}
+          <div className="print-row">
+            <div className="print-item">
+              <span className="print-label">指導対象</span>
+              <span className="print-value">{report.guidance_recipient}</span>
+            </div>
+            <div className="print-item" style={{ marginLeft: '1rem' }}>
+              <span className="print-label">服薬状況</span>
+              <span className="print-value">{report.medication_status}</span>
+            </div>
+            <div className="print-item" style={{ marginLeft: '1rem' }}>
+              <span className="print-label">保管状況</span>
+              <span className="print-value">{report.storage_status}</span>
+            </div>
+          </div>
+          <div className="print-row">
+            <div className="print-item">
+              <span className="print-label">他科受診</span>
+              <span className="print-value">{report.other_dept_consultation}</span>
+            </div>
+            <div className="print-item" style={{ marginLeft: '1rem' }}>
+              <span className="print-label">併用薬</span>
+              <span className="print-value">{report.concomitant_medications}</span>
+            </div>
+          </div>
+          <div className="print-row">
+            <div className="print-item">
+              <span className="print-label" style={{ minWidth: '90px' }}>アレルギー等</span>
+              <span className="print-value">{report.allergy_history}</span>
+            </div>
+          </div>
+          <div className="print-row">
+            <div className="print-item">
+              <span className="print-label">相互作用</span>
+              <span className="print-value">{report.interaction_status}</span>
+            </div>
+          </div>
+        </div>
+
         {/* Medication Status */}
         <div className="print-section">
           <h3 className="section-title">薬剤管理状況</h3>

@@ -27,8 +27,76 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     next_visit_date: '',
     medications_check_list: [],
     medications_check_list_prn: [],
-    regular_medication_supply_until: ''
+    regular_medication_supply_until: '',
+
+    // Default Values for New Fields
+    allergy_history: 'なし',
+    guidance_recipient: '家族',
+    medication_status: '良好',
+    storage_status: '良好',
+    other_dept_consultation: 'なし',
+    concomitant_medications: 'なし',
+    interaction_status: '併用薬/飲食物による相互作用なし',
 }
+
+const SelectWithCustom = ({ label, name, value, options, onChange }: {
+    label: string,
+    name: string,
+    value: string,
+    options: string[],
+    onChange: (e: React.ChangeEvent<any>) => void
+}) => {
+    const isCustom = !options.includes(value || '');
+    // If empty string, treat as "preset" if "preset" has empty? No, "preset" usually has "None".
+    // If value is empty, it might be initial state.
+    // If options has "None", and value is "None", isCustom=false.
+    // If value is "", and "" not in options, isCustom=true (but visually might be awkward).
+    // However, our defaults are "None" etc. so it should be fine.
+
+    // UI Logic:
+    // If isCustom is true, Select shows "custom". Input shows value.
+    // If isCustom is false, Select shows value. Input hidden.
+
+    const selectValue = isCustom ? 'custom' : value;
+
+    const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = e.target.value;
+        if (val === 'custom') {
+            onChange({ target: { name, value: '' } } as any);
+        } else {
+            onChange({ target: { name, value: val } } as any);
+        }
+    };
+
+    return (
+        <div>
+            <label className="label">{label}</label>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <select
+                    className="input"
+                    value={selectValue}
+                    onChange={handleSelectChange}
+                    style={{ flex: isCustom ? '0 0 auto' : '1', width: isCustom ? 'auto' : '100%', minWidth: '120px' }}
+                >
+                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    <option value="custom">自由記載</option>
+                </select>
+                {isCustom && (
+                    <input
+                        type="text"
+                        name={name}
+                        className="input"
+                        value={value || ''}
+                        onChange={onChange}
+                        placeholder="自由に入力してください"
+                        style={{ flex: 1, minWidth: '200px' }}
+                        autoFocus
+                    />
+                )}
+            </div>
+        </div>
+    );
+};
 
 export default function ReportEdit() {
     const { id } = useParams()
@@ -87,6 +155,7 @@ export default function ReportEdit() {
             // Reset Dates to Today
             const today = new Date().toISOString().split('T')[0]
             setFormData({
+                ...EMPTY_REPORT,
                 ...rest,
                 visit_date: today,
                 prescription_date: today,
@@ -283,6 +352,69 @@ export default function ReportEdit() {
                         <div>
                             <label className="label">調剤日</label>
                             <input type="date" name="dispensing_date" className="input" value={formData.dispensing_date} onChange={handleChange} />
+                        </div>
+                    </div>
+                </section>
+
+                {/* 状況確認 (New Section) */}
+                <section className="card" style={{ padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
+                        状況確認
+                    </h3>
+                    <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                        <SelectWithCustom
+                            label="アレルギー/副作用歴"
+                            name="allergy_history"
+                            value={formData.allergy_history || ''}
+                            options={['なし']}
+                            onChange={handleChange}
+                        />
+                        <SelectWithCustom
+                            label="指導を受けた人"
+                            name="guidance_recipient"
+                            value={formData.guidance_recipient || ''}
+                            options={['家族', '本人']}
+                            onChange={handleChange}
+                        />
+                        <SelectWithCustom
+                            label="服薬状況"
+                            name="medication_status"
+                            value={formData.medication_status || ''}
+                            options={['良好', '問題なし', '不良']}
+                            onChange={handleChange}
+                        />
+                        <SelectWithCustom
+                            label="保管状況"
+                            name="storage_status"
+                            value={formData.storage_status || ''}
+                            options={['良好', '本人管理', '家族管理', '看護師管理', '介護者管理']}
+                            onChange={handleChange}
+                        />
+
+                        <SelectWithCustom
+                            label="他科受診"
+                            name="other_dept_consultation"
+                            value={formData.other_dept_consultation || ''}
+                            options={['なし']}
+                            onChange={handleChange}
+                        />
+
+                        <SelectWithCustom
+                            label="併用薬"
+                            name="concomitant_medications"
+                            value={formData.concomitant_medications || ''}
+                            options={['なし']}
+                            onChange={handleChange}
+                        />
+
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <SelectWithCustom
+                                label="相互作用"
+                                name="interaction_status"
+                                value={formData.interaction_status || ''}
+                                options={['併用薬/飲食物による相互作用なし']}
+                                onChange={handleChange}
+                            />
                         </div>
                     </div>
                 </section>

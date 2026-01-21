@@ -66,6 +66,16 @@ export interface Report {
 
   // Instructions
   chief_complaint?: string; // New field
+
+  // New Fields (2025-01-21)
+  allergy_history?: string;
+  guidance_recipient?: string;
+  medication_status?: string;
+  storage_status?: string;
+  other_dept_consultation?: string;
+  concomitant_medications?: string;
+  interaction_status?: string;
+
   medication_instruction: string;
   side_effects: string;
 
