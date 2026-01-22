@@ -139,16 +139,24 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
         <div className="print-section" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
           <h3 className="section-title">薬剤管理状況</h3>
 
+          {report.regular_medication_supply_until && (
+            <div style={{ margin: '4px 0 12px 0' }}>
+              <span style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                borderBottom: '2px solid #000',
+                paddingBottom: '2px'
+              }}>
+                定期薬残: {report.regular_medication_supply_until.replace(/-/g, '/')} まであり
+              </span>
+            </div>
+          )}
+
           {/* Medication Detail Table (Regular) */}
           {report.medications_check_list && report.medications_check_list.length > 0 && (
             <div style={{ marginBottom: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.25rem' }}>
                 <h4 style={{ fontSize: '0.875rem', fontWeight: 600, margin: 0, color: '#4b5563' }}>定期薬</h4>
-                {report.regular_medication_supply_until && (
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                    定期薬残: {report.regular_medication_supply_until.replace(/-/g, '/')} まであり
-                  </span>
-                )}
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
