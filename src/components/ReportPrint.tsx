@@ -40,7 +40,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           <table className="form-table">
             <tbody>
               <tr>
-                <td className="label-cell" style={{ width: '10%' }}>氏名</td>
+                <td className="label-cell" style={{ width: '10%' }}>患者氏名</td>
                 <td className="value-cell" style={{ width: '90%', fontSize: '16px', fontWeight: 'bold' }}>
                   {report.patient_name} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>様</span>
                   <span style={{ fontSize: '12px', fontWeight: 'normal', marginLeft: '1rem' }}>
