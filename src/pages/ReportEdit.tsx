@@ -36,7 +36,7 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     storage_status: '良好',
     other_dept_consultation: 'なし',
     concomitant_medications: 'なし',
-    concomitant_medications: 'なし',
+
     interaction_status: '併用薬/飲食物による相互作用なし',
 
     pharmacy_name: '',
@@ -212,7 +212,7 @@ export default function ReportEdit() {
                 storage_status: rest.storage_status ?? EMPTY_REPORT.storage_status,
                 other_dept_consultation: rest.other_dept_consultation ?? EMPTY_REPORT.other_dept_consultation,
                 concomitant_medications: rest.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
-                concomitant_medications: rest.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
+
                 interaction_status: rest.interaction_status ?? EMPTY_REPORT.interaction_status,
 
                 pharmacy_name: rest.pharmacy_name ?? EMPTY_REPORT.pharmacy_name,
@@ -235,7 +235,7 @@ export default function ReportEdit() {
                 patient_name: location.state.patientName,
                 patient_dob: location.state.patientDob,
                 patient_gender: location.state.patientGender,
-                patient_gender: location.state.patientGender,
+
                 patient_id: location.state.patientId,
                 visit_date: new Date().toISOString().split('T')[0],
                 prescription_date: new Date().toISOString().split('T')[0],
@@ -314,7 +314,7 @@ export default function ReportEdit() {
                 storage_status: data.storage_status ?? EMPTY_REPORT.storage_status,
                 other_dept_consultation: data.other_dept_consultation ?? EMPTY_REPORT.other_dept_consultation,
                 concomitant_medications: data.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
-                concomitant_medications: data.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
+
                 interaction_status: data.interaction_status ?? EMPTY_REPORT.interaction_status,
 
                 pharmacy_name: data.pharmacy_name ?? EMPTY_REPORT.pharmacy_name,
