@@ -58,7 +58,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
         </div>
 
         {/* 状況確認 Table */}
-        <div className="print-section form-container" style={{ marginTop: '0.5rem' }}>
+        <div className="print-section form-container" style={{ marginTop: '0px' }}>
           <table className="form-table">
             <tbody>
               <tr>
@@ -238,7 +238,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
 
         /* Form Table Layout */
         .form-container {
-          margin-bottom: 8px;
+          margin-bottom: 4px;
         }
         .form-table {
           width: 100%;
