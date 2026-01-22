@@ -56,13 +56,11 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             <tbody>
               <tr>
                 <td className="label-cell" style={{ width: '10%' }}>医療機関</td>
-                <td className="value-cell" style={{ width: '22%' }}>{report.medical_institution_name}</td>
-                <td className="label-cell" style={{ width: '8%' }}>処方医</td>
-                <td className="value-cell" style={{ width: '15%' }}>{report.doctor_name}</td>
-                <td className="label-cell" style={{ width: '8%' }}>薬剤師</td>
-                <td className="value-cell" style={{ width: '15%' }}>{report.pharmacist_name}</td>
-                <td className="label-cell" style={{ width: '8%' }}>訪問日</td>
-                <td className="value-cell" style={{ width: '14%' }}>{report.visit_date.replace(/-/g, '/')}</td>
+                <td className="value-cell" style={{ width: '30%' }}>{report.medical_institution_name}</td>
+                <td className="label-cell" style={{ width: '10%' }}>処方医</td>
+                <td className="value-cell" style={{ width: '20%' }}>{report.doctor_name}</td>
+                <td className="label-cell" style={{ width: '10%' }}>訪問日</td>
+                <td className="value-cell" style={{ width: '20%' }}>{report.visit_date.replace(/-/g, '/')}</td>
               </tr>
             </tbody>
           </table>
