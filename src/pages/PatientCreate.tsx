@@ -27,7 +27,8 @@ export default function PatientCreate() {
         primary_doctor: '',
         home_care_office: '',
         care_manager: '',
-        pharmacy_name: ''
+        pharmacy_name: '',
+        visiting_nursing_station_name: ''
     })
 
     useEffect(() => {
@@ -61,6 +62,11 @@ export default function PatientCreate() {
             setFormData(prev => ({
                 ...prev,
                 home_care_office: institution.name
+            }))
+        } else if (type === 'nursing_station') {
+            setFormData(prev => ({
+                ...prev,
+                visiting_nursing_station_name: institution.name
             }))
         }
     }
@@ -101,6 +107,7 @@ export default function PatientCreate() {
                     primary_doctor: formData.primary_doctor,
                     home_care_office: formData.home_care_office,
                     care_manager: formData.care_manager,
+                    visiting_nursing_station_name: formData.visiting_nursing_station_name,
                     pharmacy_name: formData.pharmacy_name,
                     user_id: user.id
                 }])
@@ -328,6 +335,36 @@ export default function PatientCreate() {
                                     className="input"
                                     placeholder="担当薬局"
                                     value={formData.pharmacy_name}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Visiting Nursing Station */}
+                        <div style={{ paddingBottom: '1.5rem', borderBottom: '1px dashed var(--color-border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>訪問看護情報</div>
+                                <select
+                                    className="input"
+                                    style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', height: 'auto', borderColor: 'var(--color-primary-light)' }}
+                                    onChange={(e) => {
+                                        handleInstitutionSelect('nursing_station', e.target.value);
+                                        e.target.value = '';
+                                    }}
+                                >
+                                    <option value="">事業所を引用...</option>
+                                    {institutions.filter(i => i.type === 'nursing_station').map(i => (
+                                        <option key={i.id} value={i.id}>{i.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <input
+                                    type="text"
+                                    name="visiting_nursing_station_name"
+                                    className="input"
+                                    placeholder="訪問看護ステーション"
+                                    value={formData.visiting_nursing_station_name}
                                     onChange={handleChange}
                                 />
                             </div>

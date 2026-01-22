@@ -51,6 +51,11 @@ export default function PatientDetail() {
                 ...prev,
                 home_care_office: institution.name
             }))
+        } else if (type === 'nursing_station') {
+            setEditForm(prev => ({
+                ...prev,
+                visiting_nursing_station_name: institution.name
+            }))
         }
     }
 
@@ -115,6 +120,7 @@ export default function PatientDetail() {
                     primary_doctor: editForm.primary_doctor,
                     home_care_office: editForm.home_care_office,
                     care_manager: editForm.care_manager,
+                    visiting_nursing_station_name: editForm.visiting_nursing_station_name,
                     pharmacy_name: editForm.pharmacy_name,
                     memo: editForm.memo
                 })
@@ -479,6 +485,35 @@ export default function PatientDetail() {
                                     </div>
                                 </div>
 
+                                {/* Visiting Nursing Station */}
+                                <div style={{ paddingBottom: '1.5rem', borderBottom: '1px dashed var(--color-border)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>訪問看護情報</div>
+                                        <select
+                                            className="input"
+                                            style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', height: 'auto' }}
+                                            onChange={(e) => {
+                                                handleInstitutionSelect('nursing_station', e.target.value);
+                                                e.target.value = '';
+                                            }}
+                                        >
+                                            <option value="">事業所を引用...</option>
+                                            {institutions.filter(i => i.type === 'nursing_station').map(i => (
+                                                <option key={i.id} value={i.id}>{i.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <input
+                                            className="input"
+                                            value={editForm.visiting_nursing_station_name || ''}
+                                            placeholder="訪問看護ステーション"
+                                            onChange={e => setEditForm({ ...editForm, visiting_nursing_station_name: e.target.value })}
+                                            style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
+                                        />
+                                    </div>
+                                </div>
+
                                 {/* Care */}
                                 <div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
@@ -525,6 +560,7 @@ export default function PatientDetail() {
                         (() => {
                             const hospital = institutions.find(i => i.name === patient.medical_institution_name && i.type === 'hospital');
                             const pharmacy = institutions.find(i => i.name === patient.pharmacy_name && i.type === 'pharmacy');
+                            const nursingStation = institutions.find(i => i.name === patient.visiting_nursing_station_name && i.type === 'nursing_station');
                             const careOffice = institutions.find(i => i.name === patient.home_care_office && i.type === 'care_office');
 
                             return (
@@ -573,6 +609,21 @@ export default function PatientDetail() {
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', columnGap: '2rem', rowGap: '1rem', borderTop: '1px dashed var(--color-border)', paddingTop: '1rem' }}>
+                                        {/* Visiting Nursing */}
+                                        <div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <Building2 size={13} /> 訪問看護
+                                            </div>
+                                            <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.1rem' }}>{patient.visiting_nursing_station_name || '-'}</div>
+                                            {nursingStation && nursingStation.tel && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                                    <Phone size={12} />
+                                                    <a href={`tel:${nursingStation.tel}`} style={{ color: 'inherit', textDecoration: 'none' }}>{nursingStation.tel}</a>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Care Office */}
                                         <div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                 <Building2 size={13} /> 居宅介護支援事業所
@@ -584,12 +635,11 @@ export default function PatientDetail() {
                                                     <a href={`tel:${careOffice.tel}`} style={{ color: 'inherit', textDecoration: 'none' }}>{careOffice.tel}</a>
                                                 </div>
                                             )}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                <User size={13} /> ケアマネージャー
-                                            </div>
-                                            <div style={{ fontSize: '1rem', fontWeight: 500 }}>{patient.care_manager || '-'}</div>
+                                            {patient.care_manager && (
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                                    <User size={12} style={{ display: 'inline', marginRight: '3px' }} /> {patient.care_manager}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

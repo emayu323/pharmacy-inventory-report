@@ -16,6 +16,7 @@ export interface Patient {
   primary_doctor?: string;
   home_care_office?: string;
   care_manager?: string;
+  visiting_nursing_station_name?: string;
   pharmacy_name?: string;
   is_active?: boolean;
 }
@@ -90,7 +91,7 @@ export interface Report {
   memo?: string; // Snapshot of patient memo at time of report
 }
 
-export type InstitutionType = 'hospital' | 'pharmacy' | 'care_office';
+export type InstitutionType = 'hospital' | 'pharmacy' | 'care_office' | 'nursing_station';
 
 export interface Institution {
   id: string;
