@@ -224,6 +224,7 @@ export default function ReportEdit() {
                 visit_date: today,
                 prescription_date: today,
                 dispensing_date: today,
+                pharmacist_name: user?.user_metadata?.display_name || '', // Default to current user on copy
             })
             // If copying from prev report, we might want to copy the memo too, or clear it.
             // Since it's a "handover" for THAT visit, maybe it makes sense to start empty, or copy.
@@ -536,18 +537,7 @@ export default function ReportEdit() {
                             <label className="label">担当薬剤師</label>
                             <input type="text" name="pharmacist_name" className="input" required value={formData.pharmacist_name} onChange={handleChange} />
                         </div>
-                        <div>
-                            <label className="label">薬局名</label>
-                            <input type="text" name="pharmacy_name" className="input" value={formData.pharmacy_name || ''} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <label className="label">薬局TEL</label>
-                            <input type="text" name="pharmacy_tel" className="input" value={formData.pharmacy_tel || ''} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <label className="label">薬局FAX</label>
-                            <input type="text" name="pharmacy_fax" className="input" value={formData.pharmacy_fax || ''} onChange={handleChange} />
-                        </div>
+
                         <div>
                             <label className="label">処方日</label>
                             <input type="date" name="prescription_date" className="input" value={formData.prescription_date} onChange={handleChange} />
