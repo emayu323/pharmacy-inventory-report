@@ -220,9 +220,9 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
         }
         .print-header {
           text-align: center;
-          margin-bottom: 8px;
-          border-bottom: 1px solid #333;
-          padding-bottom: 4px;
+          margin-bottom: 4px;
+          /* border-bottom: 1px solid #333;  <-- Removed per user request */
+          padding-bottom: 0;
           position: relative;
         }
         .print-header h1 {
