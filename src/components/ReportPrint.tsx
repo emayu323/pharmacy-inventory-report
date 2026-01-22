@@ -22,11 +22,13 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           </div>
 
           {/* Right: Source */}
-          <div style={{ textAlign: 'right', width: '48%' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>[報告元]</div>
-            <div>担当薬剤師: {report.pharmacist_name}</div>
-            <div>{report.pharmacy_name}</div>
-            <div>TEL: {report.pharmacy_tel} / FAX: {report.pharmacy_fax}</div>
+          <div style={{ width: '48%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>[報告元]</div>
+              <div>担当薬剤師: {report.pharmacist_name}</div>
+              <div>{report.pharmacy_name}</div>
+              <div>TEL: {report.pharmacy_tel} / FAX: {report.pharmacy_fax}</div>
+            </div>
           </div>
         </div>
       </div>
