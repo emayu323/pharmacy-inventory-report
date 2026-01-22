@@ -22,7 +22,7 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             <tbody>
               <tr>
                 <td className="label-cell" style={{ width: '10%' }}>氏名</td>
-                <td className="value-cell" style={{ width: '40%', fontSize: '16px', fontWeight: 'bold' }}>
+                <td className="value-cell" style={{ width: '90%', fontSize: '16px', fontWeight: 'bold' }}>
                   {report.patient_name} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>様</span>
                   <span style={{ fontSize: '12px', fontWeight: 'normal', marginLeft: '1rem' }}>
                     ({report.patient_dob.replace(/-/g, '/')}生 {calculateAge(report.patient_dob)}歳)
@@ -31,8 +31,6 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
                     </span>
                   </span>
                 </td>
-                <td className="label-cell" style={{ width: '10%' }}>訪問日</td>
-                <td className="value-cell" style={{ width: '40%' }}>{report.visit_date.replace(/-/g, '/')}</td>
               </tr>
             </tbody>
           </table>
@@ -41,17 +39,24 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             <tbody>
               <tr>
                 <td className="label-cell" style={{ width: '10%' }}>医療機関</td>
-                <td className="value-cell" style={{ width: '23%' }}>{report.medical_institution_name}</td>
-                <td className="label-cell" style={{ width: '10%' }}>処方医</td>
-                <td className="value-cell" style={{ width: '23%' }}>{report.doctor_name}</td>
-                <td className="label-cell" style={{ width: '10%' }}>薬剤師</td>
-                <td className="value-cell" style={{ width: '24%' }}>{report.pharmacist_name}</td>
+                <td className="value-cell" style={{ width: '22%' }}>{report.medical_institution_name}</td>
+                <td className="label-cell" style={{ width: '8%' }}>処方医</td>
+                <td className="value-cell" style={{ width: '15%' }}>{report.doctor_name}</td>
+                <td className="label-cell" style={{ width: '8%' }}>薬剤師</td>
+                <td className="value-cell" style={{ width: '15%' }}>{report.pharmacist_name}</td>
+                <td className="label-cell" style={{ width: '8%' }}>訪問日</td>
+                <td className="value-cell" style={{ width: '14%' }}>{report.visit_date.replace(/-/g, '/')}</td>
               </tr>
+            </tbody>
+          </table>
+
+          <table className="form-table" style={{ borderTop: 'none' }}>
+            <tbody>
               <tr>
-                <td className="label-cell">処方日</td>
-                <td className="value-cell">{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</td>
-                <td className="label-cell">調剤日</td>
-                <td className="value-cell" colSpan={3}>{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</td>
+                <td className="label-cell" style={{ width: '10%' }}>処方日</td>
+                <td className="value-cell" style={{ width: '40%' }}>{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</td>
+                <td className="label-cell" style={{ width: '10%' }}>調剤日</td>
+                <td className="value-cell" style={{ width: '40%' }}>{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</td>
               </tr>
             </tbody>
           </table>
