@@ -55,11 +55,9 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
               </tr>
             </tbody>
           </table>
-        </div>
 
-        {/* 状況確認 Table */}
-        <div className="print-section form-container" style={{ marginTop: '0px' }}>
-          <table className="form-table">
+          {/* 状況確認 Table (Merged into same container for zero gap) */}
+          <table className="form-table" style={{ borderTop: 'none' }}>
             <tbody>
               <tr>
                 <td className="label-cell" style={{ width: '12%' }}>指導対象</td>
