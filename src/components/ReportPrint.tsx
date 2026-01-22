@@ -17,11 +17,10 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           {/* Left: Destination */}
           <div style={{ textAlign: 'left', width: '48%' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>[報告先]</div>
-            <div>{report.medical_institution_name}</div>
+            <div>{report.medical_institution_name}　{report.doctor_name} 先生</div>
             {(report.medical_institution_tel || report.medical_institution_fax) && (
               <div>TEL: {report.medical_institution_tel} / FAX: {report.medical_institution_fax}</div>
             )}
-            <div>{report.doctor_name} 先生</div>
           </div>
 
           <div style={{ width: '48%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
