@@ -60,9 +60,6 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
                 <td className="label-cell" style={{ width: '10%' }}>医療機関</td>
                 <td className="value-cell" style={{ width: '30%' }}>
                   {report.medical_institution_name}
-                  {(report.medical_institution_tel || report.medical_institution_fax) && (
-                    <div style={{ fontSize: '10px' }}>TEL: {report.medical_institution_tel} / FAX: {report.medical_institution_fax}</div>
-                  )}
                 </td>
                 <td className="label-cell" style={{ width: '10%' }}>処方医</td>
                 <td className="value-cell" style={{ width: '20%' }}>{report.doctor_name}</td>
