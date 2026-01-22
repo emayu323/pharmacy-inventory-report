@@ -262,37 +262,58 @@ export default function ReportEdit() {
             }
             fetchLatest()
 
-            // Fetch Pharmacy Info from Patient -> Institution
-            const fetchPharmacyInfo = async () => {
-                // First get patient's pharmacy name
+            // Fetch Related Info (Pharmacy & Medical Institution) from Patient -> Institution
+            const fetchRelatedInfo = async () => {
+                // First get patient's registered pharmacy and medical institution
                 const { data: patientData } = await supabase
                     .from('patients')
-                    .select('pharmacy_name')
+                    .select('pharmacy_name, medical_institution_name')
                     .eq('id', location.state.patientId)
                     .single()
 
-                if (patientData && patientData.pharmacy_name) {
-                    setFormData(prev => ({ ...prev, pharmacy_name: patientData.pharmacy_name }))
+                if (patientData) {
+                    const updates: any = {}
 
-                    // Then find the institution to get TEL/FAX
-                    const { data: instData } = await supabase
-                        .from('institutions')
-                        .select('tel, fax')
-                        .eq('name', patientData.pharmacy_name)
-                        .eq('type', 'pharmacy')
-                        .limit(1)
-                        .maybeSingle()
+                    if (patientData.pharmacy_name) {
+                        updates.pharmacy_name = patientData.pharmacy_name
+                        // Fetch Pharmacy Tel/Fax
+                        const { data: phData } = await supabase
+                            .from('institutions')
+                            .select('tel, fax')
+                            .eq('name', patientData.pharmacy_name)
+                            .eq('type', 'pharmacy')
+                            .limit(1)
+                            .maybeSingle()
 
-                    if (instData) {
-                        setFormData(prev => ({
-                            ...prev,
-                            pharmacy_tel: instData.tel || '',
-                            pharmacy_fax: instData.fax || ''
-                        }))
+                        if (phData) {
+                            updates.pharmacy_tel = phData.tel || ''
+                            updates.pharmacy_fax = phData.fax || ''
+                        }
+                    }
+
+                    if (patientData.medical_institution_name) {
+                        updates.medical_institution_name = patientData.medical_institution_name
+                        // Fetch Medical Institution Tel/Fax
+                        const { data: medData } = await supabase
+                            .from('institutions')
+                            .select('tel, fax')
+                            .eq('name', patientData.medical_institution_name)
+                            // .eq('type', 'hospital') // Relax type check or check for both hospital/clinic if needed
+                            .limit(1)
+                            .maybeSingle()
+
+                        if (medData) {
+                            updates.medical_institution_tel = medData.tel || ''
+                            updates.medical_institution_fax = medData.fax || ''
+                        }
+                    }
+
+                    if (Object.keys(updates).length > 0) {
+                        setFormData(prev => ({ ...prev, ...updates }))
                     }
                 }
             }
-            fetchPharmacyInfo()
+            fetchRelatedInfo()
         }
     }, [id, location.state])
 
