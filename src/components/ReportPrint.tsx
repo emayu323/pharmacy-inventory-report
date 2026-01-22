@@ -75,17 +75,10 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           <table className="form-table" style={{ borderTop: 'none' }}>
             <tbody>
               <tr>
-                <td className="label-cell" style={{ width: '10%' }}>処方日</td>
-                <td className="value-cell" style={{ width: '25%' }}>{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</td>
-                <td className="label-cell" style={{ width: '10%' }}>調剤日</td>
-                <td className="value-cell" style={{ width: '25%' }}>{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</td>
-                <td className="label-cell" style={{ width: '10%' }}>薬局名</td>
-                <td className="value-cell" style={{ width: '20%' }}>
-                  {report.pharmacy_name}
-                  {(report.pharmacy_tel || report.pharmacy_fax) && (
-                    <div style={{ fontSize: '10px' }}>TEL: {report.pharmacy_tel} / FAX: {report.pharmacy_fax}</div>
-                  )}
-                </td>
+                <td className="label-cell" style={{ width: '15%' }}>処方日</td>
+                <td className="value-cell" style={{ width: '35%' }}>{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</td>
+                <td className="label-cell" style={{ width: '15%' }}>調剤日</td>
+                <td className="value-cell" style={{ width: '35%' }}>{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</td>
               </tr>
             </tbody>
           </table>
