@@ -154,6 +154,14 @@ export default function InstitutionEdit() {
                                 />
                                 居宅介護事業所
                             </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                <input
+                                    type="radio"
+                                    checked={formData.type === 'nursing_station'}
+                                    onChange={() => setFormData({ ...formData, type: 'nursing_station' })}
+                                />
+                                訪問看護
+                            </label>
                         </div>
                     </div>
                 )}
@@ -161,7 +169,8 @@ export default function InstitutionEdit() {
                 <div>
                     <label className="label">
                         {formData.type === 'hospital' ? '病院名' :
-                            formData.type === 'pharmacy' ? '薬局名' : '事業所名'}
+                            formData.type === 'pharmacy' ? '薬局名' :
+                                formData.type === 'care_office' ? '事業所名' : 'ステーション名'}
                         <span style={{ color: 'red' }}> *</span>
                     </label>
                     <input
@@ -170,7 +179,7 @@ export default function InstitutionEdit() {
                         value={formData.name}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                         required
-                        placeholder={`例: ${formData.type === 'hospital' ? '〇〇病院' : '〇〇薬局'}`}
+                        placeholder={`例: ${formData.type === 'hospital' ? '〇〇病院' : formData.type === 'pharmacy' ? '〇〇薬局' : formData.type === 'nursing_station' ? '〇〇訪問看護ステーション' : '〇〇居宅介護支援事業所'}`}
                     />
                 </div>
 

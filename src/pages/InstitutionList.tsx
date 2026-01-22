@@ -39,6 +39,7 @@ export default function InstitutionList() {
         { id: 'hospital', label: '医療機関 (病院)', icon: <Building2 size={18} /> },
         { id: 'pharmacy', label: '薬局', icon: <Stethoscope size={18} /> },
         { id: 'care_office', label: '居宅介護支援事業所', icon: <Contact size={18} /> },
+        { id: 'nursing_station', label: '訪問看護', icon: <Building2 size={18} /> },
     ]
 
     return (
