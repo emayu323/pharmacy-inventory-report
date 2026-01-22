@@ -52,6 +52,8 @@ export interface Report {
   patient_gender: Gender;
   doctor_name: string;
   medical_institution_name?: string;
+  medical_institution_tel?: string;
+  medical_institution_fax?: string;
   pharmacist_name: string;
   pharmacy_name?: string;
   pharmacy_tel?: string;

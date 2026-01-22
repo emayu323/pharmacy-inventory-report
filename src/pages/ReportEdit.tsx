@@ -17,6 +17,8 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     patient_gender: 'female',
     doctor_name: '',
     medical_institution_name: '',
+    medical_institution_tel: '',
+    medical_institution_fax: '',
     pharmacist_name: '',
     prescription_date: new Date().toISOString().split('T')[0],
     dispensing_date: new Date().toISOString().split('T')[0],
@@ -321,6 +323,10 @@ export default function ReportEdit() {
                 pharmacy_tel: data.pharmacy_tel ?? EMPTY_REPORT.pharmacy_tel,
                 pharmacy_fax: data.pharmacy_fax ?? EMPTY_REPORT.pharmacy_fax,
 
+                medical_institution_name: data.medical_institution_name ?? EMPTY_REPORT.medical_institution_name,
+                medical_institution_tel: data.medical_institution_tel ?? EMPTY_REPORT.medical_institution_tel,
+                medical_institution_fax: data.medical_institution_fax ?? EMPTY_REPORT.medical_institution_fax,
+
                 medications_check_list: data.medications_check_list || [],
                 medications_check_list_prn: data.medications_check_list_prn || []
             })
@@ -483,6 +489,14 @@ export default function ReportEdit() {
                                 <label className="label">医療機関名</label>
                                 <input type="text" name="medical_institution_name" className="input" value={formData.medical_institution_name || ''} onChange={handleChange} />
                             </div>
+                            <div>
+                                <label className="label">医療機関TEL</label>
+                                <input type="text" name="medical_institution_tel" className="input" value={formData.medical_institution_tel || ''} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <label className="label">医療機関FAX</label>
+                                <input type="text" name="medical_institution_fax" className="input" value={formData.medical_institution_fax || ''} onChange={handleChange} />
+                            </div>
                         </div>
                     )}
                 </section>
@@ -500,6 +514,18 @@ export default function ReportEdit() {
                         <div>
                             <label className="label">担当薬剤師</label>
                             <input type="text" name="pharmacist_name" className="input" required value={formData.pharmacist_name} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <label className="label">薬局名</label>
+                            <input type="text" name="pharmacy_name" className="input" value={formData.pharmacy_name || ''} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <label className="label">薬局TEL</label>
+                            <input type="text" name="pharmacy_tel" className="input" value={formData.pharmacy_tel || ''} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <label className="label">薬局FAX</label>
+                            <input type="text" name="pharmacy_fax" className="input" value={formData.pharmacy_fax || ''} onChange={handleChange} />
                         </div>
                         <div>
                             <label className="label">処方日</label>

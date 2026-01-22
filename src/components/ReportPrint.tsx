@@ -18,6 +18,9 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           <div style={{ textAlign: 'left', width: '48%' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>[報告先]</div>
             <div>{report.medical_institution_name}</div>
+            {(report.medical_institution_tel || report.medical_institution_fax) && (
+              <div>TEL: {report.medical_institution_tel} / FAX: {report.medical_institution_fax}</div>
+            )}
             <div>{report.doctor_name} 先生</div>
           </div>
 
@@ -56,7 +59,12 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             <tbody>
               <tr>
                 <td className="label-cell" style={{ width: '10%' }}>医療機関</td>
-                <td className="value-cell" style={{ width: '30%' }}>{report.medical_institution_name}</td>
+                <td className="value-cell" style={{ width: '30%' }}>
+                  {report.medical_institution_name}
+                  {(report.medical_institution_tel || report.medical_institution_fax) && (
+                    <div style={{ fontSize: '10px' }}>TEL: {report.medical_institution_tel} / FAX: {report.medical_institution_fax}</div>
+                  )}
+                </td>
                 <td className="label-cell" style={{ width: '10%' }}>処方医</td>
                 <td className="value-cell" style={{ width: '20%' }}>{report.doctor_name}</td>
                 <td className="label-cell" style={{ width: '10%' }}>訪問日</td>
@@ -69,9 +77,16 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
             <tbody>
               <tr>
                 <td className="label-cell" style={{ width: '10%' }}>処方日</td>
-                <td className="value-cell" style={{ width: '40%' }}>{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</td>
+                <td className="value-cell" style={{ width: '25%' }}>{report.prescription_date ? report.prescription_date.replace(/-/g, '/') : ''}</td>
                 <td className="label-cell" style={{ width: '10%' }}>調剤日</td>
-                <td className="value-cell" style={{ width: '40%' }}>{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</td>
+                <td className="value-cell" style={{ width: '25%' }}>{report.dispensing_date ? report.dispensing_date.replace(/-/g, '/') : ''}</td>
+                <td className="label-cell" style={{ width: '10%' }}>薬局名</td>
+                <td className="value-cell" style={{ width: '20%' }}>
+                  {report.pharmacy_name}
+                  {(report.pharmacy_tel || report.pharmacy_fax) && (
+                    <div style={{ fontSize: '10px' }}>TEL: {report.pharmacy_tel} / FAX: {report.pharmacy_fax}</div>
+                  )}
+                </td>
               </tr>
             </tbody>
           </table>
