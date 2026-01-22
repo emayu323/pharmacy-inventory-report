@@ -140,12 +140,16 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
           <h3 className="section-title">薬剤管理状況</h3>
 
           {report.regular_medication_supply_until && (
-            <div style={{ margin: '4px 0 12px 0' }}>
+            <div style={{ margin: '8px 0 12px 0' }}>
               <span style={{
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 'bold',
-                borderBottom: '2px solid #000',
-                paddingBottom: '2px'
+                border: '1px solid #4b5563',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                backgroundColor: '#f9fafb',
+                display: 'inline-block',
+                color: '#1f2937'
               }}>
                 定期薬残: {report.regular_medication_supply_until.replace(/-/g, '/')} まであり
               </span>
