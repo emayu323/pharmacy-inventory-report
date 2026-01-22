@@ -100,32 +100,32 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
 
           <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid #e5e7eb' }}>
             {report.chief_complaint && (
-              <div style={{ display: 'flex', padding: '8px 4px', borderBottom: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', padding: '4px 4px', borderBottom: '1px solid #e5e7eb' }}>
                 <div style={{ width: '100px', fontSize: '11px', fontWeight: 'bold', color: '#666', paddingTop: '2px' }}>主訴等</div>
-                <div style={{ flex: 1, fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                <div style={{ flex: 1, fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: 1.3 }}>
                   {report.chief_complaint}
                 </div>
               </div>
             )}
 
-            <div style={{ display: 'flex', padding: '8px 4px', borderBottom: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', padding: '4px 4px', borderBottom: '1px solid #e5e7eb' }}>
               <div style={{ width: '100px', fontSize: '11px', fontWeight: 'bold', color: '#666', paddingTop: '2px' }}>服薬指導</div>
-              <div style={{ flex: 1, fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: 1.5, minHeight: 'auto' }}>
+              <div style={{ flex: 1, fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: 1.3, minHeight: 'auto' }}>
                 {report.medication_instruction}
               </div>
             </div>
 
             {report.side_effects && (
-              <div style={{ display: 'flex', padding: '8px 4px', borderBottom: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', padding: '4px 4px', borderBottom: '1px solid #e5e7eb' }}>
                 <div style={{ width: '100px', fontSize: '11px', fontWeight: 'bold', color: '#666', paddingTop: '2px' }}>その他伝達事項</div>
-                <div style={{ flex: 1, fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                <div style={{ flex: 1, fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: 1.3 }}>
                   {report.side_effects}
                 </div>
               </div>
             )}
 
             {report.next_visit_date && (
-              <div style={{ display: 'flex', padding: '8px 4px', borderBottom: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', padding: '4px 4px', borderBottom: '1px solid #e5e7eb' }}>
                 <div style={{ width: '100px', fontSize: '11px', fontWeight: 'bold', color: '#666' }}>次回訪問予定日</div>
                 <div style={{ flex: 1, fontSize: '12px', fontWeight: 'bold' }}>
                   {report.next_visit_date.replace(/-/g, '/')}
