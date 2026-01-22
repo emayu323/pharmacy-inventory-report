@@ -36,7 +36,12 @@ const EMPTY_REPORT: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
     storage_status: '良好',
     other_dept_consultation: 'なし',
     concomitant_medications: 'なし',
+    concomitant_medications: 'なし',
     interaction_status: '併用薬/飲食物による相互作用なし',
+
+    pharmacy_name: '',
+    pharmacy_tel: '',
+    pharmacy_fax: '',
 }
 
 const EditableSelect = ({ label, name, value, options, onChange }: {
@@ -207,7 +212,12 @@ export default function ReportEdit() {
                 storage_status: rest.storage_status ?? EMPTY_REPORT.storage_status,
                 other_dept_consultation: rest.other_dept_consultation ?? EMPTY_REPORT.other_dept_consultation,
                 concomitant_medications: rest.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
+                concomitant_medications: rest.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
                 interaction_status: rest.interaction_status ?? EMPTY_REPORT.interaction_status,
+
+                pharmacy_name: rest.pharmacy_name ?? EMPTY_REPORT.pharmacy_name,
+                pharmacy_tel: rest.pharmacy_tel ?? EMPTY_REPORT.pharmacy_tel,
+                pharmacy_fax: rest.pharmacy_fax ?? EMPTY_REPORT.pharmacy_fax,
 
                 visit_date: today,
                 prescription_date: today,
@@ -224,6 +234,7 @@ export default function ReportEdit() {
                 ...formData,
                 patient_name: location.state.patientName,
                 patient_dob: location.state.patientDob,
+                patient_gender: location.state.patientGender,
                 patient_gender: location.state.patientGender,
                 patient_id: location.state.patientId,
                 visit_date: new Date().toISOString().split('T')[0],
@@ -248,6 +259,38 @@ export default function ReportEdit() {
                 }
             }
             fetchLatest()
+
+            // Fetch Pharmacy Info from Patient -> Institution
+            const fetchPharmacyInfo = async () => {
+                // First get patient's pharmacy name
+                const { data: patientData } = await supabase
+                    .from('patients')
+                    .select('pharmacy_name')
+                    .eq('id', location.state.patientId)
+                    .single()
+
+                if (patientData && patientData.pharmacy_name) {
+                    setFormData(prev => ({ ...prev, pharmacy_name: patientData.pharmacy_name }))
+
+                    // Then find the institution to get TEL/FAX
+                    const { data: instData } = await supabase
+                        .from('institutions')
+                        .select('tel, fax')
+                        .eq('name', patientData.pharmacy_name)
+                        .eq('type', 'pharmacy')
+                        .limit(1)
+                        .maybeSingle()
+
+                    if (instData) {
+                        setFormData(prev => ({
+                            ...prev,
+                            pharmacy_tel: instData.tel || '',
+                            pharmacy_fax: instData.fax || ''
+                        }))
+                    }
+                }
+            }
+            fetchPharmacyInfo()
         }
     }, [id, location.state])
 
@@ -271,7 +314,12 @@ export default function ReportEdit() {
                 storage_status: data.storage_status ?? EMPTY_REPORT.storage_status,
                 other_dept_consultation: data.other_dept_consultation ?? EMPTY_REPORT.other_dept_consultation,
                 concomitant_medications: data.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
+                concomitant_medications: data.concomitant_medications ?? EMPTY_REPORT.concomitant_medications,
                 interaction_status: data.interaction_status ?? EMPTY_REPORT.interaction_status,
+
+                pharmacy_name: data.pharmacy_name ?? EMPTY_REPORT.pharmacy_name,
+                pharmacy_tel: data.pharmacy_tel ?? EMPTY_REPORT.pharmacy_tel,
+                pharmacy_fax: data.pharmacy_fax ?? EMPTY_REPORT.pharmacy_fax,
 
                 medications_check_list: data.medications_check_list || [],
                 medications_check_list_prn: data.medications_check_list_prn || []

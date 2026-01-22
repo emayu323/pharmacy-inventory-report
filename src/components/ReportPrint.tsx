@@ -12,6 +12,23 @@ export const ReportPrint = React.forwardRef<HTMLDivElement, Props>(({ report }, 
       <div className="print-header">
         <h1>居宅療養管理指導報告書</h1>
 
+        {/* Header Info: Destination & Source */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12px', marginTop: '4px', marginBottom: '8px', lineHeight: 1.4 }}>
+          {/* Left: Destination */}
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>[報告先]</div>
+            <div>{report.medical_institution_name}</div>
+            <div>{report.doctor_name} 先生</div>
+          </div>
+
+          {/* Right: Source */}
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>[報告元]</div>
+            <div>{report.pharmacy_name}</div>
+            <div>担当薬剤師: {report.pharmacist_name}</div>
+            <div>TEL: {report.pharmacy_tel} / FAX: {report.pharmacy_fax}</div>
+          </div>
+        </div>
       </div>
 
       <div className="print-grid">

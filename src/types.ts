@@ -53,6 +53,9 @@ export interface Report {
   doctor_name: string;
   medical_institution_name?: string;
   pharmacist_name: string;
+  pharmacy_name?: string;
+  pharmacy_tel?: string;
+  pharmacy_fax?: string;
 
   // Dates
   prescription_date: string;
