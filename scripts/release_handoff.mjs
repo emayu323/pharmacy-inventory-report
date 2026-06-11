@@ -77,6 +77,17 @@ export function createReleaseHandoffMarkdown(options = {}) {
         })
     }
 
+    lines.push(
+        '',
+        '## 本番配布直前の最終ゲート',
+        '',
+        '署名Secret投入後、公開前に次を実行し、`pending` / `warn` が残っていないことを確認する。',
+        '',
+        '```bash',
+        'npm run release:check:full:strict',
+        '```'
+    )
+
     if (options.githubStatus) {
         lines.push(
             '',

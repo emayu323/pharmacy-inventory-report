@@ -34,6 +34,9 @@ test('release handoff markdown summarizes pending external work without secrets'
     assert.match(markdown, /Vercel Production環境変数を更新してよい/)
     assert.match(markdown, /gh workflow run windows-installer\.yml/)
     assert.match(markdown, /vercel env add INSTALL_CODE_REGISTRY production/)
+    assert.match(markdown, /## 本番配布直前の最終ゲート/)
+    assert.match(markdown, /署名Secret投入後/)
+    assert.match(markdown, /npm run release:check:full:strict/)
     assert.doesNotMatch(markdown, /SUPER_SECRET/)
 })
 
