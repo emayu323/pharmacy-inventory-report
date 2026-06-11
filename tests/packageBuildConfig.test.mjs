@@ -131,11 +131,11 @@ test('Windows installer docs show handoff with GitHub status for external operat
     assert.match(windowsInstallerDocs, /npm run dist:win:mac/)
     assert.equal(
         pkg.scripts['release:check:full'],
-        'node scripts/release_readiness_check.mjs --source-status --github-status --vercel-status --vercel-smoke --ai-receipt output/local-ai-integration-result.json --format text'
+        'node scripts/release_readiness_check.mjs --source-status --github-status --vercel-status --vercel-smoke --env-file output/.env.production.local.generated --ai-receipt output/local-ai-integration-result.json --format text'
     )
     assert.equal(
         pkg.scripts['release:handoff:full'],
-        'node scripts/release_handoff.mjs --source-status --github-status --vercel-status --vercel-smoke --ai-receipt output/local-ai-integration-result.json'
+        'node scripts/release_handoff.mjs --source-status --github-status --vercel-status --vercel-smoke --env-file output/.env.production.local.generated --ai-receipt output/local-ai-integration-result.json'
     )
     assert.equal(pkg.scripts['release:vercel-smoke'], 'node scripts/vercel_production_smoke.mjs')
     assert.match(windowsInstallerDocs, /npm run release:check:full/)
