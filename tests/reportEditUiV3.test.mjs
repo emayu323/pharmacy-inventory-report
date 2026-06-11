@@ -48,6 +48,11 @@ test('basic information collapse control is keyboard reachable', () => {
     assert.match(reportEdit, /id="section-basic-fields"/)
 })
 
+test('editable select suggestions are keyboard reachable buttons', () => {
+    assert.match(reportEdit, /className="editable-select-option"/)
+    assert.match(reportEdit, /type="button"[\s\S]*className="editable-select-option"[\s\S]*onClick=\{\(\) => handleSelect\(opt\)\}/)
+})
+
 test('report edit screen uses template chips instead of dropdown template selectors', () => {
     assert.match(reportEdit, /template-chip-list/)
     assert.match(reportEdit, /template-chip-replace/)

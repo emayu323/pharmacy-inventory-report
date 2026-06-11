@@ -213,19 +213,14 @@ const EditableSelect = ({ label, name, value, options, onChange }: {
                         padding: '0.25rem 0'
                     }}>
                         {options.map((opt) => (
-                            <li
-                                key={opt}
-                                onClick={() => handleSelect(opt)}
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    cursor: 'pointer',
-                                    fontSize: '0.925rem',
-                                    transition: 'background-color 0.1s',
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-background)'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                {opt}
+                            <li key={opt}>
+                                <button
+                                    type="button"
+                                    className="editable-select-option"
+                                    onClick={() => handleSelect(opt)}
+                                >
+                                    {opt}
+                                </button>
                             </li>
                         ))}
                     </ul>
@@ -1619,6 +1614,21 @@ export default function ReportEdit() {
 	          border-color: var(--color-primary);
 	          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 	        }
+
+            .editable-select-option {
+              width: 100%;
+              padding: 0.5rem 1rem;
+              color: inherit;
+              font-size: 0.925rem;
+              text-align: left;
+              transition: background-color 0.1s;
+            }
+
+            .editable-select-option:hover,
+            .editable-select-option:focus-visible {
+              background-color: var(--color-background);
+              outline: none;
+            }
 
             .report-edit-form {
               display: block;
