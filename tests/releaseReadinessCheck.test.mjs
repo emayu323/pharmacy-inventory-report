@@ -1516,7 +1516,7 @@ function sourceStatusFixture(overrides = {}) {
 
 function workflowFixture() {
     return `
-runs-on: windows-latest
+runs-on: windows-2025-vs2026
 FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 actions/checkout@v6
 actions/setup-node@v6

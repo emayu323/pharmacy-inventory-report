@@ -841,7 +841,7 @@ function checkWindowsWorkflow(rootDir) {
 
     const workflow = fs.readFileSync(workflowPath, 'utf8')
     const requiredSnippets = [
-        'runs-on: windows-latest',
+        'runs-on: windows-2025-vs2026',
         'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true',
         'node-version: 24',
         'actions/checkout@v6',

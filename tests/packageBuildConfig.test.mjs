@@ -106,7 +106,7 @@ test('Windows updater helper calls the app pre-update backup CLI', () => {
 })
 
 test('Windows installer workflow builds and verifies distributable artifact', () => {
-    assert.match(windowsInstallerWorkflow, /runs-on: windows-latest/)
+    assert.match(windowsInstallerWorkflow, /runs-on: windows-2025-vs2026/)
     assert.match(windowsInstallerWorkflow, /FORCE_JAVASCRIPT_ACTIONS_TO_NODE24:\s*true/)
     assert.match(windowsInstallerWorkflow, /node-version: 24/)
     assert.match(windowsInstallerWorkflow, /actions\/checkout@v6/)

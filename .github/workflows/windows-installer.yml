@@ -12,7 +12,7 @@ permissions:
 jobs:
   build-windows-installer:
     name: Build Windows installer
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     timeout-minutes: 30
 
     env:
