@@ -238,10 +238,13 @@ function checkGitHubReleaseStatus(status) {
 }
 
 function getGitHubReleaseStatusMessage(status) {
-    return status.artifact?.message
-        || status.latestRun?.message
-        || status.workflow?.message
-        || 'GitHub Actions release status was read'
+    const messages = [
+        status.releaseRepository?.message,
+        status.artifact?.message,
+        status.latestRun?.message,
+        status.workflow?.message
+    ].filter(Boolean)
+    return messages.join('; ') || 'GitHub Actions release status was read'
 }
 
 function checkVercelCloudEnvironment(status) {
@@ -1086,6 +1089,10 @@ function getNextActionDescription(check, details) {
     }
     if (check.id === 'source_publication' && check.message) {
         const baseDescription = details.description || 'ローカルのソース公開状態を確認します。'
+        return `${baseDescription} 現在の判定: ${check.message}`
+    }
+    if (check.id === 'github_release_status' && check.message) {
+        const baseDescription = details.description || 'GitHub Actions上の配布状態を確認します。'
         return `${baseDescription} 現在の判定: ${check.message}`
     }
     return details.description || check.message

@@ -373,6 +373,12 @@ test('release readiness check can include GitHub Actions artifact status as an o
                     status: 'present',
                     message: 'Workflow is available on GitHub'
                 },
+                releaseRepository: {
+                    nameWithOwner: 'emayu323/pharmacy-report-releases',
+                    expectedPrivate: false,
+                    status: 'missing',
+                    message: 'Public release repository emayu323/pharmacy-report-releases is not available'
+                },
                 latestRun: null,
                 artifact: {
                     name: 'pharmacy-report-windows-installer',
@@ -391,7 +397,9 @@ test('release readiness check can include GitHub Actions artifact status as an o
         assert.equal(report.ok, true)
         assert.equal(report.ready, false)
         assert.equal(githubCheck?.status, 'pending')
+        assert.match(githubCheck?.message || '', /pharmacy-report-releases/)
         assert.match(githubCheck?.message || '', /No workflow runs/)
+        assert.match(githubAction?.description || '', /pharmacy-report-releases/)
         assert.equal(githubAction?.docs, 'docs/windows-installer-build.md')
         assert.deepEqual(githubAction?.commands, [
             'npm run release:github-status',
