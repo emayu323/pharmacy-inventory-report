@@ -34,6 +34,7 @@ npm run test:local-ai-text -- --ollama-model llama3.1:8b --visit-memo "主訴等
 
 - 作成日時
 - アプリバージョン
+- Gitソースリビジョン
 - Ollamaの接続状態
 - 指定モデルの確認結果
 - 下書き作成がローカルLLM経由で成功したか
@@ -45,7 +46,7 @@ npm run test:local-ai-text -- --ollama-model llama3.1:8b --visit-memo "主訴等
 
 リリース前チェックでは、証跡JSONに `visitMemo`、`visit_memo`、`chief_complaint`、`medication_instruction` など本文を示すフィールドが混ざっている場合は失敗として扱う。
 
-証跡JSONの `app_version` が現在の `package.json` のバージョンと違う場合も失敗として扱う。アプリ更新後は、現地PCでAI結合テストを取り直す。
+証跡JSONの `app_version` が現在の `package.json` のバージョンと違う場合も失敗として扱う。さらに `source_revision` が現在のGitソースと違う場合も失敗として扱う。アプリ更新後やソース変更後は、現地PCでAI結合テストを取り直す。
 
 本番配布前にAI機能を `pass` にするには、`ready: true`、`ollama.status: "ready"`、ローカルLLM由来の下書き成功、主訴等/服薬指導内容の両方の抽出成功が必要。
 

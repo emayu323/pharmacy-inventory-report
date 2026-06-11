@@ -104,13 +104,15 @@ test('local AI integration check writes privacy-safe receipt when requested', as
                 LOCAL_AI_TIMEOUT_MS: '20'
             },
             fetchImpl: fakeFetch,
-            now: () => new Date('2026-06-10T12:00:00.000Z')
+            now: () => new Date('2026-06-10T12:00:00.000Z'),
+            sourceRevision: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
         })
 
         assert.equal(result.receiptPath, receiptPath)
         const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
         assert.equal(receipt.created_at, '2026-06-10T12:00:00.000Z')
         assert.equal(receipt.app_version, '0.1.0')
+        assert.equal(receipt.source_revision, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
         assert.equal(receipt.ok, true)
         assert.equal(receipt.ollama.status, 'ready')
         assert.equal(receipt.draft.source, 'local_llm')

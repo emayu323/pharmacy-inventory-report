@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { createAiDraftFromVisitMemo } from '../electron/localAiDraftService.mjs'
@@ -12,6 +13,7 @@ const DEFAULT_VISIT_MEMO = '主訴等: 眠気の訴えあり。\n服薬指導内
 export async function runLocalAiIntegrationCheck(options = {}) {
     const env = options.env || process.env
     const config = buildIntegrationConfig(env, options)
+    const sourceRevision = options.sourceRevision || readSourceRevision(options.cwd || process.cwd())
     if (!config.enabled) {
         return {
             skipped: true,
@@ -43,11 +45,13 @@ export async function runLocalAiIntegrationCheck(options = {}) {
     const result = {
         skipped: false,
         status,
-        draft
+        draft,
+        sourceRevision
     }
     if (config.resultPath) {
         writeIntegrationReceipt(config.resultPath, result, {
-            createdAt: (typeof options.now === 'function' ? options.now() : new Date()).toISOString()
+            createdAt: (typeof options.now === 'function' ? options.now() : new Date()).toISOString(),
+            sourceRevision
         })
         result.receiptPath = config.resultPath
     }
@@ -103,17 +107,22 @@ export function writeIntegrationReceipt(resultPath, result, options = {}) {
 }
 
 export function createIntegrationReceipt(result, options = {}) {
+    const sourceRevision = normalizeSha(options.sourceRevision || result.sourceRevision)
     if (result.skipped) {
-        return {
+        const receipt = {
             created_at: options.createdAt || new Date().toISOString(),
             app_version: options.appVersion || packageJson.version,
             ok: false,
             skipped: true,
             reason: result.reason
         }
+        if (sourceRevision) {
+            receipt.source_revision = sourceRevision
+        }
+        return receipt
     }
 
-    return {
+    const receipt = {
         created_at: options.createdAt || new Date().toISOString(),
         app_version: options.appVersion || packageJson.version,
         ok: true,
@@ -133,6 +142,10 @@ export function createIntegrationReceipt(result, options = {}) {
             medicationInstructionPresent: Boolean(result.draft.medication_instruction)
         }
     }
+    if (sourceRevision) {
+        receipt.source_revision = sourceRevision
+    }
+    return receipt
 }
 
 function readBoolean(value) {
@@ -149,6 +162,23 @@ function splitArg(arg) {
     const separatorIndex = value.indexOf('=')
     if (separatorIndex < 0) return [value, undefined]
     return [value.slice(0, separatorIndex), value.slice(separatorIndex + 1)]
+}
+
+function readSourceRevision(cwd) {
+    try {
+        return normalizeSha(execFileSync('git', ['rev-parse', 'HEAD'], {
+            cwd,
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore']
+        }))
+    } catch {
+        return ''
+    }
+}
+
+function normalizeSha(value) {
+    const text = String(value || '').trim()
+    return /^[a-f0-9]{40}$/i.test(text) ? text.toLowerCase() : ''
 }
 
 function summarizeResult(result) {

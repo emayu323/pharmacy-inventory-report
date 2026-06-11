@@ -128,10 +128,12 @@ test('source release status reports synced source as ready', async () => {
     assert.equal(report.ready, true)
     assert.equal(report.clean, true)
     assert.equal(report.publishState, 'synced')
+    assert.equal(report.currentHeadSha, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
 
     const text = formatSourceReleaseStatusText(report)
     assert.match(text, /ローカルGit判定: 同期済み/)
     assert.match(text, /ready: true/)
+    assert.match(text, /source revision: aaaaaaa/)
 })
 
 test('source release status blocks publication when sensitive local files are tracked', async () => {
@@ -184,6 +186,12 @@ function fakeGit(responses) {
         if (!response && key === 'ls-files') {
             return {
                 stdout: '',
+                stderr: ''
+            }
+        }
+        if (!response && key === 'rev-parse HEAD') {
+            return {
+                stdout: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n',
                 stderr: ''
             }
         }

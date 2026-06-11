@@ -842,12 +842,76 @@ test('release readiness check rejects AI receipts from another app version', () 
     }
 })
 
+test('release readiness check rejects AI receipts without source revision', () => {
+    const tmpDir = createFixture()
+    const receiptPath = path.join(tmpDir, 'missing-source-ai-receipt.json')
+    fs.writeFileSync(receiptPath, JSON.stringify({
+        created_at: '2026-06-11T09:00:00.000Z',
+        app_version: '0.1.0',
+        ok: true,
+        skipped: false,
+        ready: true,
+        ollama: {
+            status: 'ready'
+        },
+        draft: {
+            source: 'local_llm',
+            chiefComplaintPresent: true,
+            medicationInstructionPresent: true
+        }
+    }))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            aiReceiptPath: receiptPath
+        })
+        const check = report.checks.find(item => item.id === 'local_ai_integration')
+
+        assert.equal(report.ok, false)
+        assert.equal(check?.status, 'fail')
+        assert.match(check?.message || '', /source_revision/)
+        assert.match(check?.message || '', /test:local-ai-text/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check rejects AI receipts from another source revision', () => {
+    const tmpDir = createFixture()
+    const receiptPath = path.join(tmpDir, 'old-source-ai-receipt.json')
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture({
+        source_revision: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    })))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            aiReceiptPath: receiptPath,
+            sourceStatus: sourceStatusFixture({
+                currentHeadSha: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+            })
+        })
+        const check = report.checks.find(item => item.id === 'local_ai_integration')
+
+        assert.equal(report.ok, false)
+        assert.equal(check?.status, 'fail')
+        assert.match(check?.message || '', /source_revision/)
+        assert.match(check?.message || '', /current source/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
 test('release readiness check rejects incomplete AI receipts even when ok is true', () => {
     const tmpDir = createFixture()
     const receiptPath = path.join(tmpDir, 'incomplete-ai-receipt.json')
     fs.writeFileSync(receiptPath, JSON.stringify({
         created_at: '2026-06-11T09:00:00.000Z',
         app_version: '0.1.0',
+        source_revision: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         ok: true,
         skipped: false,
         ready: false,
@@ -1477,6 +1541,7 @@ function aiReceiptFixture(overrides = {}) {
     return {
         created_at: '2026-06-11T09:00:00.000Z',
         app_version: '0.1.0',
+        source_revision: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         ok: true,
         skipped: false,
         ready: true,

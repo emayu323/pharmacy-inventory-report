@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { verifyVercelProductionEnv, readEnvFile } from './verify_vercel_production_env.mjs'
 import { createSourceReleaseStatus } from './source_release_status.mjs'
 import { readVercelCloudEnvStatus } from './vercel_cloud_env_status.mjs'
@@ -234,7 +235,7 @@ export function createReleaseReadinessReport(options = {}) {
         checkVercelEnvironment(env, options.envFile, rootDir),
         ...(options.vercelCloudStatus ? [checkVercelCloudEnvironment(options.vercelCloudStatus)] : []),
         ...(options.vercelProductionSmokeStatus ? [checkVercelProductionSmoke(options.vercelProductionSmokeStatus)] : []),
-        checkLocalAiIntegrationReceipt(env, options.aiReceiptPath, rootDir)
+        checkLocalAiIntegrationReceipt(env, options.aiReceiptPath, rootDir, options.sourceStatus)
     ]
 
     const summary = summarizeChecks(checks)
@@ -1021,7 +1022,7 @@ function getRegistryInstallerUrlArtifactMismatches(rawRegistry, expectedFileName
     }
 }
 
-function checkLocalAiIntegrationReceipt(env, explicitReceiptPath, rootDir) {
+function checkLocalAiIntegrationReceipt(env, explicitReceiptPath, rootDir, sourceStatus) {
     const rawReceiptPath = explicitReceiptPath || env.LOCAL_AI_INTEGRATION_RESULT_PATH || ''
     if (!rawReceiptPath) {
         return {
@@ -1060,6 +1061,15 @@ function checkLocalAiIntegrationReceipt(env, explicitReceiptPath, rootDir) {
                 label: 'Local AI integration receipt',
                 status: 'fail',
                 message: `AI integration receipt app version must match package.json version ${packageVersion}`
+            }
+        }
+        const sourceRevisionError = getAiReceiptSourceRevisionError(receipt, sourceStatus, rootDir)
+        if (sourceRevisionError) {
+            return {
+                id: 'local_ai_integration',
+                label: 'Local AI integration receipt',
+                status: 'fail',
+                message: sourceRevisionError
             }
         }
         const receiptPendingReason = getAiReceiptPendingReason(receipt)
@@ -1131,6 +1141,22 @@ function getAiReceiptCompletionErrors(receipt) {
     return errors
 }
 
+function getAiReceiptSourceRevisionError(receipt, sourceStatus, rootDir) {
+    if (!receipt?.ok || receipt.skipped) return ''
+
+    const receiptRevision = normalizeSha(receipt.source_revision)
+    if (!receiptRevision) {
+        return 'AI integration receipt source_revision is missing; rerun npm run test:local-ai-text on the current source'
+    }
+
+    const currentRevision = normalizeSha(sourceStatus?.currentHeadSha) || readCurrentSourceRevision(rootDir)
+    if (currentRevision && receiptRevision !== currentRevision) {
+        return `AI integration receipt source_revision ${shortSha(receiptRevision)} does not match current source ${shortSha(currentRevision)}; rerun npm run test:local-ai-text`
+    }
+
+    return ''
+}
+
 function getAiDraftReceiptErrors(draft, label) {
     const errors = []
     if (draft?.source !== 'local_llm') {
@@ -1143,6 +1169,28 @@ function getAiDraftReceiptErrors(draft, label) {
         errors.push(`${label}.medicationInstructionPresent must be true`)
     }
     return errors
+}
+
+function readCurrentSourceRevision(rootDir) {
+    try {
+        return normalizeSha(execFileSync('git', ['rev-parse', 'HEAD'], {
+            cwd: rootDir,
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore']
+        }))
+    } catch {
+        return ''
+    }
+}
+
+function normalizeSha(value) {
+    const text = String(value || '').trim()
+    return /^[a-f0-9]{40}$/i.test(text) ? text.toLowerCase() : ''
+}
+
+function shortSha(value) {
+    const sha = normalizeSha(value)
+    return sha ? sha.slice(0, 7) : 'unknown'
 }
 
 function readPackageJson(rootDir) {

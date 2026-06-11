@@ -61,6 +61,7 @@ export async function createSourceReleaseStatus(options = {}) {
     }
 
     const remoteResult = await runGit(execFileImpl, ['remote', 'get-url', 'origin'], cwd)
+    const headResult = await runGit(execFileImpl, ['rev-parse', 'HEAD'], cwd)
     const parsed = parseShortBranchStatus(statusResult.stdout)
     const trackedSensitivePaths = await readTrackedSensitivePaths(execFileImpl, cwd)
     const publishState = determinePublishState(parsed, trackedSensitivePaths)
@@ -73,6 +74,7 @@ export async function createSourceReleaseStatus(options = {}) {
         clean: parsed.changedCount === 0,
         branch: parsed.branch,
         upstream: parsed.upstream,
+        currentHeadSha: normalizeSha(headResult.stdout),
         remoteUrl: remoteResult.ok ? remoteResult.stdout.trim() : '',
         rootDir: rootResult.stdout.trim(),
         ahead: parsed.ahead,
@@ -98,6 +100,7 @@ export function formatSourceReleaseStatusText(report, options = {}) {
         `publish state: ${report.publishState || 'unknown'}`,
         `branch: ${report.branch || 'unknown'}`,
         `upstream: ${report.upstream || 'none'}`,
+        `source revision: ${shortSha(report.currentHeadSha) || 'unknown'}`,
         `ahead: ${report.ahead || 0}`,
         `behind: ${report.behind || 0}`,
         `changed files: ${report.changedCount || 0}`,
@@ -197,6 +200,16 @@ function parseBranchLine(line) {
 function parseCount(value, pattern) {
     const match = value.match(pattern)
     return match ? Number(match[1]) : 0
+}
+
+function normalizeSha(value) {
+    const text = String(value || '').trim()
+    return /^[a-f0-9]{40}$/i.test(text) ? text.toLowerCase() : ''
+}
+
+function shortSha(value) {
+    const sha = normalizeSha(value)
+    return sha ? sha.slice(0, 7) : ''
 }
 
 function determinePublishState(parsed, trackedSensitivePaths = []) {
