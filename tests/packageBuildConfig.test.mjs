@@ -107,14 +107,17 @@ test('Windows updater helper calls the app pre-update backup CLI', () => {
 
 test('Windows installer workflow builds and verifies distributable artifact', () => {
     assert.match(windowsInstallerWorkflow, /runs-on: windows-latest/)
+    assert.match(windowsInstallerWorkflow, /FORCE_JAVASCRIPT_ACTIONS_TO_NODE24:\s*true/)
     assert.match(windowsInstallerWorkflow, /node-version: 24/)
+    assert.match(windowsInstallerWorkflow, /actions\/checkout@v6/)
+    assert.match(windowsInstallerWorkflow, /actions\/setup-node@v6/)
     assert.match(windowsInstallerWorkflow, /npm ci/)
     assert.match(windowsInstallerWorkflow, /npm run test:local-app/)
     assert.match(windowsInstallerWorkflow, /npm run dist:win/)
     assert.match(windowsInstallerWorkflow, /node --test tests\/preUpdateBackupCommand\.test\.mjs/)
     assert.match(windowsInstallerWorkflow, /npm run release:check -- --format text/)
     assert.match(windowsInstallerWorkflow, /release-readiness\.txt/)
-    assert.match(windowsInstallerWorkflow, /actions\/upload-artifact@v4/)
+    assert.match(windowsInstallerWorkflow, /actions\/upload-artifact@v7/)
     assert.match(windowsInstallerWorkflow, /release\/\*\.exe/)
     assert.match(windowsInstallerWorkflow, /release\/release-readiness\.txt/)
     assert.match(windowsInstallerWorkflow, /WINDOWS_CSC_LINK/)

@@ -1517,6 +1517,9 @@ function sourceStatusFixture(overrides = {}) {
 function workflowFixture() {
     return `
 runs-on: windows-latest
+FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+actions/checkout@v6
+actions/setup-node@v6
 node-version: 24
 npm run dist:win
 npm run dist:win:publish
@@ -1525,7 +1528,7 @@ LOCAL_CODE_SIGNING_ENABLED
 tests/preUpdateBackupCommand.test.mjs
 npm run release:check -- --format text
 release-readiness.txt
-actions/upload-artifact@v4
+actions/upload-artifact@v7
 `
 }
 

@@ -842,7 +842,10 @@ function checkWindowsWorkflow(rootDir) {
     const workflow = fs.readFileSync(workflowPath, 'utf8')
     const requiredSnippets = [
         'runs-on: windows-latest',
+        'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true',
         'node-version: 24',
+        'actions/checkout@v6',
+        'actions/setup-node@v6',
         'npm run dist:win',
         'npm run dist:win:publish',
         'AUTO_UPDATE_RELEASE_PUBLISH_ENABLED',
@@ -850,7 +853,7 @@ function checkWindowsWorkflow(rootDir) {
         'tests/preUpdateBackupCommand.test.mjs',
         'npm run release:check -- --format text',
         'release-readiness.txt',
-        'actions/upload-artifact@v4'
+        'actions/upload-artifact@v7'
     ]
     const missing = requiredSnippets.filter(snippet => !workflow.includes(snippet))
     return {

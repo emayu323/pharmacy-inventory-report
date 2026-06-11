@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 30
 
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
       CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
       GH_TOKEN: ${{ secrets.RELEASES_GITHUB_TOKEN }}
@@ -24,10 +25,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -54,7 +55,7 @@ jobs:
           npm run release:check -- --format text | Tee-Object -FilePath "release\release-readiness.txt"
 
       - name: Upload installer artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pharmacy-report-windows-installer
           path: |
