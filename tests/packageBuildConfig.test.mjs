@@ -75,6 +75,9 @@ test('Electron startup configures Windows login auto launch for packaged app', (
 test('Electron exposes DB protection status for rollout checks', () => {
     assert.match(electronMain, /localSecurityStatus\.mjs/)
     assert.match(electronMain, /security:get-status/)
+    assert.match(electronMain, /createStartupSecurityWarning/)
+    assert.match(electronMain, /showStartupSecurityWarning/)
+    assert.match(electronMain, /dialog\.showMessageBox/)
     assert.ok(pkg.scripts['test:local-app'].includes('localSecurityStatus.test.mjs'))
 })
 

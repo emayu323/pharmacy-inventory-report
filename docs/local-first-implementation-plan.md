@@ -275,6 +275,7 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - 自動バックアップは手入力パスワードを保存せず、生成済み薬局キーを暗号化キーとして使う。
 - 自動バックアップ履歴は `backups.status = auto_created` と `metadata_json.auto_backup.date` で記録し、同日中の重複作成を避ける。
 - 設定画面で稼働中SQLite DB本体の保護状態を確認できるようにする。WindowsではBitLocker状態を確認し、mac開発環境やWeb入口ではWindows端末で確認する旨を表示する。
+- Windows端末でBitLockerが無効な場合は、Electron起動時にも警告を表示する。ただし利用はブロックせず、「このまま使う」で継続できる。
 - 設定画面から薬局キーを表示、非表示、コピーできる。初回や旧DBで未発行の場合は設定画面でも生成できる。
 - アップデート前バックアップを `backups.status = pre_update_created` と `metadata_json.pre_update_backup` で履歴に残す。
 - 設定画面から薬局キーを使ったアップデート前バックアップを作成できる。将来の配布アップデータからも同じIPCを呼ぶ。

@@ -61,6 +61,22 @@ export function parseBitLockerProtectionStatus(output) {
     return 'unknown'
 }
 
+export function createStartupSecurityWarning(status) {
+    const dbProtection = status?.dbProtection
+    if (dbProtection?.status !== 'unprotected') return null
+
+    const drive = dbProtection.drive ? `\n対象ドライブ: ${dbProtection.drive}` : ''
+    return {
+        type: 'warning',
+        buttons: ['このまま使う'],
+        defaultId: 0,
+        cancelId: 0,
+        title: 'DB保護の確認',
+        message: 'BitLockerが無効です',
+        detail: `患者情報を含むローカルDB本体は、WindowsのBitLockerで保護することを推奨します。利用は継続できます。導入後にBitLockerを有効化してください。${drive}`
+    }
+}
+
 function createBitLockerProtectionResult(status, drive) {
     if (status === 'protected') {
         return {

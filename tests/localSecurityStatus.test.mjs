@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { getLocalSecurityStatus, parseBitLockerProtectionStatus } from '../electron/localSecurityStatus.mjs'
+import {
+    createStartupSecurityWarning,
+    getLocalSecurityStatus,
+    parseBitLockerProtectionStatus
+} from '../electron/localSecurityStatus.mjs'
 
 test('parses BitLocker protection on from manage-bde output', () => {
     const status = parseBitLockerProtectionStatus(`
@@ -64,4 +68,42 @@ test('returns unknown when BitLocker output cannot be parsed', async () => {
     })
 
     assert.equal(status.dbProtection.status, 'unknown')
+})
+
+test('creates a non-blocking startup warning when BitLocker is disabled', () => {
+    const warning = createStartupSecurityWarning({
+        checked_at: '2026-06-11T00:00:00.000Z',
+        dbProtection: {
+            status: 'unprotected',
+            method: 'BitLocker',
+            drive: 'C:',
+            message: 'BitLockerが無効です。導入時に有効化してください'
+        }
+    })
+
+    assert.equal(warning?.type, 'warning')
+    assert.deepEqual(warning?.buttons, ['このまま使う'])
+    assert.match(warning?.message || '', /BitLockerが無効/)
+    assert.match(warning?.detail || '', /利用は継続できます/)
+    assert.match(warning?.detail || '', /C:/)
+})
+
+test('does not create a startup warning outside disabled BitLocker state', () => {
+    assert.equal(createStartupSecurityWarning({
+        checked_at: '2026-06-11T00:00:00.000Z',
+        dbProtection: {
+            status: 'protected',
+            method: 'BitLocker',
+            drive: 'C:',
+            message: 'BitLockerは有効です'
+        }
+    }), null)
+    assert.equal(createStartupSecurityWarning({
+        checked_at: '2026-06-11T00:00:00.000Z',
+        dbProtection: {
+            status: 'not_windows',
+            method: 'BitLocker',
+            message: 'BitLocker確認はWindows端末で実行します'
+        }
+    }), null)
 })

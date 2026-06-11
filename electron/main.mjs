@@ -7,7 +7,7 @@ import { startLocalHealthServer } from '../scripts/local_health_service.js'
 import { createAiDraftFromVisitMemo } from './localAiDraftService.mjs'
 import { getLocalAiEnvironmentStatus } from './localAiEnvironment.mjs'
 import { createLocalAiProcessManager } from './localAiProcessManager.mjs'
-import { getLocalSecurityStatus } from './localSecurityStatus.mjs'
+import { createStartupSecurityWarning, getLocalSecurityStatus } from './localSecurityStatus.mjs'
 import {
     clearLocalPin,
     ensureBackupKey,
@@ -120,6 +120,7 @@ app.whenReady()
         registerIpcHandlers()
         await startHealthApi(databaseState)
         await createMainWindow()
+        void showStartupSecurityWarning()
         configureAutoUpdates()
     })
     .catch(error => {
@@ -656,6 +657,20 @@ async function createMainWindow() {
         || process.env.ELECTRON_SMOKE_BACKUP === '1'
     ) {
         await runConfiguredSmokeTests()
+    }
+}
+
+async function showStartupSecurityWarning() {
+    if (!mainWindow) return
+
+    try {
+        const status = await getLocalSecurityStatus()
+        const warning = createStartupSecurityWarning(status)
+        if (warning) {
+            await dialog.showMessageBox(mainWindow, warning)
+        }
+    } catch (error) {
+        console.warn('Electron startup security warning failed:', error)
     }
 }
 
