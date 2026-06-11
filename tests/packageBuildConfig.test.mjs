@@ -136,15 +136,15 @@ test('Windows installer docs show handoff with GitHub status for external operat
     assert.match(windowsInstallerDocs, /npm run dist:win:mac/)
     assert.equal(
         pkg.scripts['release:check:full'],
-        'node scripts/release_readiness_check.mjs --source-status --github-status --vercel-status --vercel-smoke --env-file output/.env.production.local.generated --ai-receipt output/local-ai-integration-result.json --format text'
+        'node scripts/release_readiness_check.mjs --source-status --github-status --vercel-status --vercel-smoke --env-file output/.env.production.local.generated --ai-receipt output/local-ai-integration-result.json --windows-smoke-receipt output/windows-target-smoke-result.json --format text'
     )
     assert.equal(
         pkg.scripts['release:check:full:strict'],
-        'node scripts/release_readiness_check.mjs --source-status --github-status --vercel-status --vercel-smoke --env-file output/.env.production.local.generated --ai-receipt output/local-ai-integration-result.json --format text --strict'
+        'node scripts/release_readiness_check.mjs --source-status --github-status --vercel-status --vercel-smoke --env-file output/.env.production.local.generated --ai-receipt output/local-ai-integration-result.json --windows-smoke-receipt output/windows-target-smoke-result.json --format text --strict'
     )
     assert.equal(
         pkg.scripts['release:handoff:full'],
-        'node scripts/release_handoff.mjs --source-status --github-status --vercel-status --vercel-smoke --env-file output/.env.production.local.generated --ai-receipt output/local-ai-integration-result.json'
+        'node scripts/release_handoff.mjs --source-status --github-status --vercel-status --vercel-smoke --env-file output/.env.production.local.generated --ai-receipt output/local-ai-integration-result.json --windows-smoke-receipt output/windows-target-smoke-result.json'
     )
     assert.equal(pkg.scripts['release:vercel-smoke'], 'node scripts/vercel_production_smoke.mjs')
     assert.match(windowsInstallerDocs, /npm run release:check:full/)
@@ -163,16 +163,18 @@ test('Windows installer docs show handoff with GitHub status for external operat
     assert.match(windowsInstallerDocs, /外部操作の明示承認/)
     assert.match(windowsInstallerDocs, /GitHub ActionsのWindowsインストーラーworkflowを実行してよい/)
     assert.match(windowsInstallerDocs, /Vercel Production環境変数を更新してよい/)
-    assert.match(windowsInstallerDocs, /署名付き自動更新公開Prerequisiteだけ/)
+    assert.match(windowsInstallerDocs, /署名付き自動更新公開Prerequisite、および `output\/windows-target-smoke-result\.json`/)
+    assert.match(windowsInstallerDocs, /docs\/windows-target-smoke\.md/)
     assert.doesNotMatch(windowsInstallerDocs, /Windowsインストーラー、GitHub Actions上の配布artifact、実AI結合が `pending`/)
 })
 
-test('implementation plan release status only leaves signing prerequisites as pending', () => {
+test('implementation plan release status only leaves external signing and Windows smoke prerequisites as pending', () => {
     assert.match(implementationPlan, /GitHub Actions.*release:github-status.*source revision: current/s)
     assert.match(implementationPlan, /source_revision.*release:check:full.*現在ソースとの一致/s)
     assert.match(implementationPlan, /導入先Windows PCごとのローカルAI結合テスト再実行/)
     assert.match(implementationPlan, /Vercel本番env.*設定済み/s)
     assert.match(implementationPlan, /未実装・外部待ち:/)
+    assert.match(implementationPlan, /output\/windows-target-smoke-result\.json/)
     assert.match(implementationPlan, /RELEASES_GITHUB_TOKEN/)
     assert.match(implementationPlan, /WINDOWS_CSC_LINK/)
     assert.match(implementationPlan, /WINDOWS_CSC_KEY_PASSWORD/)
@@ -182,8 +184,9 @@ test('implementation plan release status only leaves signing prerequisites as pe
 })
 
 test('v2 verification doc matches the current release gate state', () => {
-    assert.match(verifyV2PolicyChangeDoc, /release:check:full.*pass 17, pending 1, fail 0/s)
+    assert.match(verifyV2PolicyChangeDoc, /release:check:full.*pass 17, pending 2, fail 0/s)
     assert.match(verifyV2PolicyChangeDoc, /署名付き自動更新公開/)
+    assert.match(verifyV2PolicyChangeDoc, /Windows実機スモーク証跡/)
     assert.match(verifyV2PolicyChangeDoc, /GitHub Actions上のWindowsインストーラーartifact、本番Vercel env、現地AI結合証跡は確認済み/)
     assert.doesNotMatch(verifyV2PolicyChangeDoc, /外部実行待ちだけが `pending`/)
 })

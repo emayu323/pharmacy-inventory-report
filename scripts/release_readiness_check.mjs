@@ -17,6 +17,7 @@ const REQUIRED_FILES = [
     'docs/windows-installer-build.md',
     'docs/vercel-production-env.md',
     'docs/local-ai-integration-check.md',
+    'docs/windows-target-smoke.md',
     'electron/main.mjs',
     'electron/autoUpdateService.mjs',
     'electron/localSecurityStatus.mjs',
@@ -213,6 +214,14 @@ const NEXT_ACTION_DETAILS = {
             'npm run test:local-ai-text -- --ollama-model <model>',
             'npm run release:check -- --ai-receipt output/local-ai-integration-result.json'
         ]
+    },
+    windows_target_smoke: {
+        description: 'Windows実機でインストール、起動、保存、印刷、バックアップ、自動更新後のデータ保持を確認し、証跡JSONを保存します。',
+        docs: 'docs/windows-target-smoke.md',
+        commands: [
+            'npm run release:check:full',
+            'npm run release:check:full:strict'
+        ]
     }
 }
 
@@ -236,7 +245,10 @@ export function createReleaseReadinessReport(options = {}) {
         checkVercelEnvironment(env, options.envFile, rootDir),
         ...(options.vercelCloudStatus ? [checkVercelCloudEnvironment(options.vercelCloudStatus)] : []),
         ...(options.vercelProductionSmokeStatus ? [checkVercelProductionSmoke(options.vercelProductionSmokeStatus)] : []),
-        checkLocalAiIntegrationReceipt(env, options.aiReceiptPath, rootDir, options.sourceStatus)
+        checkLocalAiIntegrationReceipt(env, options.aiReceiptPath, rootDir, options.sourceStatus),
+        ...(options.windowsSmokeReceiptPath || env.WINDOWS_TARGET_SMOKE_RESULT_PATH
+            ? [checkWindowsTargetSmokeReceipt(env, options.windowsSmokeReceiptPath, rootDir, options.sourceStatus)]
+            : [])
     ]
 
     const summary = summarizeChecks(checks)
@@ -1115,6 +1127,106 @@ function checkLocalAiIntegrationReceipt(env, explicitReceiptPath, rootDir, sourc
     }
 }
 
+function checkWindowsTargetSmokeReceipt(env, explicitReceiptPath, rootDir, sourceStatus) {
+    const rawReceiptPath = explicitReceiptPath || env.WINDOWS_TARGET_SMOKE_RESULT_PATH || ''
+    const receiptPath = resolvePath(rawReceiptPath, rootDir)
+    if (!fs.existsSync(receiptPath)) {
+        return {
+            id: 'windows_target_smoke',
+            label: 'Windows target PC smoke receipt',
+            status: 'pending',
+            message: `Windows target smoke receipt was not found: ${receiptPath}`
+        }
+    }
+
+    try {
+        const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
+        const unsafeFields = findWindowsSmokeReceiptPrivacyFields(receipt)
+        if (unsafeFields.length > 0) {
+            return {
+                id: 'windows_target_smoke',
+                label: 'Windows target PC smoke receipt',
+                status: 'fail',
+                message: `Windows target smoke receipt contains privacy-sensitive fields: ${unsafeFields.join(', ')}`
+            }
+        }
+        const packageVersion = normalizeText(readPackageJson(rootDir)?.version)
+        if (packageVersion && normalizeText(receipt.app_version) !== packageVersion) {
+            return {
+                id: 'windows_target_smoke',
+                label: 'Windows target PC smoke receipt',
+                status: 'fail',
+                message: `Windows target smoke receipt app version must match package.json version ${packageVersion}`
+            }
+        }
+        const sourceRevisionError = getReceiptSourceRevisionError(
+            receipt,
+            sourceStatus,
+            rootDir,
+            'Windows target smoke receipt',
+            'rerun the Windows target smoke check on the current source'
+        )
+        if (sourceRevisionError) {
+            return {
+                id: 'windows_target_smoke',
+                label: 'Windows target PC smoke receipt',
+                status: 'fail',
+                message: sourceRevisionError
+            }
+        }
+        const completionErrors = getWindowsSmokeReceiptCompletionErrors(receipt)
+        if (completionErrors.length > 0) {
+            return {
+                id: 'windows_target_smoke',
+                label: 'Windows target PC smoke receipt',
+                status: 'fail',
+                message: `Windows target smoke receipt is incomplete: ${completionErrors.join(', ')}`
+            }
+        }
+        return {
+            id: 'windows_target_smoke',
+            label: 'Windows target PC smoke receipt',
+            status: 'pass',
+            message: `Windows target smoke verified at ${receipt.created_at || receiptPath}`
+        }
+    } catch {
+        return {
+            id: 'windows_target_smoke',
+            label: 'Windows target PC smoke receipt',
+            status: 'fail',
+            message: 'Windows target smoke receipt is not valid JSON'
+        }
+    }
+}
+
+const WINDOWS_SMOKE_REQUIRED_FLAGS = [
+    'installer_installed',
+    'desktop_shortcut_launch',
+    'local_health_ready',
+    'local_db_ready',
+    'pin_lock_ready',
+    'report_save',
+    'print_preview',
+    'backup_create',
+    'windows_auto_launch_enabled',
+    'pre_update_backup_created',
+    'auto_update_completed',
+    'data_intact_after_update'
+]
+
+function getWindowsSmokeReceiptCompletionErrors(receipt) {
+    const errors = []
+    if (receipt?.ok !== true) errors.push('ok must be true')
+    if (receipt?.ready !== true) errors.push('ready must be true')
+    if (receipt?.platform !== 'win32') errors.push('platform must be win32')
+    for (const flag of WINDOWS_SMOKE_REQUIRED_FLAGS) {
+        if (receipt?.checks?.[flag] !== true) {
+            errors.push(`checks.${flag} must be true`)
+        }
+    }
+    return errors
+}
+
 function getAiReceiptPendingReason(receipt) {
     if (!receipt?.ok || receipt.skipped || receipt.ready === true) return ''
 
@@ -1145,14 +1257,24 @@ function getAiReceiptCompletionErrors(receipt) {
 function getAiReceiptSourceRevisionError(receipt, sourceStatus, rootDir) {
     if (!receipt?.ok || receipt.skipped) return ''
 
+    return getReceiptSourceRevisionError(
+        receipt,
+        sourceStatus,
+        rootDir,
+        'AI integration receipt',
+        'rerun npm run test:local-ai-text on the current source'
+    )
+}
+
+function getReceiptSourceRevisionError(receipt, sourceStatus, rootDir, label, rerunText) {
     const receiptRevision = normalizeSha(receipt.source_revision)
     if (!receiptRevision) {
-        return 'AI integration receipt source_revision is missing; rerun npm run test:local-ai-text on the current source'
+        return `${label} source_revision is missing; ${rerunText}`
     }
 
     const currentRevision = normalizeSha(sourceStatus?.currentHeadSha) || readCurrentSourceRevision(rootDir)
     if (currentRevision && receiptRevision !== currentRevision) {
-        return `AI integration receipt source_revision ${shortSha(receiptRevision)} does not match current source ${shortSha(currentRevision)}; rerun npm run test:local-ai-text`
+        return `${label} source_revision ${shortSha(receiptRevision)} does not match current source ${shortSha(currentRevision)}; ${rerunText}`
     }
 
     return ''
@@ -1309,6 +1431,38 @@ function findAiReceiptPrivacyFields(value, pathParts = []) {
     return fields
 }
 
+const WINDOWS_SMOKE_RECEIPT_UNSAFE_FIELD_NAMES = new Set([
+    'patient_name',
+    'patientname',
+    'birth_date',
+    'birthdate',
+    'address',
+    'phone',
+    'fax',
+    'visit_memo',
+    'visitmemo',
+    'chief_complaint',
+    'medication_instruction',
+    'drug_name',
+    'drugname'
+])
+
+function findWindowsSmokeReceiptPrivacyFields(value, pathParts = []) {
+    if (!value || typeof value !== 'object') return []
+
+    const fields = []
+    for (const [key, child] of Object.entries(value)) {
+        const normalizedKey = key.toLowerCase()
+        const nextPath = [...pathParts, key]
+        if (WINDOWS_SMOKE_RECEIPT_UNSAFE_FIELD_NAMES.has(normalizedKey)) {
+            fields.push(nextPath.join('.'))
+            continue
+        }
+        fields.push(...findWindowsSmokeReceiptPrivacyFields(child, nextPath))
+    }
+    return fields
+}
+
 function summarizeChecks(checks) {
     const summary = {
         pass: 0,
@@ -1374,6 +1528,7 @@ function getUrlPathBasename(value) {
 if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').href) {
     const envFileIndex = process.argv.indexOf('--env-file')
     const aiReceiptIndex = process.argv.indexOf('--ai-receipt')
+    const windowsSmokeReceiptIndex = process.argv.indexOf('--windows-smoke-receipt')
     const formatIndex = process.argv.indexOf('--format')
     const strict = process.argv.includes('--strict')
     const includeSourceStatus = process.argv.includes('--source-status')
@@ -1392,6 +1547,7 @@ if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').hre
     const report = createReleaseReadinessReport({
         envFile: envFileIndex >= 0 ? process.argv[envFileIndex + 1] : undefined,
         aiReceiptPath: aiReceiptIndex >= 0 ? process.argv[aiReceiptIndex + 1] : undefined,
+        windowsSmokeReceiptPath: windowsSmokeReceiptIndex >= 0 ? process.argv[windowsSmokeReceiptIndex + 1] : undefined,
         strict,
         sourceStatus,
         githubReleaseStatus,

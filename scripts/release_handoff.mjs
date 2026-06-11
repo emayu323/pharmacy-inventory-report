@@ -36,6 +36,7 @@ export function createReleaseHandoffMarkdown(options = {}) {
         env: options.env || process.env,
         envFile: options.envFile,
         aiReceiptPath: options.aiReceiptPath,
+        windowsSmokeReceiptPath: options.windowsSmokeReceiptPath,
         strict: options.strict,
         sourceStatus: options.sourceStatus,
         githubReleaseStatus: options.githubStatus,
@@ -195,6 +196,9 @@ function parseArgs(argv) {
             index += 1
         } else if (arg === '--ai-receipt') {
             options.aiReceiptPath = argv[index + 1]
+            index += 1
+        } else if (arg === '--windows-smoke-receipt') {
+            options.windowsSmokeReceiptPath = argv[index + 1]
             index += 1
         } else if (arg === '--strict') {
             options.strict = true

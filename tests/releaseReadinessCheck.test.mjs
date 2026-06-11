@@ -15,6 +15,7 @@ const REQUIRED_FILES = [
     'docs/windows-installer-build.md',
     'docs/vercel-production-env.md',
     'docs/local-ai-integration-check.md',
+    'docs/windows-target-smoke.md',
     'electron/main.mjs',
     'electron/autoUpdateService.mjs',
     'electron/localSecurityStatus.mjs',
@@ -301,6 +302,104 @@ test('release readiness check becomes ready when artifacts env and AI receipt ar
         assert.equal(report.summary.pass, report.summary.total)
         assert.equal(report.checks.find(check => check.id === 'vercel_production_env')?.status, 'pass')
         assert.equal(report.checks.find(check => check.id === 'local_ai_integration')?.status, 'pass')
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check can include Windows target smoke receipt as a final gate', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const aiReceiptPath = path.join(tmpDir, 'ai-receipt.json')
+    const smokeReceiptPath = path.join(tmpDir, 'output', 'windows-target-smoke-result.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(aiReceiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const pendingReport = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath,
+            windowsSmokeReceiptPath: 'output/windows-target-smoke-result.json',
+            strict: false
+        })
+        const pendingCheck = pendingReport.checks.find(check => check.id === 'windows_target_smoke')
+        const pendingAction = pendingReport.nextActions.find(action => action.id === 'windows_target_smoke')
+
+        assert.equal(pendingReport.ok, true)
+        assert.equal(pendingReport.ready, false)
+        assert.equal(pendingCheck?.status, 'pending')
+        assert.match(pendingCheck?.message || '', /Windows target smoke receipt was not found/)
+        assert.equal(pendingAction?.docs, 'docs/windows-target-smoke.md')
+        assert.deepEqual(pendingAction?.commands, [
+            'npm run release:check:full',
+            'npm run release:check:full:strict'
+        ])
+
+        writeFixtureFile(tmpDir, 'output/windows-target-smoke-result.json', JSON.stringify(windowsSmokeReceiptFixture()))
+        const passReport = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath,
+            windowsSmokeReceiptPath: smokeReceiptPath,
+            strict: true
+        })
+        const passCheck = passReport.checks.find(check => check.id === 'windows_target_smoke')
+
+        assert.equal(passReport.ok, true)
+        assert.equal(passReport.ready, true)
+        assert.equal(passCheck?.status, 'pass')
+        assert.match(passCheck?.message || '', /Windows target smoke verified/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check rejects incomplete or unsafe Windows target smoke receipts', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'windows-smoke.json')
+
+    try {
+        fs.writeFileSync(receiptPath, JSON.stringify(windowsSmokeReceiptFixture({
+            checks: {
+                ...windowsSmokeReceiptFixture().checks,
+                auto_update_completed: false
+            }
+        })))
+        const incompleteReport = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            windowsSmokeReceiptPath: receiptPath
+        })
+        const incompleteCheck = incompleteReport.checks.find(check => check.id === 'windows_target_smoke')
+
+        assert.equal(incompleteReport.ok, false)
+        assert.equal(incompleteCheck?.status, 'fail')
+        assert.match(incompleteCheck?.message || '', /auto_update_completed/)
+
+        fs.writeFileSync(receiptPath, JSON.stringify(windowsSmokeReceiptFixture({
+            patient_name: '山田太郎'
+        })))
+        const unsafeReport = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            windowsSmokeReceiptPath: receiptPath
+        })
+        const unsafeCheck = unsafeReport.checks.find(check => check.id === 'windows_target_smoke')
+
+        assert.equal(unsafeReport.ok, false)
+        assert.equal(unsafeCheck?.status, 'fail')
+        assert.match(unsafeCheck?.message || '', /privacy-sensitive fields: patient_name/)
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true })
     }
@@ -1556,6 +1655,32 @@ function aiReceiptFixture(overrides = {}) {
             source: 'local_llm',
             chiefComplaintPresent: true,
             medicationInstructionPresent: true
+        },
+        ...overrides
+    }
+}
+
+function windowsSmokeReceiptFixture(overrides = {}) {
+    return {
+        created_at: '2026-06-11T09:30:00.000Z',
+        app_version: '0.1.0',
+        source_revision: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        platform: 'win32',
+        ok: true,
+        ready: true,
+        checks: {
+            installer_installed: true,
+            desktop_shortcut_launch: true,
+            local_health_ready: true,
+            local_db_ready: true,
+            pin_lock_ready: true,
+            report_save: true,
+            print_preview: true,
+            backup_create: true,
+            windows_auto_launch_enabled: true,
+            pre_update_backup_created: true,
+            auto_update_completed: true,
+            data_intact_after_update: true
         },
         ...overrides
     }

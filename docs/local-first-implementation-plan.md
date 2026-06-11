@@ -358,17 +358,17 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - `docs/vercel-production-env.md` に、本番環境変数、Supabase台数管理用の任意環境変数、設定/確認コマンドをまとめる。
 - `scripts/verify_vercel_production_env.mjs` と `npm run verify:vercel-env` を追加し、`INSTALL_CODE_REGISTRY`、`WINDOWS_INSTALLER_URL`、任意のSupabase台数管理envを本番投入前に検査できるようにする。検査結果にはService Role Keyを出さない。
 - `scripts/create_install_code_registry.mjs` と `npm run create:install-codes` を追加し、導入コード管理表と検査用 `.env.production.local` を `output/` に生成できるようにする。生成した導入コード実値はgit管理外で扱う。
-- `scripts/release_readiness_check.mjs` と `npm run release:check` を追加し、実装ファイル、運用引き継ぎ文書、npm script、Windows workflow、mac同梱物、Windowsインストーラー、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、GitHub Actions上の配布artifact、Vercel本番env、現地AI結合証跡をまとめて確認できるようにする。通常モードでは外部環境待ちを `pending` として扱い、`--strict` では `pending` もリリース不可として扱う。
+- `scripts/release_readiness_check.mjs` と `npm run release:check` を追加し、実装ファイル、運用引き継ぎ文書、npm script、Windows workflow、mac同梱物、Windowsインストーラー、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、GitHub Actions上の配布artifact、Vercel本番env、現地AI結合証跡、Windows実機スモーク証跡をまとめて確認できるようにする。通常モードでは外部環境待ちを `pending` として扱い、`--strict` では `pending` もリリース不可として扱う。
 - `release:check -- --source-status` では、ローカルGitの未commit/未push状態を追加の `Source publication` ゲートとして扱い、GitHub Actionsへworkflowが届いていない原因を切り分けられるようにする。
 - `scripts/vercel_production_smoke.mjs` と `npm run release:vercel-smoke` を追加し、本番Vercelの `/entry` と導入コードAPIがruntimeで応答することを導入コード実値なしで確認できるようにする。
-- `npm run release:check:full` を追加し、ローカルGit状態、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、GitHub Actions上の配布artifact、Vercel本番env名、`output/.env.production.local.generated`、Vercel本番スモーク、`output/local-ai-integration-result.json` を含む人間向けリリース判定を1コマンドで表示できるようにする。
+- `npm run release:check:full` を追加し、ローカルGit状態、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、GitHub Actions上の配布artifact、Vercel本番env名、`output/.env.production.local.generated`、Vercel本番スモーク、`output/local-ai-integration-result.json`、`output/windows-target-smoke-result.json` を含む人間向けリリース判定を1コマンドで表示できるようにする。
 - `npm run release:check:full:strict` を追加し、署名Secret投入後の本番配布直前に `pending` / `warn` も失敗扱いで確認できるようにする。
 - `release:check` では、報告書の自動保存/手動保存、保存状態表示、手動バックアップ、復元、更新前バックアップの導線も静的に確認する。
 - `scripts/release_handoff.mjs` と `npm run release:handoff` を追加し、外部担当者へ渡す残作業サマリを秘密情報なしのMarkdownとして `output/release-handoff.md` に生成できるようにする。
 - `scripts/source_release_status.mjs` と `npm run release:source-status` を追加し、ローカルGitの未commit/未push状態を読み取り専用で確認できるようにする。
 - `npm run release:source-status -- --details` では、GitHubへ反映する前に確認できるよう、変更ファイル一覧を任意表示できるようにする。通常のハンドオフには件数だけを出し、詳細は必要時だけ表示する。
 - `scripts/source_publication_checklist.mjs` と `npm run release:source-checklist` を追加し、GitHubへ反映する前の確認項目と変更ファイル一覧を `output/source-publication-checklist.md` に生成できるようにする。
-- `npm run release:handoff:full` を追加し、ローカルGit状態、GitHub Actions状態、現地AI結合証跡を含む引き継ぎMarkdownを1コマンドで生成できるようにする。
+- `npm run release:handoff:full` を追加し、ローカルGit状態、GitHub Actions状態、現地AI結合証跡、Windows実機スモーク証跡を含む引き継ぎMarkdownを1コマンドで生成できるようにする。
 - `public/manual.html` に利用者向けのかんたんマニュアル/FAQを配置し、Vercel入口ページから開けるようにする。
 - mac開発デモでは、Vercel Functionが未起動でも `VITE_DEMO_INSTALL_CODES` と `VITE_WINDOWS_INSTALLER_URL` で導入コード確認を試せる。
 - mac開発デモ向けに `scripts/mac_demo_readiness.mjs` / `npm run demo:mac-readiness` を追加し、起動コマンドと外部待ちを本番判定とは分けて表示できるようにする。
@@ -380,13 +380,14 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - リリース成果物専用の公開GitHubリポジトリ `emayu323/pharmacy-report-releases` は作成済み。
 - Vercel本番envは `INSTALL_CODE_REGISTRY` と `WINDOWS_INSTALLER_URL` が設定済みで、`release:vercel-status` と `release:vercel-smoke` は通過済み。
 - ローカルAI結合証跡は `npm run test:local-ai-text -- --ollama-model gemma3:4b --timeout-ms 30000` で作成済み。証跡には `source_revision` を保存し、`release:check:full` が現在ソースとの一致を確認する。
-- `release:check:full` は `pass 17, pending 1, fail 0` で、未完了は署名付き自動更新公開の外部Prerequisiteだけ。
+- `release:check:full` は `pass 17, pending 2, fail 0` で、未完了は署名付き自動更新公開の外部PrerequisiteとWindows実機スモーク証跡。
 
 未実装・外部待ち:
 
 - `RELEASES_GITHUB_TOKEN` Secretの設定。
 - `WINDOWS_CSC_LINK` と `WINDOWS_CSC_KEY_PASSWORD` Secretの設定。
 - コード署名有効化後のWindows実機での自動更新スモーク。
+- Windows実機スモーク後の `output/windows-target-smoke-result.json` 作成。
 - 導入先Windows PCごとのローカルAI結合テスト再実行。
 
 ## 11. フェーズ9: AIモード

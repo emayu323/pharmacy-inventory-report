@@ -102,13 +102,13 @@ npm run release:check
 npm run release:check -- --format text
 ```
 
-通常の引き継ぎ前確認では、ローカルの変更がGitHubへ反映済みか、公開リリース用リポジトリとGitHub Actions上のWindowsインストーラーartifactがあるか、Vercel本番env名が反映済みか、現地AI結合証跡があるかもまとめて確認します。
+通常の引き継ぎ前確認では、ローカルの変更がGitHubへ反映済みか、公開リリース用リポジトリとGitHub Actions上のWindowsインストーラーartifactがあるか、Vercel本番env名が反映済みか、現地AI結合証跡とWindows実機スモーク証跡があるかもまとめて確認します。
 
 ```bash
 npm run release:check:full
 ```
 
-`release:check:full` はGitHub Actions状態とVercel本番env名も読み取り専用で確認し、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、最新workflow run/artifactの有無、必要な `INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足、旧 `VITE_SUPABASE_*` の残存を表示します。
+`release:check:full` はGitHub Actions状態とVercel本番env名も読み取り専用で確認し、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、最新workflow run/artifactの有無、必要な `INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足、旧 `VITE_SUPABASE_*` の残存、Windows実機スモーク証跡の有無を表示します。
 署名Secret投入後の本番配布直前は、`pending` や `warn` も失敗扱いにする次のコマンドを使います。
 
 ```bash
@@ -140,13 +140,14 @@ npm run release:vercel-smoke
 この確認はenv名だけを読み取り、`INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足と、旧 `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` の残存を表示します。
 `release:vercel-smoke` は本番URLの `/entry` と `/api/install-code/verify` に実リクエストを送り、導入コードAPIがruntimeで500になっていないことを確認します。導入コード実値は使わず、無効コードが `400 invalid` として返ることだけを確認します。
 
-実値入りのVercel環境変数ファイルと、現地PCで取得したAI結合テスト証跡がある場合:
+実値入りのVercel環境変数ファイル、現地PCで取得したAI結合テスト証跡、Windows実機スモーク証跡がある場合:
 
 ```bash
 npm run release:check -- \
   --source-status \
   --env-file .env.production.local \
-  --ai-receipt output/local-ai-integration-result.json
+  --ai-receipt output/local-ai-integration-result.json \
+  --windows-smoke-receipt output/windows-target-smoke-result.json
 ```
 
 本番配布直前は、未確認項目も失敗扱いにします。
@@ -155,7 +156,7 @@ npm run release:check -- \
 npm run release:check:full:strict
 ```
 
-`ok: true` は致命的な設定不備がない状態です。`ready: true` はローカル成果物、GitHub Actions上の配布artifact、Vercel本番env、AI結合証跡、署名付き自動更新公開Prerequisiteまで揃った状態です。GitHub Actions artifact、Vercel本番env、ローカルAI証跡が揃っている現在の状態では、`pending` は `RELEASES_GITHUB_TOKEN` と `WINDOWS_CSC_LINK` / `WINDOWS_CSC_KEY_PASSWORD` による署名付き自動更新公開Prerequisiteだけになります。
+`ok: true` は致命的な設定不備がない状態です。`ready: true` はローカル成果物、GitHub Actions上の配布artifact、Vercel本番env、AI結合証跡、Windows実機スモーク証跡、署名付き自動更新公開Prerequisiteまで揃った状態です。GitHub Actions artifact、Vercel本番env、ローカルAI証跡が揃っている現在の状態では、`pending` は `RELEASES_GITHUB_TOKEN` と `WINDOWS_CSC_LINK` / `WINDOWS_CSC_KEY_PASSWORD` による署名付き自動更新公開Prerequisite、および `output/windows-target-smoke-result.json` によるWindows実機スモーク証跡です。
 
 JSON出力の `nextActions`、または `--format text` の「次の作業」に、未完了項目ごとの参照文書と実行コマンドが表示されます。
 
@@ -174,6 +175,8 @@ npm run release:handoff -- --source-status --github-status --vercel-status
 ```
 
 `--source-status` を付けると、ローカルGitの未commit/未push状態を件数中心で追記します。`--github-status` を付けると、GitHub Actions上のworkflow公開状況、最新run、artifact有無も読み取り専用で追記します。`--vercel-status` を付けると、本番Vercelに必要な環境変数名が存在するかを値なしで追記します。`--vercel-smoke` を付けると、本番Vercelの入口ページと導入コードAPIのruntime応答も追記します。
+
+Windows実機スモークの確認手順と証跡JSON形式は `docs/windows-target-smoke.md` にまとめます。証跡には患者情報、導入コード実値、秘密情報を書きません。
 
 ## 外部操作の明示承認
 
