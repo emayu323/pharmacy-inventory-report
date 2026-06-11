@@ -124,7 +124,7 @@ test('Windows installer docs show handoff with GitHub status for external operat
     )
     assert.equal(
         pkg.scripts['release:handoff:full'],
-        'node scripts/release_handoff.mjs --source-status --github-status --ai-receipt output/local-ai-integration-result.json'
+        'node scripts/release_handoff.mjs --source-status --github-status --vercel-status --ai-receipt output/local-ai-integration-result.json'
     )
     assert.match(windowsInstallerDocs, /npm run release:check:full/)
     assert.equal(
@@ -133,7 +133,7 @@ test('Windows installer docs show handoff with GitHub status for external operat
     )
     assert.match(windowsInstallerDocs, /npm run release:source-checklist/)
     assert.match(windowsInstallerDocs, /npm run release:source-status -- --details/)
-    assert.match(windowsInstallerDocs, /npm run release:handoff -- --source-status --github-status/)
+    assert.match(windowsInstallerDocs, /npm run release:handoff -- --source-status --github-status --vercel-status/)
     assert.match(windowsInstallerDocs, /npm run release:handoff:full/)
     assert.match(windowsInstallerDocs, /--source-status/)
     assert.match(windowsInstallerDocs, /output\/release-handoff\.md/)

@@ -96,6 +96,36 @@ test('release handoff can include local source status without raw filenames', ()
     assert.doesNotMatch(markdown, /source_release_status\.mjs/)
 })
 
+test('release handoff can include Vercel cloud env status without values', () => {
+    const markdown = createReleaseHandoffMarkdown({
+        generatedAt: '2026-06-11T09:00:00.000Z',
+        packageVersion: '0.1.0',
+        report: releaseReportFixture(),
+        vercelCloudStatus: {
+            ok: true,
+            ready: false,
+            environment: 'production',
+            envCount: 2,
+            presentRequired: [],
+            missingRequired: ['INSTALL_CODE_REGISTRY', 'WINDOWS_INSTALLER_URL'],
+            staleAppEnv: ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'],
+            nextActions: [
+                'vercel env rm VITE_SUPABASE_URL production',
+                'vercel env add INSTALL_CODE_REGISTRY production'
+            ],
+            message: 'Vercel production env is not ready: missing INSTALL_CODE_REGISTRY, WINDOWS_INSTALLER_URL'
+        }
+    })
+
+    assert.match(markdown, /## Vercel本番env状態/)
+    assert.match(markdown, /Vercel cloud env判定: 未完了/)
+    assert.match(markdown, /missing required: INSTALL_CODE_REGISTRY, WINDOWS_INSTALLER_URL/)
+    assert.match(markdown, /stale app env: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY/)
+    assert.match(markdown, /vercel env rm VITE_SUPABASE_URL production/)
+    assert.doesNotMatch(markdown, /Encrypted/)
+    assert.doesNotMatch(markdown, /secret-anon-key/)
+})
+
 test('release handoff writer creates parent directory and writes markdown', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-handoff-'))
     const outputPath = path.join(tmpDir, 'nested', 'handoff.md')

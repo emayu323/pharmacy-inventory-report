@@ -164,10 +164,10 @@ npm run release:handoff:full
 出力先や証跡パスを変える場合:
 
 ```bash
-npm run release:handoff -- --source-status --github-status
+npm run release:handoff -- --source-status --github-status --vercel-status
 ```
 
-`--source-status` を付けると、ローカルGitの未commit/未push状態を件数中心で追記します。`--github-status` を付けると、GitHub Actions上のworkflow公開状況、最新run、artifact有無も読み取り専用で追記します。
+`--source-status` を付けると、ローカルGitの未commit/未push状態を件数中心で追記します。`--github-status` を付けると、GitHub Actions上のworkflow公開状況、最新run、artifact有無も読み取り専用で追記します。`--vercel-status` を付けると、本番Vercelに必要な環境変数名が存在するかを値なしで追記します。
 
 ## Windowsでのインストーラー作成
 

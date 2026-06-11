@@ -23,7 +23,7 @@
     "release:check": "node scripts/release_readiness_check.mjs",
     "release:check:full": "node scripts/release_readiness_check.mjs --source-status --ai-receipt output/local-ai-integration-result.json --format text",
     "release:handoff": "node scripts/release_handoff.mjs",
-    "release:handoff:full": "node scripts/release_handoff.mjs --source-status --github-status --ai-receipt output/local-ai-integration-result.json",
+    "release:handoff:full": "node scripts/release_handoff.mjs --source-status --github-status --vercel-status --ai-receipt output/local-ai-integration-result.json",
     "release:github-status": "node scripts/github_release_status.mjs",
     "release:vercel-status": "node scripts/vercel_cloud_env_status.mjs",
     "release:source-status": "node scripts/source_release_status.mjs",

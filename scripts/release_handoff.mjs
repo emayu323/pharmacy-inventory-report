@@ -14,6 +14,10 @@ import {
     createSourceReleaseStatus,
     formatSourceReleaseStatusText
 } from './source_release_status.mjs'
+import {
+    createVercelCloudEnvStatus,
+    formatVercelCloudEnvStatusText
+} from './vercel_cloud_env_status.mjs'
 
 const require = createRequire(import.meta.url)
 const packageJson = require('../package.json')
@@ -87,6 +91,17 @@ export function createReleaseHandoffMarkdown(options = {}) {
         )
     }
 
+    if (options.vercelCloudStatus) {
+        lines.push(
+            '',
+            '## Vercel本番env状態',
+            '',
+            '```text',
+            sanitizeText(formatVercelCloudEnvStatusText(options.vercelCloudStatus)),
+            '```'
+        )
+    }
+
     lines.push(
         '',
         '## チェック詳細',
@@ -129,6 +144,7 @@ function parseArgs(argv) {
     let outputPath = DEFAULT_OUTPUT_PATH
     let includeGithubStatus = false
     let includeSourceStatus = false
+    let includeVercelCloudStatus = false
     for (let index = 0; index < argv.length; index += 1) {
         const arg = argv[index]
         if (arg === '--output') {
@@ -146,18 +162,33 @@ function parseArgs(argv) {
             includeGithubStatus = true
         } else if (arg === '--source-status') {
             includeSourceStatus = true
+        } else if (arg === '--vercel-status') {
+            includeVercelCloudStatus = true
         }
     }
-    return { outputPath, options, includeGithubStatus, includeSourceStatus }
+    return { outputPath, options, includeGithubStatus, includeSourceStatus, includeVercelCloudStatus }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-    const { outputPath, options, includeGithubStatus, includeSourceStatus } = parseArgs(process.argv.slice(2))
+    const { outputPath, options, includeGithubStatus, includeSourceStatus, includeVercelCloudStatus } = parseArgs(process.argv.slice(2))
     if (includeGithubStatus) {
         options.githubStatus = await createGitHubReleaseStatus()
     }
     if (includeSourceStatus) {
         options.sourceStatus = await createSourceReleaseStatus()
+    }
+    if (includeVercelCloudStatus) {
+        options.vercelCloudStatus = createVercelCloudEnvStatus('')
+        try {
+            const { spawnSync } = await import('node:child_process')
+            const result = spawnSync('vercel', ['env', 'ls', 'production', '--format', 'json'], {
+                cwd: process.cwd(),
+                encoding: 'utf8'
+            })
+            options.vercelCloudStatus = createVercelCloudEnvStatus(`${result.stdout || ''}\n${result.stderr || ''}`)
+        } catch {
+            options.vercelCloudStatus = createVercelCloudEnvStatus('')
+        }
     }
     const writtenPath = writeReleaseHandoffMarkdown(outputPath, options)
     console.log(`Release handoff written: ${writtenPath}`)
