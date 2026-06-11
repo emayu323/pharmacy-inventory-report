@@ -153,7 +153,7 @@ npm run release:check -- \
   --strict
 ```
 
-`ok: true` は致命的な設定不備がない状態です。`ready: true` はローカル成果物、GitHub Actions上の配布artifact、Vercel本番env、AI結合証跡まで揃った状態です。macだけで開発している間は、Windowsインストーラー、GitHub Actions上の配布artifact、実AI結合が `pending` になるのが正常です。
+`ok: true` は致命的な設定不備がない状態です。`ready: true` はローカル成果物、GitHub Actions上の配布artifact、Vercel本番env、AI結合証跡、署名付き自動更新公開Prerequisiteまで揃った状態です。GitHub Actions artifact、Vercel本番env、ローカルAI証跡が揃っている現在の状態では、`pending` は `RELEASES_GITHUB_TOKEN` と `WINDOWS_CSC_LINK` / `WINDOWS_CSC_KEY_PASSWORD` による署名付き自動更新公開Prerequisiteだけになります。
 
 JSON出力の `nextActions`、または `--format text` の「次の作業」に、未完了項目ごとの参照文書と実行コマンドが表示されます。
 

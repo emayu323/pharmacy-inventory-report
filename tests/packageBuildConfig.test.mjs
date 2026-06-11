@@ -7,6 +7,7 @@ const electronMain = fs.readFileSync(new URL('../electron/main.mjs', import.meta
 const windowsPreUpdateScript = fs.readFileSync(new URL('../scripts/windows_pre_update_backup.ps1', import.meta.url), 'utf8')
 const windowsInstallerWorkflow = fs.readFileSync(new URL('../.github/workflows/windows-installer.yml', import.meta.url), 'utf8')
 const windowsInstallerDocs = fs.readFileSync(new URL('../docs/windows-installer-build.md', import.meta.url), 'utf8')
+const verifyV2PolicyChangeDoc = fs.readFileSync(new URL('../docs/verify-v2-policy-change.md', import.meta.url), 'utf8')
 const implementationPlan = fs.readFileSync(new URL('../docs/local-first-implementation-plan.md', import.meta.url), 'utf8')
 const gitignore = fs.readFileSync(new URL('../.gitignore', import.meta.url), 'utf8')
 const vercelignore = fs.readFileSync(new URL('../.vercelignore', import.meta.url), 'utf8')
@@ -157,6 +158,8 @@ test('Windows installer docs show handoff with GitHub status for external operat
     assert.match(windowsInstallerDocs, /外部操作の明示承認/)
     assert.match(windowsInstallerDocs, /GitHub ActionsのWindowsインストーラーworkflowを実行してよい/)
     assert.match(windowsInstallerDocs, /Vercel Production環境変数を更新してよい/)
+    assert.match(windowsInstallerDocs, /署名付き自動更新公開Prerequisiteだけ/)
+    assert.doesNotMatch(windowsInstallerDocs, /Windowsインストーラー、GitHub Actions上の配布artifact、実AI結合が `pending`/)
 })
 
 test('implementation plan release status only leaves signing prerequisites as pending', () => {
@@ -171,6 +174,13 @@ test('implementation plan release status only leaves signing prerequisites as pe
     assert.doesNotMatch(implementationPlan, /GitHub ActionsまたはWindows実機でのNSISインストーラー作成実行/)
     assert.doesNotMatch(implementationPlan, /リリース成果物専用の公開GitHubリポジトリ作成/)
     assert.doesNotMatch(implementationPlan, /実値を使ったVercel本番環境変数の設定/)
+})
+
+test('v2 verification doc matches the current release gate state', () => {
+    assert.match(verifyV2PolicyChangeDoc, /release:check:full.*pass 17, pending 1, fail 0/s)
+    assert.match(verifyV2PolicyChangeDoc, /署名付き自動更新公開/)
+    assert.match(verifyV2PolicyChangeDoc, /GitHub Actions上のWindowsインストーラーartifact、本番Vercel env、現地AI結合証跡は確認済み/)
+    assert.doesNotMatch(verifyV2PolicyChangeDoc, /外部実行待ちだけが `pending`/)
 })
 
 test('gitignore keeps local secrets and generated release artifacts out of source publication', () => {
