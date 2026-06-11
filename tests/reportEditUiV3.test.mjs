@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const root = new URL('../', import.meta.url)
 const brief = fs.readFileSync(new URL('codex-implementation-brief-v3.md', root), 'utf8')
+const appShell = fs.readFileSync(new URL('src/App.tsx', root), 'utf8')
 const reportEdit = fs.readFileSync(new URL('src/pages/ReportEdit.tsx', root), 'utf8')
 const medicationListForm = fs.readFileSync(new URL('src/components/MedicationListForm.tsx', root), 'utf8')
 const indexCss = fs.readFileSync(new URL('src/index.css', root), 'utf8')
@@ -17,6 +18,12 @@ const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const expectLabeledReportField = ({ label, id, name, tag = 'input' }) => {
     assert.match(reportEdit, new RegExp(`<label className="label"[^>]*htmlFor="${id}"[^>]*>${escapeRegExp(label)}</label>`))
     assert.match(reportEdit, new RegExp(`<${tag}[^>]*id="${id}"[^>]*${name ? `name="${name}"` : ''}`))
+}
+
+const expectLabeledMedicationField = ({ label, field, tag = 'input' }) => {
+    assert.match(medicationListForm, new RegExp(`<label className="medication-row-label"[^>]*htmlFor=\\{fieldId\\('${field}'\\)\\}[^>]*>${escapeRegExp(label)}</label>`))
+    assert.match(medicationListForm, new RegExp(`<${tag}[\\s\\S]*id=\\{fieldId\\('${field}'\\)\\}`))
+    assert.match(medicationListForm, new RegExp(`<${tag}[\\s\\S]*aria-label="${escapeRegExp(label)}"`))
 }
 
 test('v3 UI brief is checked in as the active UI implementation brief', () => {
@@ -119,6 +126,28 @@ test('calculated medication values are styled as read-only aligned numbers', () 
     assert.match(medicationListForm, /text-align:\s*right/)
     assert.match(medicationListForm, /border:\s*0/)
     assert.match(medicationListForm, /background-color:\s*transparent/)
+})
+
+test('medication row inputs have explicit label associations', () => {
+    assert.match(medicationListForm, /const fieldId = \(field: string\) => `medication-\$\{item\.id\}-\$\{field\}`/)
+    expectLabeledMedicationField({ label: '薬品名', field: 'name' })
+    expectLabeledMedicationField({ label: '前回いつまで分', field: 'previous_supply_until' })
+    expectLabeledMedicationField({ label: '今回処方日数', field: 'prescription_days' })
+    expectLabeledMedicationField({ label: '実残日数', field: 'actual_remaining_days' })
+    expectLabeledMedicationField({ label: '数量', field: 'current_amount' })
+    expectLabeledMedicationField({ label: '単位', field: 'unit' })
+    expectLabeledMedicationField({ label: '備考', field: 'notes' })
+    assert.match(medicationListForm, /htmlFor=\{fieldId\('actual_remaining_reason'\)\}[\s\S]*>実残理由<\/label>/)
+    assert.match(medicationListForm, /id=\{fieldId\('actual_remaining_reason'\)\}/)
+    assert.match(medicationListForm, /aria-label="実残理由"/)
+    assert.match(medicationListForm, /id=\{fieldId\('unit_select'\)\}/)
+    assert.match(medicationListForm, /aria-label=\{`\$\{item\.name \|\| '薬剤'\}を削除`\}/)
+})
+
+test('mobile app menu toggle has an accessible name and expanded state', () => {
+    assert.match(appShell, /className="desktop-hidden btn btn-ghost"/)
+    assert.match(appShell, /aria-label=\{isMenuOpen \? 'メニューを閉じる' : 'メニューを開く'\}/)
+    assert.match(appShell, /aria-expanded=\{isMenuOpen\}/)
 })
 
 test('local app test gate includes v3 UI coverage', () => {

@@ -107,6 +107,8 @@ function ProtectedLayout() {
           <button
             className="desktop-hidden btn btn-ghost"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? 'メニューを閉じる' : 'メニューを開く'}
+            aria-expanded={isMenuOpen}
             style={{ zIndex: 51, position: 'relative' }}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}

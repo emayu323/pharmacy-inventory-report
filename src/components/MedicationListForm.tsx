@@ -437,6 +437,7 @@ function SortableItem({ item, index, onChange, onRemove, mode }: {
     const isRegular = mode === 'regular';
     const totalDays = item.calculated_total_days || ''
     const supplyUntil = formatDisplayDate(item.calculated_supply_until)
+    const fieldId = (field: string) => `medication-${item.id}-${field}`
 
     return (
         <div ref={setNodeRef} style={style}>
@@ -448,10 +449,12 @@ function SortableItem({ item, index, onChange, onRemove, mode }: {
 
                 {/* Drug Name - Full width on mobile */}
                 <div className="medication-row-name">
-                    <label className="medication-row-label">薬品名</label>
+                    <label className="medication-row-label" htmlFor={fieldId('name')}>薬品名</label>
                     <input
+                        id={fieldId('name')}
                         type="text"
                         className="input"
+                        aria-label="薬品名"
                         placeholder="薬品名"
                         list="drug-options-shared"
                         value={item.name}
@@ -462,29 +465,35 @@ function SortableItem({ item, index, onChange, onRemove, mode }: {
                 {isRegular ? (
                     <>
                         <div className="mobile-stack-horizontal">
-                            <label className="medication-row-label">前回いつまで分</label>
+                            <label className="medication-row-label" htmlFor={fieldId('previous_supply_until')}>前回いつまで分</label>
                             <input
+                                id={fieldId('previous_supply_until')}
                                 type="date"
                                 className="input"
+                                aria-label="前回いつまで分"
                                 value={item.previous_supply_until || ''}
                                 onChange={(e) => onChange(index, 'previous_supply_until', e.target.value)}
                             />
                         </div>
                         <div className="mobile-stack-horizontal">
-                            <label className="medication-row-label">今回処方日数</label>
+                            <label className="medication-row-label" htmlFor={fieldId('prescription_days')}>今回処方日数</label>
                             <input
+                                id={fieldId('prescription_days')}
                                 type="number"
                                 className="input"
+                                aria-label="今回処方日数"
                                 placeholder="28"
                                 value={item.prescription_days || ''}
                                 onChange={(e) => onChange(index, 'prescription_days', e.target.value)}
                             />
                         </div>
                         <div className="mobile-stack-horizontal">
-                            <label className="medication-row-label">実残日数</label>
+                            <label className="medication-row-label" htmlFor={fieldId('actual_remaining_days')}>実残日数</label>
                             <input
+                                id={fieldId('actual_remaining_days')}
                                 type="number"
                                 className="input"
+                                aria-label="実残日数"
                                 placeholder={item.calculated_previous_remaining_days ? `計算 ${item.calculated_previous_remaining_days}` : ''}
                                 value={item.actual_remaining_days || ''}
                                 onChange={(e) => onChange(index, 'actual_remaining_days', e.target.value)}
@@ -507,10 +516,12 @@ function SortableItem({ item, index, onChange, onRemove, mode }: {
                 ) : (
                     <>
                         <div className="mobile-stack-horizontal">
-                            <label className="medication-row-label">数量</label>
+                            <label className="medication-row-label" htmlFor={fieldId('current_amount')}>数量</label>
                             <input
+                                id={fieldId('current_amount')}
                                 type="text"
                                 className="input"
+                                aria-label="数量"
                                 placeholder="数量"
                                 value={item.current_amount}
                                 onChange={(e) => onChange(index, 'current_amount', e.target.value)}
@@ -519,11 +530,13 @@ function SortableItem({ item, index, onChange, onRemove, mode }: {
                     </>
                 )}
                 <div className="mobile-stack-horizontal">
-                    <label className="medication-row-label">単位</label>
+                    <label className="medication-row-label" htmlFor={fieldId('unit')}>単位</label>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <input
+                            id={fieldId('unit')}
                             type="text"
                             className="input"
+                            aria-label="単位"
                             placeholder="単位"
                             value={item.unit}
                             onChange={(e) => onChange(index, 'unit', e.target.value)}
@@ -540,6 +553,7 @@ function SortableItem({ item, index, onChange, onRemove, mode }: {
                             <ChevronDown size={14} />
                         </div>
                         <select
+                            id={fieldId('unit_select')}
                             aria-label="単位を選択"
                             style={{
                                 position: 'absolute',
@@ -572,10 +586,12 @@ function SortableItem({ item, index, onChange, onRemove, mode }: {
 
                 {/* Notes - Full width on mobile */}
                 <div className="medication-row-notes">
-                    <label className="medication-row-label">備考</label>
+                    <label className="medication-row-label" htmlFor={fieldId('notes')}>備考</label>
                     <input
+                        id={fieldId('notes')}
                         type="text"
                         className="input"
+                        aria-label="備考"
                         placeholder="備考"
                         value={item.notes}
                         onChange={(e) => onChange(index, 'notes', e.target.value)}
@@ -590,6 +606,7 @@ function SortableItem({ item, index, onChange, onRemove, mode }: {
                         style={{ color: 'var(--color-error)', padding: '0.5rem' }}
                         title="削除"
                         type="button"
+                        aria-label={`${item.name || '薬剤'}を削除`}
                     >
                         <Trash2 size={16} />
                     </button>
@@ -597,10 +614,12 @@ function SortableItem({ item, index, onChange, onRemove, mode }: {
 
                 {isRegular && (item.actual_remaining_days || item.actual_remaining_reason) && (
                     <div className="medication-actual-reason">
-                        <span className="medication-actual-reason-label">実残理由</span>
+                        <label className="medication-actual-reason-label" htmlFor={fieldId('actual_remaining_reason')}>実残理由</label>
                         <input
+                            id={fieldId('actual_remaining_reason')}
                             type="text"
                             className="input"
+                            aria-label="実残理由"
                             placeholder="例: 飲み忘れ、紛失、回収など"
                             value={item.actual_remaining_reason || ''}
                             onChange={(e) => onChange(index, 'actual_remaining_reason', e.target.value)}
