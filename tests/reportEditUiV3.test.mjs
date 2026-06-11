@@ -9,6 +9,7 @@ const medicationListForm = fs.readFileSync(new URL('src/components/MedicationLis
 const indexCss = fs.readFileSync(new URL('src/index.css', root), 'utf8')
 const packageJson = JSON.parse(fs.readFileSync(new URL('package.json', root), 'utf8'))
 const ofl = fs.readFileSync(new URL('src/assets/fonts/biz-udp-gothic/OFL.txt', root), 'utf8')
+const verifyDoc = fs.readFileSync(new URL('docs/verify-v3-report-ui.md', root), 'utf8')
 
 test('v3 UI brief is checked in as the active UI implementation brief', () => {
     assert.match(brief, /^# codex実装指示書 v3:/)
@@ -56,4 +57,13 @@ test('calculated medication values are styled as read-only aligned numbers', () 
 
 test('local app test gate includes v3 UI coverage', () => {
     assert.ok(packageJson.scripts['test:local-app'].includes('tests/reportEditUiV3.test.mjs'))
+})
+
+test('v3 UI verification procedure is documented with screenshot evidence paths', () => {
+    assert.match(verifyDoc, /v3報告書作成画面UIの検証手順/)
+    assert.match(verifyDoc, /npm run test:local-app/)
+    assert.match(verifyDoc, /docs\/product-design-audit\/2026-06-11-v3-report-ui/)
+    assert.match(verifyDoc, /01-v3-1440\.png/)
+    assert.match(verifyDoc, /04-v3-390\.png/)
+    assert.match(verifyDoc, /overflowing: false/)
 })
