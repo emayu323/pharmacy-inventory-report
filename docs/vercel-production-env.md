@@ -55,6 +55,15 @@ Vercel Functionだけで使うService Role Keyです。ブラウザへ公開し�
 
 導入台数管理テーブル名です。省略時は `install_code_devices` です。
 
+## 旧Supabase版envの撤去
+
+ローカル一本化後のアプリ本体では、患者データ用のSupabase接続を使いません。旧Web版で使っていた次のVercel本番envが残っている場合は撤去します。
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+`INSTALL_CODE_USAGE_SUPABASE_*` は導入コード台数管理用で、患者データを含まないため任意で残せます。`VITE_SUPABASE_*` とは用途が違います。
+
 ## 入口URLとローカルアプリCORS
 
 Vercel入口を `*.vercel.app` のURLで使う場合、ローカルアプリ側の追加設定は不要です。ローカルヘルスAPIは標準でVercelドメイン、localhost、127.0.0.1からの接続確認だけを許可します。
@@ -130,6 +139,8 @@ vercel env ls
 npm run verify:vercel-env -- --env-file .env.production.local
 vercel deploy --prod
 ```
+
+`verify:vercel-env` は `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` が残っている場合に警告を出します。
 
 本番反映後:
 

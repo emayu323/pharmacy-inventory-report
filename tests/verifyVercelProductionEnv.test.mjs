@@ -48,6 +48,27 @@ test('accepts optional Supabase usage store settings without leaking secrets', (
     assert.equal(JSON.stringify(result).includes('secret-service-role-key'), false)
 })
 
+test('warns when stale app Supabase env vars remain after local-only migration', () => {
+    const result = verifyVercelProductionEnv({
+        INSTALL_CODE_REGISTRY: JSON.stringify({
+            codes: [
+                {
+                    code: 'LOCAL-1234',
+                    maxDevices: 2
+                }
+            ]
+        }),
+        WINDOWS_INSTALLER_URL: 'https://example.com/setup.exe',
+        VITE_SUPABASE_URL: 'https://old-project.supabase.co',
+        VITE_SUPABASE_ANON_KEY: 'old-public-anon-key'
+    })
+
+    assert.equal(result.ok, true)
+    assert.equal(result.warnings.some(warning => warning.includes('VITE_SUPABASE_URL')), true)
+    assert.equal(result.warnings.some(warning => warning.includes('VITE_SUPABASE_ANON_KEY')), true)
+    assert.equal(JSON.stringify(result).includes('old-public-anon-key'), false)
+})
+
 test('reports invalid production environment values', () => {
     const result = verifyVercelProductionEnv({
         INSTALL_CODE_REGISTRY: JSON.stringify({

@@ -11,6 +11,11 @@ const OPTIONAL_SUPABASE_ENV = [
     'INSTALL_CODE_USAGE_TABLE'
 ]
 
+const STALE_APP_SUPABASE_ENV = [
+    'VITE_SUPABASE_URL',
+    'VITE_SUPABASE_ANON_KEY'
+]
+
 export function verifyVercelProductionEnv(env = process.env, options = {}) {
     const errors = []
     const warnings = []
@@ -37,6 +42,7 @@ export function verifyVercelProductionEnv(env = process.env, options = {}) {
     const supabaseResult = validateSupabaseUsageEnv(env)
     errors.push(...supabaseResult.errors)
     warnings.push(...supabaseResult.warnings)
+    warnings.push(...detectStaleAppSupabaseEnv(env))
 
     return {
         ok: errors.length === 0,
@@ -51,6 +57,12 @@ export function verifyVercelProductionEnv(env = process.env, options = {}) {
             supabaseUsageTable: normalizeText(env.INSTALL_CODE_USAGE_TABLE) || 'install_code_devices'
         }
     }
+}
+
+function detectStaleAppSupabaseEnv(env) {
+    return STALE_APP_SUPABASE_ENV
+        .filter(name => normalizeText(env[name]))
+        .map(name => `${name} is a stale app Supabase environment variable; remove it from Vercel production after the local-only migration`)
 }
 
 export function readEnvFile(filePath) {
