@@ -1094,11 +1094,15 @@ function findAppSupabaseReferences(rootDir) {
     return appDirs.flatMap(appDir => findFiles(appDir, filePath => {
         if (!/\.(?:ts|tsx|js|mjs|cjs)$/.test(filePath)) return false
         return containsSupabaseReference(readTextFile(filePath))
-    })).map(filePath => path.relative(rootDir, filePath))
+    })).map(filePath => toPosixRelativePath(rootDir, filePath))
 }
 
 function containsSupabaseReference(source) {
     return /(?:\bsupabase\b|\bSupabase\b|@supabase\b|VITE_SUPABASE\b)/.test(source)
+}
+
+function toPosixRelativePath(rootDir, filePath) {
+    return path.relative(rootDir, filePath).split(path.sep).join('/')
 }
 
 function readTopLevelFiles(dir) {
