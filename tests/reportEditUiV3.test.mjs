@@ -10,6 +10,7 @@ const indexCss = fs.readFileSync(new URL('src/index.css', root), 'utf8')
 const packageJson = JSON.parse(fs.readFileSync(new URL('package.json', root), 'utf8'))
 const ofl = fs.readFileSync(new URL('src/assets/fonts/biz-udp-gothic/OFL.txt', root), 'utf8')
 const verifyDoc = fs.readFileSync(new URL('docs/verify-v3-report-ui.md', root), 'utf8')
+const auditReadme = fs.readFileSync(new URL('docs/product-design-audit/2026-06-11-v3-report-ui/README.md', root), 'utf8')
 
 test('v3 UI brief is checked in as the active UI implementation brief', () => {
     assert.match(brief, /^# codex実装指示書 v3:/)
@@ -40,6 +41,13 @@ test('report edit screen exposes the v3 desktop summary rail and mobile summary 
     assert.match(reportEdit, /A4ページ目安/)
 })
 
+test('basic information collapse control is keyboard reachable', () => {
+    assert.match(reportEdit, /className="compact-section-toggle"/)
+    assert.match(reportEdit, /type="button"[\s\S]*aria-expanded=\{isBasicInfoOpen\}/)
+    assert.match(reportEdit, /aria-controls="section-basic-fields"/)
+    assert.match(reportEdit, /id="section-basic-fields"/)
+})
+
 test('report edit screen uses template chips instead of dropdown template selectors', () => {
     assert.match(reportEdit, /template-chip-list/)
     assert.match(reportEdit, /template-chip-replace/)
@@ -66,4 +74,6 @@ test('v3 UI verification procedure is documented with screenshot evidence paths'
     assert.match(verifyDoc, /01-v3-1440\.png/)
     assert.match(verifyDoc, /04-v3-390\.png/)
     assert.match(verifyDoc, /overflowing: false/)
+    assert.doesNotMatch(auditReadme, /キーボード操作は未確認/)
+    assert.match(auditReadme, /キーボード到達性/)
 })

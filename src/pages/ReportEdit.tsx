@@ -989,15 +989,12 @@ export default function ReportEdit() {
                 {/* 基本情報 */}
                 {/* 基本情報 */}
                 <section id="section-basic" className="card" style={{ padding: '0.5rem 1.5rem' }}>
-                    <div
+                    <button
+                        type="button"
+                        className="compact-section-toggle"
+                        aria-expanded={isBasicInfoOpen}
+                        aria-controls="section-basic-fields"
                         onClick={() => setIsBasicInfoOpen(!isBasicInfoOpen)}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            cursor: 'pointer',
-                            padding: '1rem 0'
-                        }}
                     >
                         <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             基本情報
@@ -1007,11 +1004,11 @@ export default function ReportEdit() {
                                 </span>
                             )}
                         </h3>
-                        {isBasicInfoOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                    </div>
+                        {isBasicInfoOpen ? <ChevronDown size={20} aria-hidden="true" /> : <ChevronRight size={20} aria-hidden="true" />}
+                    </button>
 
                     {isBasicInfoOpen && (
-                        <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', paddingBottom: '1.5rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
+                        <div id="section-basic-fields" className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', paddingBottom: '1.5rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
                             {isCareManagerRecipientMissing && (
                                 <div style={{
                                     gridColumn: '1 / -1',
@@ -1687,6 +1684,22 @@ export default function ReportEdit() {
             .report-summary-details > summary::-webkit-details-marker,
             .compact-section-details > summary::-webkit-details-marker {
               display: none;
+            }
+
+            .compact-section-toggle {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              width: 100%;
+              padding: 1rem 0;
+              color: inherit;
+              text-align: left;
+            }
+
+            .compact-section-toggle:focus-visible {
+              outline: 3px solid rgba(37, 99, 235, 0.16);
+              outline-offset: 3px;
+              border-radius: var(--radius-md);
             }
 
             .report-summary-details > summary {
