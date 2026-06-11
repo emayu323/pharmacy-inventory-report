@@ -61,6 +61,7 @@ node --test --experimental-strip-types tests/autoUpdateService.test.mjs tests/pa
 - 更新ダウンロード後、更新前バックアップ成功時だけ `quitAndInstall` へ進む。
 - `electron-updater` と公開リリース用publish設定がパッケージに含まれる。
 - `localSecurityStatus.test.mjs` で、BitLocker無効時のみ起動時警告を作り、利用継続可能な文言になっている。
+- `release:check` で、15分無操作ロックとケアマネ向け一時入力警告の導線が維持されている。
 
 ## 画面確認
 

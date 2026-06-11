@@ -35,12 +35,15 @@ const REQUIRED_FILES = [
     'scripts/release_handoff.mjs',
     'src/data/drug-master.generated.json',
     'src/main.tsx',
+    'src/App.tsx',
+    'src/components/LocalPinLock.tsx',
     'src/pages/EntryPortal.tsx',
     'src/pages/ReportEdit.tsx',
     'src/pages/Settings.tsx',
     'src/localAppConnection.ts',
     'src/patientRepository.ts',
     'src/reportRepository.ts',
+    'src/reportPrintModel.ts',
     'src/reportSelection.ts',
     'src/institutionRepository.ts',
     'src/contexts/AuthProvider.tsx',
@@ -955,6 +958,37 @@ test('release readiness check requires backup and save operational workflows', (
     }
 })
 
+test('release readiness check requires PIN idle lock and care manager temporary recipient workflows', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'src/components/LocalPinLock.tsx', [
+        'export default function LocalPinLock({ children }) {',
+        '  return children',
+        '}'
+    ].join('\n'))
+    writeFixtureFile(tmpDir, 'src/pages/ReportEdit.tsx', [
+        "import { canAutoSaveReportDraft, createReportAutoSaveFingerprint } from '../reportAutoSave'",
+        "const saveStatusLabel = { dirty: '未保存あり', saving: '保存中', saved: '保存済み', error: '保存失敗' }[saveStatus]",
+        'setTimeout(() => runAutoSave(), 2000)',
+        'async function persistReport() { return saveReport() }',
+        'export default function ReportEdit() { return <button>保存する</button> }'
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const workflowCheck = report.checks.find(item => item.id === 'operational_workflows')
+
+        assert.equal(report.ok, false)
+        assert.equal(workflowCheck?.status, 'fail')
+        assert.match(workflowCheck?.message || '', /LocalPinLock/)
+        assert.match(workflowCheck?.message || '', /care manager/i)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
 test('release readiness check requires previous report lookup to prefer visit date', () => {
     const tmpDir = createFixture()
     writeFixtureFile(tmpDir, 'src/reportRepository.ts', [
@@ -1316,6 +1350,25 @@ function fileContentFixture(file) {
         ].join('\n')
     }
     if (file === '.node-version') return '24\n'
+    if (file === 'src/App.tsx') {
+        return [
+            "import LocalPinLock from './components/LocalPinLock'",
+            'export default function ProtectedLayout() {',
+            '  return <LocalPinLock><Outlet /></LocalPinLock>',
+            '}'
+        ].join('\n')
+    }
+    if (file === 'src/components/LocalPinLock.tsx') {
+        return [
+            'const ACTIVITY_EVENTS = [\'mousedown\', \'mousemove\', \'keydown\', \'touchstart\', \'scroll\']',
+            'export default function LocalPinLock({ children }) {',
+            '  setLocked(data.pin_enabled)',
+            '  setTimeout(lock, settings.lock_timeout_minutes * 60 * 1000)',
+            '  verifyLocalPin(pin)',
+            '  return children',
+            '}'
+        ].join('\n')
+    }
     if (file === 'src/main.tsx') {
         return [
             "import EntryPortal from './pages/EntryPortal'",
@@ -1356,10 +1409,23 @@ function fileContentFixture(file) {
     if (file === 'src/pages/ReportEdit.tsx') {
         return [
             "import { canAutoSaveReportDraft, createReportAutoSaveFingerprint } from '../reportAutoSave'",
+            "import { hasMissingCareManagerRecipient } from '../reportPrintModel'",
             "const saveStatusLabel = { dirty: '未保存あり', saving: '保存中', saved: '保存済み', error: '保存失敗' }[saveStatus]",
             'setTimeout(() => runAutoSave(), 2000)',
             'async function persistReport() { return saveReport() }',
-            'export default function ReportEdit() { return <button>保存する</button> }'
+            'const isCareManagerRecipientMissing = hasMissingCareManagerRecipient(reportForPrint, printTarget)',
+            'if (isCareManagerRecipientMissing) setIsBasicInfoOpen(true)',
+            "document.getElementById('section-basic')",
+            'const careMessage = "ケアマネ向け印刷には居宅介護支援事業所と事業所FAXが必要です。ここで入力した内容は今回報告書に保存され、保存時に患者マスタへ反映するか選べます。"',
+            'export default function ReportEdit() { return <section id="section-basic"><button>保存する</button>{careMessage}</section> }'
+        ].join('\n')
+    }
+    if (file === 'src/reportPrintModel.ts') {
+        return [
+            'export function hasMissingCareManagerRecipient(report, target) { return target === "care_manager" }',
+            'export function getReportPrintWarnings() {',
+            '  return ["ケアマネ向けの報告先またはFAX番号が未入力です。今回報告書だけの一時入力を確認してください。"]',
+            '}'
         ].join('\n')
     }
     if (file === 'src/pages/Settings.tsx') {

@@ -35,12 +35,15 @@ const REQUIRED_FILES = [
     'scripts/release_handoff.mjs',
     'src/data/drug-master.generated.json',
     'src/main.tsx',
+    'src/App.tsx',
+    'src/components/LocalPinLock.tsx',
     'src/pages/EntryPortal.tsx',
     'src/pages/ReportEdit.tsx',
     'src/pages/Settings.tsx',
     'src/localAppConnection.ts',
     'src/patientRepository.ts',
     'src/reportRepository.ts',
+    'src/reportPrintModel.ts',
     'src/reportSelection.ts',
     'src/institutionRepository.ts',
     'src/contexts/AuthProvider.tsx',
@@ -114,7 +117,7 @@ const NEXT_ACTION_DETAILS = {
         docs: 'codex-implementation-brief-v3.md'
     },
     operational_workflows: {
-        description: '報告書の自動/手動保存と、手動/復元/更新前バックアップの導線を戻します。',
+        description: '報告書保存、15分無操作ロック、ケアマネ向け一時入力、バックアップ導線を戻します。',
         docs: 'docs/local-first-implementation-plan.md'
     },
     latest_report_selection: {
@@ -600,10 +603,26 @@ function checkAiTextOnlyWorkflow(rootDir) {
 }
 
 function checkOperationalWorkflows(rootDir) {
+    const appSource = readTextFile(path.join(rootDir, 'src', 'App.tsx'))
+    const localPinLock = readTextFile(path.join(rootDir, 'src', 'components', 'LocalPinLock.tsx'))
     const reportEdit = readTextFile(path.join(rootDir, 'src', 'pages', 'ReportEdit.tsx'))
+    const reportPrintModel = readTextFile(path.join(rootDir, 'src', 'reportPrintModel.ts'))
     const settings = readTextFile(path.join(rootDir, 'src', 'pages', 'Settings.tsx'))
     const electronMain = readTextFile(path.join(rootDir, 'electron', 'main.mjs'))
     const errors = []
+
+    const pinLockSnippets = [
+        '<LocalPinLock>',
+        'ACTIVITY_EVENTS',
+        'setLocked(data.pin_enabled)',
+        'setTimeout(lock, settings.lock_timeout_minutes * 60 * 1000)',
+        'verifyLocalPin'
+    ]
+    const pinLockSource = `${appSource}\n${localPinLock}`
+    const missingPinLock = pinLockSnippets.filter(snippet => !pinLockSource.includes(snippet))
+    if (missingPinLock.length > 0) {
+        errors.push(`LocalPinLock idle workflow is missing: ${missingPinLock.join(', ')}`)
+    }
 
     const autoSaveSnippets = [
         'canAutoSaveReportDraft',
@@ -629,6 +648,27 @@ function checkOperationalWorkflows(rootDir) {
 
     if (!reportEdit.includes('保存する') || !reportEdit.includes('persistReport')) {
         errors.push('ReportEdit manual save workflow is missing')
+    }
+
+    const careManagerSnippets = [
+        'hasMissingCareManagerRecipient',
+        'setIsBasicInfoOpen(true)',
+        'section-basic',
+        'ケアマネ向け印刷には居宅介護支援事業所と事業所FAXが必要です',
+        '今回報告書に保存され',
+        '患者マスタへ反映'
+    ]
+    const missingCareManager = careManagerSnippets.filter(snippet => !reportEdit.includes(snippet))
+    const reportPrintCareManagerSnippets = [
+        'hasMissingCareManagerRecipient',
+        '今回報告書だけの一時入力'
+    ]
+    const missingReportPrintCareManager = reportPrintCareManagerSnippets.filter(snippet => !reportPrintModel.includes(snippet))
+    if (missingCareManager.length > 0 || missingReportPrintCareManager.length > 0) {
+        errors.push(`care manager temporary recipient workflow is missing: ${[
+            ...missingCareManager,
+            ...missingReportPrintCareManager.map(snippet => `reportPrintModel:${snippet}`)
+        ].join(', ')}`)
     }
 
     const settingsBackupSnippets = [
@@ -658,11 +698,11 @@ function checkOperationalWorkflows(rootDir) {
 
     return {
         id: 'operational_workflows',
-        label: 'Operational save and backup workflows',
+        label: 'Operational save, lock, recipient, and backup workflows',
         status: errors.length ? 'fail' : 'pass',
         message: errors.length
             ? errors.join('; ')
-            : 'Report auto/manual save and backup/restore/pre-update workflows are present'
+            : 'Report auto/manual save, PIN idle lock, care manager temporary recipient, and backup/restore/pre-update workflows are present'
     }
 }
 
