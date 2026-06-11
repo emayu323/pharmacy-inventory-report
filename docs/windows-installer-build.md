@@ -102,13 +102,13 @@ npm run release:check
 npm run release:check -- --format text
 ```
 
-通常の引き継ぎ前確認では、ローカルの変更がGitHubへ反映済みか、現地AI結合証跡があるかもまとめて確認します。
+通常の引き継ぎ前確認では、ローカルの変更がGitHubへ反映済みか、GitHub Actions上のWindowsインストーラーartifactがあるか、Vercel本番env名が反映済みか、現地AI結合証跡があるかもまとめて確認します。
 
 ```bash
 npm run release:check:full
 ```
 
-`release:check:full` はVercel本番env名も読み取り専用で確認し、必要な `INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足と旧 `VITE_SUPABASE_*` の残存を表示します。
+`release:check:full` はGitHub Actions状態とVercel本番env名も読み取り専用で確認し、最新workflow run/artifactの有無、必要な `INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足、旧 `VITE_SUPABASE_*` の残存を表示します。
 
 証跡パスを変える場合:
 
@@ -151,7 +151,7 @@ npm run release:check -- \
   --strict
 ```
 
-`ok: true` は致命的な設定不備がない状態です。`ready: true` はWindowsインストーラー、Vercel本番env、AI結合証跡まで揃った状態です。macだけで開発している間は、Windowsインストーラーや実AI結合が `pending` になるのが正常です。
+`ok: true` は致命的な設定不備がない状態です。`ready: true` はローカル成果物、GitHub Actions上の配布artifact、Vercel本番env、AI結合証跡まで揃った状態です。macだけで開発している間は、Windowsインストーラー、GitHub Actions上の配布artifact、実AI結合が `pending` になるのが正常です。
 
 JSON出力の `nextActions`、または `--format text` の「次の作業」に、未完了項目ごとの参照文書と実行コマンドが表示されます。
 

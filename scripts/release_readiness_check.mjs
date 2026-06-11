@@ -3,6 +3,7 @@ import path from 'node:path'
 import { verifyVercelProductionEnv, readEnvFile } from './verify_vercel_production_env.mjs'
 import { createSourceReleaseStatus } from './source_release_status.mjs'
 import { readVercelCloudEnvStatus } from './vercel_cloud_env_status.mjs'
+import { createGitHubReleaseStatus } from './github_release_status.mjs'
 
 const REQUIRED_FILES = [
     '.github/workflows/windows-installer.yml',
@@ -145,6 +146,14 @@ const NEXT_ACTION_DETAILS = {
             'npm run dist:win'
         ]
     },
+    github_release_status: {
+        description: 'GitHub Actions上のWindowsインストーラーartifactを確認します。ローカルrelease/だけでなく、配布元のworkflow結果も揃える必要があります。',
+        docs: 'docs/windows-installer-build.md',
+        commands: [
+            'npm run release:github-status',
+            'gh workflow run windows-installer.yml'
+        ]
+    },
     vercel_production_env: {
         description: '本番デプロイ前に、導入コードとインストーラーURLの実値を検査します。',
         docs: 'docs/vercel-production-env.md',
@@ -190,6 +199,7 @@ export function createReleaseReadinessReport(options = {}) {
         ...(options.sourceStatus ? [checkSourcePublication(options.sourceStatus)] : []),
         checkMacElectronPackage(rootDir),
         checkWindowsInstallerArtifact(rootDir),
+        ...(options.githubReleaseStatus ? [checkGitHubReleaseStatus(options.githubReleaseStatus)] : []),
         checkVercelEnvironment(env, options.envFile, rootDir),
         ...(options.vercelCloudStatus ? [checkVercelCloudEnvironment(options.vercelCloudStatus)] : []),
         checkLocalAiIntegrationReceipt(env, options.aiReceiptPath, rootDir)
@@ -208,6 +218,30 @@ export function createReleaseReadinessReport(options = {}) {
         checks,
         nextActions: createNextActions(checks)
     }
+}
+
+function checkGitHubReleaseStatus(status) {
+    if (!status.ok) {
+        return {
+            id: 'github_release_status',
+            label: 'GitHub Actions release artifact',
+            status: 'fail',
+            message: getGitHubReleaseStatusMessage(status)
+        }
+    }
+    return {
+        id: 'github_release_status',
+        label: 'GitHub Actions release artifact',
+        status: status.ready ? 'pass' : 'pending',
+        message: getGitHubReleaseStatusMessage(status)
+    }
+}
+
+function getGitHubReleaseStatusMessage(status) {
+    return status.artifact?.message
+        || status.latestRun?.message
+        || status.workflow?.message
+        || 'GitHub Actions release status was read'
 }
 
 function checkVercelCloudEnvironment(status) {
@@ -1080,14 +1114,17 @@ if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').hre
     const formatIndex = process.argv.indexOf('--format')
     const strict = process.argv.includes('--strict')
     const includeSourceStatus = process.argv.includes('--source-status')
+    const includeGitHubStatus = process.argv.includes('--github-status')
     const includeVercelStatus = process.argv.includes('--vercel-status')
     const sourceStatus = includeSourceStatus ? await createSourceReleaseStatus() : undefined
+    const githubReleaseStatus = includeGitHubStatus ? await createGitHubReleaseStatus() : undefined
     const vercelCloudStatus = includeVercelStatus ? readVercelCloudEnvStatus() : undefined
     const report = createReleaseReadinessReport({
         envFile: envFileIndex >= 0 ? process.argv[envFileIndex + 1] : undefined,
         aiReceiptPath: aiReceiptIndex >= 0 ? process.argv[aiReceiptIndex + 1] : undefined,
         strict,
         sourceStatus,
+        githubReleaseStatus,
         vercelCloudStatus
     })
     const format = formatIndex >= 0 ? process.argv[formatIndex + 1] : 'json'

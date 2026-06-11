@@ -20,7 +20,7 @@ npm run release:check:full
 - `build` が成功する。
 - `test:local-app` が全件成功する。
 - `lint` が成功する。
-- `release:check:full` は `fail 0` で、Git反映、Windowsインストーラー、本番Vercel env、現地AI結合証跡だけが `pending` になる。
+- `release:check:full` は `fail 0` で、GitHub Actions上のWindowsインストーラーartifact、本番Vercel env、現地AI結合証跡など外部実行待ちだけが `pending` になる。
 
 ## 方針別確認
 

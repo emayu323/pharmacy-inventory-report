@@ -347,6 +347,61 @@ test('release readiness check can include Vercel cloud env status as an optional
     }
 })
 
+test('release readiness check can include GitHub Actions artifact status as an optional pending gate', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath,
+            githubReleaseStatus: {
+                ok: true,
+                ready: false,
+                workflow: {
+                    file: 'windows-installer.yml',
+                    status: 'present',
+                    message: 'Workflow is available on GitHub'
+                },
+                latestRun: null,
+                artifact: {
+                    name: 'pharmacy-report-windows-installer',
+                    status: 'none',
+                    message: 'No workflow runs were found'
+                },
+                nextActions: [
+                    'gh workflow run windows-installer.yml',
+                    'Run npm run release:github-status again after the workflow completes'
+                ]
+            }
+        })
+        const githubCheck = report.checks.find(check => check.id === 'github_release_status')
+        const githubAction = report.nextActions.find(action => action.id === 'github_release_status')
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, false)
+        assert.equal(githubCheck?.status, 'pending')
+        assert.match(githubCheck?.message || '', /No workflow runs/)
+        assert.equal(githubAction?.docs, 'docs/windows-installer-build.md')
+        assert.deepEqual(githubAction?.commands, [
+            'npm run release:github-status',
+            'gh workflow run windows-installer.yml'
+        ])
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
 test('release readiness check resolves relative AI receipt path from root directory', () => {
     const tmpDir = createFixture({
         macPackage: true,
