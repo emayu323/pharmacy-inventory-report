@@ -33,7 +33,9 @@ export function createReleaseHandoffMarkdown(options = {}) {
         envFile: options.envFile,
         aiReceiptPath: options.aiReceiptPath,
         strict: options.strict,
-        sourceStatus: options.sourceStatus
+        sourceStatus: options.sourceStatus,
+        githubReleaseStatus: options.githubStatus,
+        vercelCloudStatus: options.vercelCloudStatus
     })
     const releaseState = report.ready ? '完了' : report.ok ? '未完了' : '要修正'
     const lines = [

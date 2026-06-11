@@ -126,6 +126,50 @@ test('release handoff can include Vercel cloud env status without values', () =>
     assert.doesNotMatch(markdown, /secret-anon-key/)
 })
 
+test('release handoff passes optional external statuses into the readiness report', () => {
+    const markdown = createReleaseHandoffMarkdown({
+        generatedAt: '2026-06-11T09:00:00.000Z',
+        packageVersion: '0.1.0',
+        rootDir: process.cwd(),
+        env: {},
+        githubStatus: {
+            ok: true,
+            ready: false,
+            workflow: {
+                file: 'windows-installer.yml',
+                status: 'present',
+                message: 'Workflow is available on GitHub'
+            },
+            latestRun: null,
+            artifact: {
+                name: 'pharmacy-report-windows-installer',
+                status: 'none',
+                message: 'No workflow runs were found'
+            },
+            nextActions: [
+                'gh workflow run windows-installer.yml',
+                'Run npm run release:github-status again after the workflow completes'
+            ]
+        },
+        vercelCloudStatus: {
+            ok: true,
+            ready: false,
+            environment: 'production',
+            envCount: 2,
+            presentRequired: [],
+            missingRequired: ['INSTALL_CODE_REGISTRY', 'WINDOWS_INSTALLER_URL'],
+            staleAppEnv: ['VITE_SUPABASE_URL'],
+            nextActions: [],
+            message: 'Vercel production env is not ready: missing INSTALL_CODE_REGISTRY, WINDOWS_INSTALLER_URL'
+        }
+    })
+
+    assert.match(markdown, /GitHub Actions release artifact/)
+    assert.match(markdown, /No workflow runs were found/)
+    assert.match(markdown, /Vercel cloud environment/)
+    assert.match(markdown, /missing INSTALL_CODE_REGISTRY/)
+})
+
 test('release handoff writer creates parent directory and writes markdown', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-handoff-'))
     const outputPath = path.join(tmpDir, 'nested', 'handoff.md')
