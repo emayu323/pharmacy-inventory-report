@@ -1306,11 +1306,14 @@ test('release readiness check rejects recording and Whisper app paths', () => {
 test('release readiness check requires Windows workflow to save release check receipt', () => {
     const tmpDir = createFixture()
     writeFixtureFile(tmpDir, '.github/workflows/windows-installer.yml', [
-        'runs-on: windows-latest',
+        'runs-on: windows-2025-vs2026',
+        'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true',
+        'actions/checkout@v6',
+        'actions/setup-node@v6',
         'node-version: 24',
         'npm run dist:win',
         'tests/preUpdateBackupCommand.test.mjs',
-        'actions/upload-artifact@v4'
+        'actions/upload-artifact@v7'
     ].join('\n'))
 
     try {

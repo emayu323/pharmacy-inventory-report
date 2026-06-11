@@ -373,12 +373,18 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - mac開発デモ向けに `scripts/mac_demo_readiness.mjs` / `npm run demo:mac-readiness` を追加し、起動コマンドと外部待ちを本番判定とは分けて表示できるようにする。
 - mac開発デモ向けに `scripts/mac_demo_smoke.mjs` / `npm run demo:mac-smoke` を追加し、起動後に `/entry` と `127.0.0.1` のローカルヘルスAPI応答を確認できるようにする。
 
-未実装:
+現在の確認済み状態:
 
-- GitHub ActionsまたはWindows実機でのNSISインストーラー作成実行、署名Secrets設定、アップロード実行。
-- リリース成果物専用の公開GitHubリポジトリ作成と `RELEASES_GITHUB_TOKEN` 設定。
+- GitHub ActionsのWindowsインストーラーworkflowは `c46ff41` で実行済み。run `27335850222` は成功し、`pharmacy-report-windows-installer` artifact は `source revision: current` として最新ソース由来であることを確認済み。
+- リリース成果物専用の公開GitHubリポジトリ `emayu323/pharmacy-report-releases` は作成済み。
+- Vercel本番envは `INSTALL_CODE_REGISTRY` と `WINDOWS_INSTALLER_URL` が設定済みで、`release:vercel-status` と `release:vercel-smoke` は通過済み。
+- `release:check:full` は `pass 17, pending 1, fail 0` で、未完了は署名付き自動更新公開の外部Prerequisiteだけ。
+
+未実装・外部待ち:
+
+- `RELEASES_GITHUB_TOKEN` Secretの設定。
+- `WINDOWS_CSC_LINK` と `WINDOWS_CSC_KEY_PASSWORD` Secretの設定。
 - コード署名有効化後のWindows実機での自動更新スモーク。
-- 実値を使ったVercel本番環境変数の設定。
 
 ## 11. フェーズ9: AIモード
 
