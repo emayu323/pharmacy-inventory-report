@@ -1,5 +1,3 @@
-import { normalizeInstallCode } from '../../src/installCode.ts'
-
 type Env = Record<string, string | undefined>
 type FetchLike = typeof fetch
 
@@ -127,6 +125,10 @@ export function normalizeInstallDeviceId(value: unknown) {
     const normalized = typeof value === 'string' ? value.trim() : ''
     if (normalized.length < 8 || normalized.length > 128) return ''
     return /^[A-Za-z0-9._:-]+$/.test(normalized) ? normalized : ''
+}
+
+function normalizeInstallCode(value: string) {
+    return value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
 }
 
 function normalizeSupabaseRestEndpoint(value: string) {

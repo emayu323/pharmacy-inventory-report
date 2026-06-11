@@ -340,7 +340,7 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - 導入コード欄とWindowsインストール導線を用意する。導入コード確認後だけインストールリンクを有効化する。
 - `api/install-code/verify.ts` をVercel Functionとして追加し、`INSTALL_CODE_REGISTRY` と `WINDOWS_INSTALLER_URL` の環境変数から導入コード、失効、利用台数上限を検証する。
 - `docs/install-code-registry.example.json` を最小管理表のサンプルとして配置する。
-- `api/install-code/supabaseUsageStore.ts` を追加し、Supabase管理テーブルが設定されている場合は端末IDを登録して導入コードの利用台数を自動加算する。
+- `server/install-code/supabaseUsageStore.ts` を追加し、Supabase管理テーブルが設定されている場合は端末IDを登録して導入コードの利用台数を自動加算する。
 - 導入ページはブラウザ内に匿名端末IDを生成/保持し、導入コード確認時にVercel Functionへ送信する。同じ端末の再確認は重複加算しない。
 - `docs/install-code-usage-store.md` にSupabaseテーブル定義とVercel環境変数をまとめる。
 - `vercel.ts` で `/api/(.*)` をAPIへ通し、SPAのcatch-all rewriteより前に評価されるようにする。

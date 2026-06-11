@@ -10,6 +10,8 @@ const windowsInstallerDocs = fs.readFileSync(new URL('../docs/windows-installer-
 const gitignore = fs.readFileSync(new URL('../.gitignore', import.meta.url), 'utf8')
 const vercelignore = fs.readFileSync(new URL('../.vercelignore', import.meta.url), 'utf8')
 const tsConfig = JSON.parse(fs.readFileSync(new URL('../tsconfig.json', import.meta.url), 'utf8'))
+const installCodeApi = fs.readFileSync(new URL('../api/install-code/verify.ts', import.meta.url), 'utf8')
+const installCodeApiFiles = fs.readdirSync(new URL('../api/install-code/', import.meta.url))
 
 test('package metadata is ready for local app distribution', () => {
     assert.equal(pkg.name, 'pharmacy-report')
@@ -182,4 +184,10 @@ test('root TypeScript config supports Vercel function .ts imports', () => {
     assert.equal(tsConfig.compilerOptions.allowImportingTsExtensions, true)
     assert.equal(tsConfig.compilerOptions.moduleResolution, 'bundler')
     assert.equal(tsConfig.compilerOptions.noEmit, true)
+})
+
+test('install code Vercel API route is self-contained at runtime', () => {
+    assert.deepEqual(installCodeApiFiles.filter(file => file.endsWith('.ts')), ['verify.ts'])
+    assert.doesNotMatch(installCodeApi, /^\s*import\s/m)
+    assert.doesNotMatch(installCodeApi, /from ['"][^'"]+\.ts['"]/)
 })

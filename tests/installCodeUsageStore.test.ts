@@ -3,7 +3,7 @@ import test from 'node:test'
 import {
     createSupabaseInstallCodeUsageStore,
     normalizeInstallDeviceId
-} from '../api/install-code/supabaseUsageStore.ts'
+} from '../server/install-code/supabaseUsageStore.ts'
 
 test('Supabase usage store reads device counts through REST without SDK', async () => {
     const requests: Request[] = []
