@@ -137,6 +137,9 @@ test('Windows installer docs show handoff with GitHub status for external operat
     assert.match(windowsInstallerDocs, /npm run release:handoff:full/)
     assert.match(windowsInstallerDocs, /--source-status/)
     assert.match(windowsInstallerDocs, /output\/release-handoff\.md/)
+    assert.match(windowsInstallerDocs, /外部操作の明示承認/)
+    assert.match(windowsInstallerDocs, /GitHub ActionsのWindowsインストーラーworkflowを実行してよい/)
+    assert.match(windowsInstallerDocs, /Vercel Production環境変数を更新してよい/)
 })
 
 test('gitignore keeps local secrets and generated release artifacts out of source publication', () => {

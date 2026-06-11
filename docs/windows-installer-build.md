@@ -171,6 +171,27 @@ npm run release:handoff -- --source-status --github-status --vercel-status
 
 `--source-status` を付けると、ローカルGitの未commit/未push状態を件数中心で追記します。`--github-status` を付けると、GitHub Actions上のworkflow公開状況、最新run、artifact有無も読み取り専用で追記します。`--vercel-status` を付けると、本番Vercelに必要な環境変数名が存在するかを値なしで追記します。
 
+## 外部操作の明示承認
+
+GitHub Actions実行やVercel Production環境変数の変更は、外部CI、Secrets、本番設定に触れるため、読み取り確認とは分けて明示承認する。
+
+Codexなどの作業エージェントへ依頼する場合は、次のように具体的に許可する。
+
+- `GitHub ActionsのWindowsインストーラーworkflowを実行してよい`
+- `Vercel Production環境変数を更新してよい`
+
+想定コマンド:
+
+```bash
+gh workflow run windows-installer.yml
+vercel env rm VITE_SUPABASE_URL production
+vercel env rm VITE_SUPABASE_ANON_KEY production
+vercel env add INSTALL_CODE_REGISTRY production
+vercel env add WINDOWS_INSTALLER_URL production
+```
+
+Vercelへ入れる導入コード実値、Service Role Key、トークンは、手順書やチャットに書かない。必要な値はVercel CLIの入力プロンプトなど安全な経路で設定する。
+
 ## Windowsでのインストーラー作成
 
 ```bash

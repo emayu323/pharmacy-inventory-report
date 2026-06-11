@@ -29,6 +29,11 @@ test('release handoff markdown summarizes pending external work without secrets'
     assert.match(markdown, /npm run verify:vercel-env -- --env-file \.env\.production\.local/)
     assert.match(markdown, /npm run release:check -- --ai-receipt output\/local-ai-integration-result\.json/)
     assert.match(markdown, /秘密情報、Service Role Key、導入コード実値、患者情報はこの文書に書かない/)
+    assert.match(markdown, /## 外部操作の明示承認/)
+    assert.match(markdown, /GitHub ActionsのWindowsインストーラーworkflowを実行してよい/)
+    assert.match(markdown, /Vercel Production環境変数を更新してよい/)
+    assert.match(markdown, /gh workflow run windows-installer\.yml/)
+    assert.match(markdown, /vercel env add INSTALL_CODE_REGISTRY production/)
     assert.doesNotMatch(markdown, /SUPER_SECRET/)
 })
 
