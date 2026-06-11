@@ -16,6 +16,7 @@
     "build": "tsc -b && vite build",
     "build:electron": "npm run build && electron-builder --dir --publish never",
     "dist:win": "npm run build && electron-builder --win nsis --x64 --publish never",
+    "dist:win:mac": "npm run build && ELECTRON_BUILDER_CACHE=/private/tmp/report-electron-builder-cache electron-builder --win nsis --x64 --publish never -c.electronDownload.cache=/private/tmp/report-electron-cache",
     "dist:win:publish": "npm run build && electron-builder --win nsis --x64 --publish always",
     "verify:electron-package": "node scripts/verify_electron_package.mjs",
     "verify:vercel-env": "node scripts/verify_vercel_production_env.mjs",

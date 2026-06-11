@@ -46,6 +46,10 @@ test('electron-builder config creates a Windows NSIS installer with local assets
     assert.equal(pkg.build.mac.identity, null)
     assert.ok(pkg.scripts['dist:win'].includes('--win nsis --x64'))
     assert.ok(pkg.scripts['dist:win'].includes('--publish never'))
+    assert.ok(pkg.scripts['dist:win:mac'].includes('ELECTRON_BUILDER_CACHE=/private/tmp/report-electron-builder-cache'))
+    assert.ok(pkg.scripts['dist:win:mac'].includes('-c.electronDownload.cache=/private/tmp/report-electron-cache'))
+    assert.ok(pkg.scripts['dist:win:mac'].includes('--win nsis --x64'))
+    assert.ok(pkg.scripts['dist:win:mac'].includes('--publish never'))
     assert.ok(pkg.scripts['dist:win:publish'].includes('--publish always'))
     assert.equal(pkg.scripts['verify:electron-package'], 'node scripts/verify_electron_package.mjs')
 })
@@ -113,6 +117,7 @@ test('Windows installer workflow builds and verifies distributable artifact', ()
 
 test('Windows installer docs show handoff with GitHub status for external operators', () => {
     assert.match(windowsInstallerDocs, /npm run release:github-status/)
+    assert.match(windowsInstallerDocs, /npm run dist:win:mac/)
     assert.equal(
         pkg.scripts['release:check:full'],
         'node scripts/release_readiness_check.mjs --source-status --ai-receipt output/local-ai-integration-result.json --format text'

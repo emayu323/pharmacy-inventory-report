@@ -35,6 +35,24 @@ release/
 - CSV更新に必要な `csv-parse` / `iconv-lite`
 - 自動更新に必要な `electron-updater`
 
+## macからWindowsインストーラーをローカル作成
+
+mac開発環境でも、署名なしのWindows NSISインストーラーをローカル作成できます。Codexや権限制限のあるmac環境では、Electron Builderのキャッシュ先をホームディレクトリではなく `/private/tmp` に固定します。
+
+```bash
+npm run dist:win:mac
+```
+
+出力例:
+
+```text
+release/pharmacy-report-setup-0.1.0-x64.exe
+release/pharmacy-report-setup-0.1.0-x64.exe.blockmap
+release/latest.yml
+```
+
+この手順は、mac上で配布物の形と `release:check` の判定を前倒し確認するためのものです。本番配布では、Windows環境またはGitHub Actionsで作成した署名付きインストーラーを使います。
+
 ## macでのデモ
 
 Windows実機や本番Vercel環境がなくても、入口ページとローカルアプリ接続状態の見え方はmacで確認できます。これはデモ用の確認であり、本番リリース完了判定ではありません。
