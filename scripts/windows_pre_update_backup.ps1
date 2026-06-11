@@ -6,7 +6,8 @@ param(
     [string]$FromVersion = "",
     [string]$DbPath = "",
     [string]$BackupDir = "",
-    [string]$GoogleDriveFolder = ""
+    [string]$GoogleDriveFolder = "",
+    [int]$KdfIterations = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,6 +32,9 @@ if ($BackupDir.Trim()) {
 }
 if ($GoogleDriveFolder.Trim()) {
     $arguments += @("--google-drive-folder", $GoogleDriveFolder.Trim())
+}
+if ($KdfIterations -gt 0) {
+    $arguments += @("--kdf-iterations", $KdfIterations.ToString())
 }
 
 $processStartInfo = [System.Diagnostics.ProcessStartInfo]::new()

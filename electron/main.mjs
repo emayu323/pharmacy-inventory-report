@@ -176,7 +176,8 @@ async function runPreUpdateBackupCli(command) {
         googleDriveFolder: command.googleDriveFolder || undefined,
         fromVersion: command.fromVersion || getAppVersion(),
         toVersion: command.toVersion,
-        currentVersion: getAppVersion()
+        currentVersion: getAppVersion(),
+        kdfIterations: command.kdfIterations
     })
     console.log(JSON.stringify(result))
 }

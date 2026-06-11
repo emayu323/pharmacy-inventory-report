@@ -56,7 +56,8 @@ jobs:
             -DbPath $dbPath `
             -BackupDir $backupDir `
             -FromVersion "0.1.0-ci" `
-            -ToVersion "0.1.1-ci"
+            -ToVersion "0.1.1-ci" `
+            -KdfIterations 1000
           $result = $output | ConvertFrom-Json
           if (-not $result.ok) {
             throw "Pre-update backup did not return ok=true"

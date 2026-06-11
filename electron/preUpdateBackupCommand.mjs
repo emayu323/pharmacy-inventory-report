@@ -15,7 +15,8 @@ export function parsePreUpdateBackupCommand(argv = []) {
         outputDir: readArgValue(argv, '--backup-dir'),
         fromVersion: readArgValue(argv, '--from-version'),
         toVersion: readArgValue(argv, '--to-version'),
-        googleDriveFolder: readArgValue(argv, '--google-drive-folder')
+        googleDriveFolder: readArgValue(argv, '--google-drive-folder'),
+        ...readOptionalPositiveIntegerArg(argv, '--kdf-iterations', 'kdfIterations')
     }
 }
 
@@ -73,4 +74,11 @@ function readArgValue(argv, name) {
 
 function normalizeVersion(value) {
     return typeof value === 'string' ? value.trim() : ''
+}
+
+function readOptionalPositiveIntegerArg(argv, name, key) {
+    const rawValue = readArgValue(argv, name)
+    if (!rawValue) return {}
+    const value = Number.parseInt(rawValue, 10)
+    return Number.isSafeInteger(value) && value > 0 ? { [key]: value } : {}
 }

@@ -20,13 +20,16 @@ test('parses updater pre-update backup command arguments', () => {
         '--backup-dir=C:\\backup',
         '--from-version',
         '0.1.0',
-        '--to-version=0.2.0'
+        '--to-version=0.2.0',
+        '--kdf-iterations',
+        '1000'
     ]), {
         dbPath: 'C:\\data\\app.sqlite',
         outputDir: 'C:\\backup',
         fromVersion: '0.1.0',
         toVersion: '0.2.0',
-        googleDriveFolder: ''
+        googleDriveFolder: '',
+        kdfIterations: 1000
     })
 })
 
