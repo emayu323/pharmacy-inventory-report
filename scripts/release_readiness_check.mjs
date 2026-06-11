@@ -48,6 +48,7 @@ const REQUIRED_FILES = [
     'src/institutionRepository.ts',
     'src/contexts/AuthProvider.tsx',
     '.node-version',
+    'tsconfig.json',
     'vercel.ts'
 ]
 
@@ -503,6 +504,7 @@ function areAppRoutesInsideAuthProvider(source) {
 
 function checkRuntimeConfiguration(rootDir) {
     const pkg = readPackageJson(rootDir)
+    const tsConfig = readJsonFile(path.join(rootDir, 'tsconfig.json'))
     const vercelConfigPath = path.join(rootDir, 'vercel.ts')
     const nodeVersionPath = path.join(rootDir, '.node-version')
     const errors = []
@@ -528,6 +530,17 @@ function checkRuntimeConfiguration(rootDir) {
     const nodeVersion = readTextFile(nodeVersionPath).trim()
     if (!/^24(?:\D|$)/.test(nodeVersion)) {
         errors.push('Node 24 must be pinned in .node-version')
+    }
+
+    const tsCompilerOptions = tsConfig?.compilerOptions || {}
+    if (tsCompilerOptions.allowImportingTsExtensions !== true) {
+        errors.push('tsconfig.json must allow .ts import paths for Vercel functions')
+    }
+    if (tsCompilerOptions.moduleResolution !== 'bundler') {
+        errors.push('tsconfig.json must use bundler moduleResolution for Vercel functions')
+    }
+    if (tsCompilerOptions.noEmit !== true) {
+        errors.push('tsconfig.json must keep noEmit true with allowImportingTsExtensions')
     }
 
     const vercelConfig = readTextFile(vercelConfigPath)
@@ -1099,6 +1112,14 @@ function getAiDraftReceiptErrors(draft, label) {
 function readPackageJson(rootDir) {
     try {
         return JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'))
+    } catch {
+        return null
+    }
+}
+
+function readJsonFile(filePath) {
+    try {
+        return JSON.parse(fs.readFileSync(filePath, 'utf8'))
     } catch {
         return null
     }

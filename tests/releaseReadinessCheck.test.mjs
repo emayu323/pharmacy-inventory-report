@@ -48,6 +48,7 @@ const REQUIRED_FILES = [
     'src/institutionRepository.ts',
     'src/contexts/AuthProvider.tsx',
     '.node-version',
+    'tsconfig.json',
     'vercel.ts'
 ]
 
@@ -802,6 +803,9 @@ test('release readiness check requires Node 24 and Vercel TS runtime configurati
         '  rewrites: []',
         '}'
     ].join('\n'))
+    writeFixtureFile(tmpDir, 'tsconfig.json', JSON.stringify({
+        compilerOptions: {}
+    }))
     writeFixtureFile(tmpDir, '.node-version', '22\n')
 
     try {
@@ -815,6 +819,7 @@ test('release readiness check requires Node 24 and Vercel TS runtime configurati
         assert.equal(runtimeCheck?.status, 'fail')
         assert.match(runtimeCheck?.message || '', /Node 24/)
         assert.match(runtimeCheck?.message || '', /@vercel\/config/)
+        assert.match(runtimeCheck?.message || '', /tsconfig\.json/)
         assert.match(runtimeCheck?.message || '', /API rewrite/)
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true })
@@ -1433,6 +1438,16 @@ function fileContentFixture(file) {
         ].join('\n')
     }
     if (file === '.node-version') return '24\n'
+    if (file === 'tsconfig.json') {
+        return JSON.stringify({
+            compilerOptions: {
+                module: 'ESNext',
+                moduleResolution: 'bundler',
+                allowImportingTsExtensions: true,
+                noEmit: true
+            }
+        })
+    }
     if (file === 'src/App.tsx') {
         return [
             "import LocalPinLock from './components/LocalPinLock'",

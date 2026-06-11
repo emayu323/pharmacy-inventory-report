@@ -9,6 +9,7 @@ const windowsInstallerWorkflow = fs.readFileSync(new URL('../.github/workflows/w
 const windowsInstallerDocs = fs.readFileSync(new URL('../docs/windows-installer-build.md', import.meta.url), 'utf8')
 const gitignore = fs.readFileSync(new URL('../.gitignore', import.meta.url), 'utf8')
 const vercelignore = fs.readFileSync(new URL('../.vercelignore', import.meta.url), 'utf8')
+const tsConfig = JSON.parse(fs.readFileSync(new URL('../tsconfig.json', import.meta.url), 'utf8'))
 
 test('package metadata is ready for local app distribution', () => {
     assert.equal(pkg.name, 'pharmacy-report')
@@ -175,4 +176,10 @@ test('vercel deployment excludes local release artifacts and generated secrets',
     assert.match(vercelignore, /^\*\.db$/m)
     assert.match(vercelignore, /^src\/data\/y_ALL\*\.csv$/m)
     assert.match(vercelignore, /^src\/data\/y_ALL\*\.zip$/m)
+})
+
+test('root TypeScript config supports Vercel function .ts imports', () => {
+    assert.equal(tsConfig.compilerOptions.allowImportingTsExtensions, true)
+    assert.equal(tsConfig.compilerOptions.moduleResolution, 'bundler')
+    assert.equal(tsConfig.compilerOptions.noEmit, true)
 })
