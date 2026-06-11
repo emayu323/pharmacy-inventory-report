@@ -19,6 +19,10 @@ import {
     formatVercelCloudEnvStatusText,
     readVercelCloudEnvStatus
 } from './vercel_cloud_env_status.mjs'
+import {
+    formatVercelProductionSmokeText,
+    runVercelProductionSmoke
+} from './vercel_production_smoke.mjs'
 
 const require = createRequire(import.meta.url)
 const packageJson = require('../package.json')
@@ -35,7 +39,8 @@ export function createReleaseHandoffMarkdown(options = {}) {
         strict: options.strict,
         sourceStatus: options.sourceStatus,
         githubReleaseStatus: options.githubStatus,
-        vercelCloudStatus: options.vercelCloudStatus
+        vercelCloudStatus: options.vercelCloudStatus,
+        vercelProductionSmokeStatus: options.vercelProductionSmokeStatus
     })
     const releaseState = report.ready ? '完了' : report.ok ? '未完了' : '要修正'
     const lines = [
@@ -105,6 +110,17 @@ export function createReleaseHandoffMarkdown(options = {}) {
         )
     }
 
+    if (options.vercelProductionSmokeStatus) {
+        lines.push(
+            '',
+            '## Vercel本番スモーク',
+            '',
+            '```text',
+            sanitizeText(formatVercelProductionSmokeText(options.vercelProductionSmokeStatus)),
+            '```'
+        )
+    }
+
     lines.push(
         '',
         '## チェック詳細',
@@ -157,6 +173,7 @@ function parseArgs(argv) {
     let includeGithubStatus = false
     let includeSourceStatus = false
     let includeVercelCloudStatus = false
+    let includeVercelSmokeStatus = false
     for (let index = 0; index < argv.length; index += 1) {
         const arg = argv[index]
         if (arg === '--output') {
@@ -176,13 +193,18 @@ function parseArgs(argv) {
             includeSourceStatus = true
         } else if (arg === '--vercel-status') {
             includeVercelCloudStatus = true
+        } else if (arg === '--vercel-smoke') {
+            includeVercelSmokeStatus = true
+        } else if (arg === '--vercel-url') {
+            options.vercelUrl = argv[index + 1]
+            index += 1
         }
     }
-    return { outputPath, options, includeGithubStatus, includeSourceStatus, includeVercelCloudStatus }
+    return { outputPath, options, includeGithubStatus, includeSourceStatus, includeVercelCloudStatus, includeVercelSmokeStatus }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-    const { outputPath, options, includeGithubStatus, includeSourceStatus, includeVercelCloudStatus } = parseArgs(process.argv.slice(2))
+    const { outputPath, options, includeGithubStatus, includeSourceStatus, includeVercelCloudStatus, includeVercelSmokeStatus } = parseArgs(process.argv.slice(2))
     if (includeGithubStatus) {
         options.githubStatus = await createGitHubReleaseStatus()
     }
@@ -191,6 +213,11 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     }
     if (includeVercelCloudStatus) {
         options.vercelCloudStatus = readVercelCloudEnvStatus()
+    }
+    if (includeVercelSmokeStatus) {
+        options.vercelProductionSmokeStatus = await runVercelProductionSmoke({
+            baseUrl: options.vercelUrl
+        })
     }
     const writtenPath = writeReleaseHandoffMarkdown(outputPath, options)
     console.log(`Release handoff written: ${writtenPath}`)

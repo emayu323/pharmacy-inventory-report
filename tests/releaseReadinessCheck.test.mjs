@@ -30,6 +30,7 @@ const REQUIRED_FILES = [
     'scripts/mac_demo_smoke.mjs',
     'scripts/github_release_status.mjs',
     'scripts/vercel_cloud_env_status.mjs',
+    'scripts/vercel_production_smoke.mjs',
     'scripts/source_release_status.mjs',
     'scripts/source_publication_checklist.mjs',
     'scripts/release_handoff.mjs',
@@ -67,6 +68,7 @@ const REQUIRED_SCRIPTS = [
     'release:handoff:full',
     'release:github-status',
     'release:vercel-status',
+    'release:vercel-smoke',
     'release:source-status',
     'release:source-checklist',
     'create:install-codes',
@@ -345,6 +347,60 @@ test('release readiness check can include Vercel cloud env status as an optional
             'vercel env rm VITE_SUPABASE_ANON_KEY production',
             'vercel env add INSTALL_CODE_REGISTRY production',
             'vercel env add WINDOWS_INSTALLER_URL production'
+        ])
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check can include Vercel production smoke status as an optional gate', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const passReport = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath,
+            vercelProductionSmokeStatus: {
+                ok: true,
+                ready: true,
+                message: 'Vercel production entry and install-code API smoke checks passed'
+            }
+        })
+        assert.equal(passReport.ok, true)
+        assert.equal(passReport.checks.find(check => check.id === 'vercel_production_smoke')?.status, 'pass')
+
+        const failReport = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath,
+            vercelProductionSmokeStatus: {
+                ok: true,
+                ready: false,
+                message: 'POST /api/install-code/verify returned 500 unknown'
+            }
+        })
+        const smokeCheck = failReport.checks.find(check => check.id === 'vercel_production_smoke')
+        const smokeAction = failReport.nextActions.find(action => action.id === 'vercel_production_smoke')
+
+        assert.equal(failReport.ok, false)
+        assert.equal(smokeCheck?.status, 'fail')
+        assert.match(smokeCheck?.message || '', /500/)
+        assert.equal(smokeAction?.docs, 'docs/vercel-production-env.md')
+        assert.deepEqual(smokeAction?.commands, [
+            'npm run release:vercel-smoke',
+            'vercel logs https://pharmacy-inventory-report.vercel.app --since 10m --expand --level error'
         ])
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true })
@@ -1409,6 +1465,7 @@ function packageScriptsFixture() {
         'tests/createInstallCodeRegistry.test.mjs',
         'tests/githubReleaseStatus.test.mjs',
         'tests/vercelCloudEnvStatus.test.mjs',
+        'tests/vercelProductionSmoke.test.mjs',
         'tests/sourceReleaseStatus.test.mjs',
         'tests/sourcePublicationChecklist.test.mjs',
         'tests/macDemoReadiness.test.mjs',

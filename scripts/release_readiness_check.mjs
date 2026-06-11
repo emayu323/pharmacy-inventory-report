@@ -4,6 +4,7 @@ import { verifyVercelProductionEnv, readEnvFile } from './verify_vercel_producti
 import { createSourceReleaseStatus } from './source_release_status.mjs'
 import { readVercelCloudEnvStatus } from './vercel_cloud_env_status.mjs'
 import { createGitHubReleaseStatus } from './github_release_status.mjs'
+import { runVercelProductionSmoke } from './vercel_production_smoke.mjs'
 
 const REQUIRED_FILES = [
     '.github/workflows/windows-installer.yml',
@@ -30,6 +31,7 @@ const REQUIRED_FILES = [
     'scripts/mac_demo_smoke.mjs',
     'scripts/github_release_status.mjs',
     'scripts/vercel_cloud_env_status.mjs',
+    'scripts/vercel_production_smoke.mjs',
     'scripts/source_release_status.mjs',
     'scripts/source_publication_checklist.mjs',
     'scripts/release_handoff.mjs',
@@ -67,6 +69,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
     'release:handoff:full',
     'release:github-status',
     'release:vercel-status',
+    'release:vercel-smoke',
     'release:source-status',
     'release:source-checklist',
     'create:install-codes',
@@ -84,6 +87,7 @@ const REQUIRED_LOCAL_APP_TESTS = [
     'tests/createInstallCodeRegistry.test.mjs',
     'tests/githubReleaseStatus.test.mjs',
     'tests/vercelCloudEnvStatus.test.mjs',
+    'tests/vercelProductionSmoke.test.mjs',
     'tests/sourceReleaseStatus.test.mjs',
     'tests/sourcePublicationChecklist.test.mjs',
     'tests/macDemoReadiness.test.mjs',
@@ -192,6 +196,14 @@ const NEXT_ACTION_DETAILS = {
             'vercel env add WINDOWS_INSTALLER_URL production'
         ]
     },
+    vercel_production_smoke: {
+        description: 'Vercel本番の導入ページと導入コードAPIがruntimeで応答するか確認します。',
+        docs: 'docs/vercel-production-env.md',
+        commands: [
+            'npm run release:vercel-smoke',
+            'vercel logs https://pharmacy-inventory-report.vercel.app --since 10m --expand --level error'
+        ]
+    },
     local_ai_integration: {
         description: '現地PCでローカルAI結合テストを実行し、保存された証跡を release:check に渡します。',
         docs: 'docs/local-ai-integration-check.md',
@@ -221,6 +233,7 @@ export function createReleaseReadinessReport(options = {}) {
         ...(options.githubReleaseStatus ? createGitHubReleaseStatusChecks(options.githubReleaseStatus) : []),
         checkVercelEnvironment(env, options.envFile, rootDir),
         ...(options.vercelCloudStatus ? [checkVercelCloudEnvironment(options.vercelCloudStatus)] : []),
+        ...(options.vercelProductionSmokeStatus ? [checkVercelProductionSmoke(options.vercelProductionSmokeStatus)] : []),
         checkLocalAiIntegrationReceipt(env, options.aiReceiptPath, rootDir)
     ]
 
@@ -322,6 +335,23 @@ function checkVercelCloudEnvironment(status) {
         label: 'Vercel cloud environment',
         status: status.ready ? 'pass' : 'pending',
         message: status.message || 'Vercel cloud env status was read'
+    }
+}
+
+function checkVercelProductionSmoke(status) {
+    if (!status.ok) {
+        return {
+            id: 'vercel_production_smoke',
+            label: 'Vercel production smoke',
+            status: 'fail',
+            message: status.message || 'Vercel production smoke check could not run'
+        }
+    }
+    return {
+        id: 'vercel_production_smoke',
+        label: 'Vercel production smoke',
+        status: status.ready ? 'pass' : 'fail',
+        message: status.message || 'Vercel production smoke check was read'
     }
 }
 
@@ -1294,16 +1324,24 @@ if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').hre
     const includeSourceStatus = process.argv.includes('--source-status')
     const includeGitHubStatus = process.argv.includes('--github-status')
     const includeVercelStatus = process.argv.includes('--vercel-status')
+    const includeVercelSmoke = process.argv.includes('--vercel-smoke')
+    const vercelUrlIndex = process.argv.indexOf('--vercel-url')
     const sourceStatus = includeSourceStatus ? await createSourceReleaseStatus() : undefined
     const githubReleaseStatus = includeGitHubStatus ? await createGitHubReleaseStatus() : undefined
     const vercelCloudStatus = includeVercelStatus ? readVercelCloudEnvStatus() : undefined
+    const vercelProductionSmokeStatus = includeVercelSmoke
+        ? await runVercelProductionSmoke({
+            baseUrl: vercelUrlIndex >= 0 ? process.argv[vercelUrlIndex + 1] : undefined
+        })
+        : undefined
     const report = createReleaseReadinessReport({
         envFile: envFileIndex >= 0 ? process.argv[envFileIndex + 1] : undefined,
         aiReceiptPath: aiReceiptIndex >= 0 ? process.argv[aiReceiptIndex + 1] : undefined,
         strict,
         sourceStatus,
         githubReleaseStatus,
-        vercelCloudStatus
+        vercelCloudStatus,
+        vercelProductionSmokeStatus
     })
     const format = formatIndex >= 0 ? process.argv[formatIndex + 1] : 'json'
     console.log(format === 'text' ? formatReleaseReadinessReportText(report) : JSON.stringify(report, null, 2))

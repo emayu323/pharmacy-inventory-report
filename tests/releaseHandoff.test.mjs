@@ -131,6 +131,40 @@ test('release handoff can include Vercel cloud env status without values', () =>
     assert.doesNotMatch(markdown, /secret-anon-key/)
 })
 
+test('release handoff can include Vercel production smoke status', () => {
+    const markdown = createReleaseHandoffMarkdown({
+        generatedAt: '2026-06-11T09:00:00.000Z',
+        packageVersion: '0.1.0',
+        report: releaseReportFixture(),
+        vercelProductionSmokeStatus: {
+            ok: true,
+            ready: false,
+            baseUrl: 'https://pharmacy-inventory-report.vercel.app',
+            entry: {
+                status: 'pass',
+                statusCode: 200,
+                message: 'GET /entry returned a successful response'
+            },
+            installCodeApi: {
+                status: 'fail',
+                statusCode: 500,
+                message: 'POST /api/install-code/verify returned 500 unknown'
+            },
+            nextActions: [
+                'npm run release:vercel-smoke',
+                'vercel logs https://pharmacy-inventory-report.vercel.app --since 10m --expand --level error'
+            ],
+            message: 'Vercel production smoke checks did not pass'
+        }
+    })
+
+    assert.match(markdown, /## Vercel本番スモーク/)
+    assert.match(markdown, /Vercel production smoke判定: 未完了/)
+    assert.match(markdown, /entry: pass \(200\)/)
+    assert.match(markdown, /install-code API: fail \(500\)/)
+    assert.match(markdown, /npm run release:vercel-smoke/)
+})
+
 test('release handoff passes optional external statuses into the readiness report', () => {
     const markdown = createReleaseHandoffMarkdown({
         generatedAt: '2026-06-11T09:00:00.000Z',

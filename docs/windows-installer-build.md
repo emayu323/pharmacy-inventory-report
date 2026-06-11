@@ -129,9 +129,11 @@ Vercel本番に必要な環境変数名が実際に反映済みか、値を表�
 
 ```bash
 npm run release:vercel-status
+npm run release:vercel-smoke
 ```
 
 この確認はenv名だけを読み取り、`INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足と、旧 `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` の残存を表示します。
+`release:vercel-smoke` は本番URLの `/entry` と `/api/install-code/verify` に実リクエストを送り、導入コードAPIがruntimeで500になっていないことを確認します。導入コード実値は使わず、無効コードが `400 invalid` として返ることだけを確認します。
 
 実値入りのVercel環境変数ファイルと、現地PCで取得したAI結合テスト証跡がある場合:
 
@@ -169,7 +171,7 @@ npm run release:handoff:full
 npm run release:handoff -- --source-status --github-status --vercel-status
 ```
 
-`--source-status` を付けると、ローカルGitの未commit/未push状態を件数中心で追記します。`--github-status` を付けると、GitHub Actions上のworkflow公開状況、最新run、artifact有無も読み取り専用で追記します。`--vercel-status` を付けると、本番Vercelに必要な環境変数名が存在するかを値なしで追記します。
+`--source-status` を付けると、ローカルGitの未commit/未push状態を件数中心で追記します。`--github-status` を付けると、GitHub Actions上のworkflow公開状況、最新run、artifact有無も読み取り専用で追記します。`--vercel-status` を付けると、本番Vercelに必要な環境変数名が存在するかを値なしで追記します。`--vercel-smoke` を付けると、本番Vercelの入口ページと導入コードAPIのruntime応答も追記します。
 
 ## 外部操作の明示承認
 
