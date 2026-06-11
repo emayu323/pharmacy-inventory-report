@@ -95,7 +95,9 @@ test('Windows updater helper calls the app pre-update backup CLI', () => {
     assert.match(windowsPreUpdateScript, /--to-version/)
     assert.match(windowsPreUpdateScript, /--db-path/)
     assert.match(windowsPreUpdateScript, /--backup-dir/)
-    assert.match(windowsPreUpdateScript, /LASTEXITCODE/)
+    assert.match(windowsPreUpdateScript, /ProcessStartInfo/)
+    assert.match(windowsPreUpdateScript, /WaitForExit/)
+    assert.doesNotMatch(windowsPreUpdateScript, /LASTEXITCODE/)
 })
 
 test('Windows installer workflow builds and verifies distributable artifact', () => {

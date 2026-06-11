@@ -33,9 +33,39 @@ if ($GoogleDriveFolder.Trim()) {
     $arguments += @("--google-drive-folder", $GoogleDriveFolder.Trim())
 }
 
-$output = & $AppPath @arguments
-if ($LASTEXITCODE -ne 0) {
-    throw "Pre-update backup failed with exit code $LASTEXITCODE"
+$processStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
+$processStartInfo.FileName = $AppPath
+$processStartInfo.UseShellExecute = $false
+$processStartInfo.RedirectStandardOutput = $true
+$processStartInfo.RedirectStandardError = $true
+
+foreach ($argument in $arguments) {
+    [void]$processStartInfo.ArgumentList.Add($argument)
+}
+
+$process = [System.Diagnostics.Process]::new()
+$process.StartInfo = $processStartInfo
+
+[void]$process.Start()
+$stdoutTask = $process.StandardOutput.ReadToEndAsync()
+$stderrTask = $process.StandardError.ReadToEndAsync()
+$process.WaitForExit()
+
+$output = $stdoutTask.GetAwaiter().GetResult()
+$errorOutput = $stderrTask.GetAwaiter().GetResult()
+$exitCode = $process.ExitCode
+$process.Dispose()
+
+if ($exitCode -ne 0) {
+    $errorDetails = $errorOutput.Trim()
+    if ($errorDetails) {
+        throw "Pre-update backup failed with exit code ${exitCode}: $errorDetails"
+    }
+    throw "Pre-update backup failed with exit code ${exitCode}"
+}
+
+if ($errorOutput.Trim()) {
+    Write-Warning $errorOutput.Trim()
 }
 
 $output
