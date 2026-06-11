@@ -92,6 +92,21 @@ export function formatVercelCloudEnvStatusText(status) {
     return lines.join('\n')
 }
 
+export function readVercelCloudEnvStatus(options = {}) {
+    const environment = options.environment || 'production'
+    try {
+        return createVercelCloudEnvStatus(readCloudEnvOutput({ ...options, environment }), {
+            environment
+        })
+    } catch (error) {
+        const status = createVercelCloudEnvStatus('', { environment })
+        return {
+            ...status,
+            message: error instanceof Error ? error.message : status.message
+        }
+    }
+}
+
 function createNextActions(missingRequired, staleAppEnv) {
     return [
         ...staleAppEnv.map(name => `vercel env rm ${name} production`),
@@ -139,17 +154,7 @@ function parseArgs(argv) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
     const options = parseArgs(process.argv.slice(2))
-    let status
-    try {
-        status = createVercelCloudEnvStatus(readCloudEnvOutput(options), {
-            environment: options.environment
-        })
-    } catch (error) {
-        status = createVercelCloudEnvStatus('', {
-            environment: options.environment
-        })
-        status.message = error instanceof Error ? error.message : status.message
-    }
+    const status = readVercelCloudEnvStatus(options)
     console.log(options.format === 'json' ? JSON.stringify(status, null, 2) : formatVercelCloudEnvStatusText(status))
     if (!status.ok) {
         process.exitCode = 1

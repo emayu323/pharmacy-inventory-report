@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { verifyVercelProductionEnv, readEnvFile } from './verify_vercel_production_env.mjs'
 import { createSourceReleaseStatus } from './source_release_status.mjs'
+import { readVercelCloudEnvStatus } from './vercel_cloud_env_status.mjs'
 
 const REQUIRED_FILES = [
     '.github/workflows/windows-installer.yml',
@@ -153,6 +154,17 @@ const NEXT_ACTION_DETAILS = {
             'npm run release:check -- --env-file .env.production.local'
         ]
     },
+    vercel_cloud_env: {
+        description: 'Vercel本番に必要な環境変数名が実際に反映済みか確認します。',
+        docs: 'docs/vercel-production-env.md',
+        commands: [
+            'npm run release:vercel-status',
+            'vercel env rm VITE_SUPABASE_URL production',
+            'vercel env rm VITE_SUPABASE_ANON_KEY production',
+            'vercel env add INSTALL_CODE_REGISTRY production',
+            'vercel env add WINDOWS_INSTALLER_URL production'
+        ]
+    },
     local_ai_integration: {
         description: '現地PCでローカルAI結合テストを実行し、保存された証跡を release:check に渡します。',
         docs: 'docs/local-ai-integration-check.md',
@@ -179,6 +191,7 @@ export function createReleaseReadinessReport(options = {}) {
         checkMacElectronPackage(rootDir),
         checkWindowsInstallerArtifact(rootDir),
         checkVercelEnvironment(env, options.envFile, rootDir),
+        ...(options.vercelCloudStatus ? [checkVercelCloudEnvironment(options.vercelCloudStatus)] : []),
         checkLocalAiIntegrationReceipt(env, options.aiReceiptPath, rootDir)
     ]
 
@@ -194,6 +207,23 @@ export function createReleaseReadinessReport(options = {}) {
         counts: summary,
         checks,
         nextActions: createNextActions(checks)
+    }
+}
+
+function checkVercelCloudEnvironment(status) {
+    if (!status.ok) {
+        return {
+            id: 'vercel_cloud_env',
+            label: 'Vercel cloud environment',
+            status: 'fail',
+            message: status.message || 'Vercel cloud env status could not be read'
+        }
+    }
+    return {
+        id: 'vercel_cloud_env',
+        label: 'Vercel cloud environment',
+        status: status.ready ? 'pass' : 'pending',
+        message: status.message || 'Vercel cloud env status was read'
     }
 }
 
@@ -1050,12 +1080,15 @@ if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').hre
     const formatIndex = process.argv.indexOf('--format')
     const strict = process.argv.includes('--strict')
     const includeSourceStatus = process.argv.includes('--source-status')
+    const includeVercelStatus = process.argv.includes('--vercel-status')
     const sourceStatus = includeSourceStatus ? await createSourceReleaseStatus() : undefined
+    const vercelCloudStatus = includeVercelStatus ? readVercelCloudEnvStatus() : undefined
     const report = createReleaseReadinessReport({
         envFile: envFileIndex >= 0 ? process.argv[envFileIndex + 1] : undefined,
         aiReceiptPath: aiReceiptIndex >= 0 ? process.argv[aiReceiptIndex + 1] : undefined,
         strict,
-        sourceStatus
+        sourceStatus,
+        vercelCloudStatus
     })
     const format = formatIndex >= 0 ? process.argv[formatIndex + 1] : 'json'
     console.log(format === 'text' ? formatReleaseReadinessReportText(report) : JSON.stringify(report, null, 2))

@@ -108,6 +108,8 @@ npm run release:check -- --format text
 npm run release:check:full
 ```
 
+`release:check:full` はVercel本番env名も読み取り専用で確認し、必要な `INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足と旧 `VITE_SUPABASE_*` の残存を表示します。
+
 証跡パスを変える場合:
 
 ```bash

@@ -299,6 +299,54 @@ test('release readiness check becomes ready when artifacts env and AI receipt ar
     }
 })
 
+test('release readiness check can include Vercel cloud env status as an optional pending gate', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath,
+            vercelCloudStatus: {
+                ok: true,
+                ready: false,
+                message: 'missing INSTALL_CODE_REGISTRY, WINDOWS_INSTALLER_URL',
+                missingRequired: ['INSTALL_CODE_REGISTRY', 'WINDOWS_INSTALLER_URL'],
+                staleAppEnv: ['VITE_SUPABASE_URL'],
+                presentRequired: [],
+                nextActions: []
+            }
+        })
+        const cloudCheck = report.checks.find(check => check.id === 'vercel_cloud_env')
+        const cloudAction = report.nextActions.find(action => action.id === 'vercel_cloud_env')
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, false)
+        assert.equal(cloudCheck?.status, 'pending')
+        assert.match(cloudCheck?.message || '', /INSTALL_CODE_REGISTRY/)
+        assert.equal(cloudAction?.docs, 'docs/vercel-production-env.md')
+        assert.deepEqual(cloudAction?.commands, [
+            'npm run release:vercel-status',
+            'vercel env rm VITE_SUPABASE_URL production',
+            'vercel env rm VITE_SUPABASE_ANON_KEY production',
+            'vercel env add INSTALL_CODE_REGISTRY production',
+            'vercel env add WINDOWS_INSTALLER_URL production'
+        ])
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
 test('release readiness check resolves relative AI receipt path from root directory', () => {
     const tmpDir = createFixture({
         macPackage: true,
