@@ -29,6 +29,7 @@ const REQUIRED_FILES = [
     'scripts/mac_demo_readiness.mjs',
     'scripts/mac_demo_smoke.mjs',
     'scripts/github_release_status.mjs',
+    'scripts/vercel_cloud_env_status.mjs',
     'scripts/source_release_status.mjs',
     'scripts/source_publication_checklist.mjs',
     'scripts/release_handoff.mjs',
@@ -61,6 +62,7 @@ const REQUIRED_SCRIPTS = [
     'release:handoff',
     'release:handoff:full',
     'release:github-status',
+    'release:vercel-status',
     'release:source-status',
     'release:source-checklist',
     'create:install-codes',
@@ -134,6 +136,7 @@ test('release readiness check includes concrete next actions for external pendin
         assert.equal(vercelAction?.docs, 'docs/vercel-production-env.md')
         assert.deepEqual(vercelAction?.commands, [
             'npm run verify:vercel-env -- --env-file .env.production.local',
+            'npm run release:vercel-status',
             'npm run release:check -- --env-file .env.production.local'
         ])
 
@@ -1136,6 +1139,7 @@ function packageScriptsFixture() {
         'tests/packageBuildConfig.test.mjs',
         'tests/createInstallCodeRegistry.test.mjs',
         'tests/githubReleaseStatus.test.mjs',
+        'tests/vercelCloudEnvStatus.test.mjs',
         'tests/sourceReleaseStatus.test.mjs',
         'tests/sourcePublicationChecklist.test.mjs',
         'tests/macDemoReadiness.test.mjs',

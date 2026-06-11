@@ -144,6 +144,7 @@ vercel deploy --prod
 
 本番反映後:
 
+- `npm run release:vercel-status` で `INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` がProductionに存在し、旧 `VITE_SUPABASE_*` が残っていない。
 - `/entry` で導入コードを入力できる。
 - 正しい導入コードで「Windows版をインストール」が有効になる。
 - 台数上限に達した新規端末は拒否される。

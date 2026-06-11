@@ -123,6 +123,14 @@ npm run release:source-status -- --details
 
 `release:source-checklist` は `output/source-publication-checklist.md` に、確認項目と変更ファイル一覧を保存します。
 
+Vercel本番に必要な環境変数名が実際に反映済みか、値を表示せずに確認する場合:
+
+```bash
+npm run release:vercel-status
+```
+
+この確認はenv名だけを読み取り、`INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足と、旧 `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` の残存を表示します。
+
 実値入りのVercel環境変数ファイルと、現地PCで取得したAI結合テスト証跡がある場合:
 
 ```bash
