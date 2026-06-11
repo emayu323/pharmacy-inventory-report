@@ -13,6 +13,7 @@ npm run build
 npm run test:local-app
 npm run lint
 npm run release:check:full
+npm run release:check:full:strict
 ```
 
 期待結果:
@@ -21,6 +22,7 @@ npm run release:check:full
 - `test:local-app` が全件成功する。
 - `lint` が成功する。
 - `release:check:full` は `pass 17, pending 1, fail 0` になる。GitHub Actions上のWindowsインストーラーartifact、本番Vercel env、現地AI結合証跡は確認済みとして扱い、残る `pending` は署名付き自動更新公開のSecret/コード署名Prerequisiteだけにする。
+- 署名Secret投入前の `release:check:full:strict` は `pending` を失敗扱いにするため終了コード1になる。署名Secret投入後の本番配布直前はこのコマンドが成功することを最終条件にする。
 
 ## 方針別確認
 

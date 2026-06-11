@@ -362,6 +362,7 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - `release:check -- --source-status` では、ローカルGitの未commit/未push状態を追加の `Source publication` ゲートとして扱い、GitHub Actionsへworkflowが届いていない原因を切り分けられるようにする。
 - `scripts/vercel_production_smoke.mjs` と `npm run release:vercel-smoke` を追加し、本番Vercelの `/entry` と導入コードAPIがruntimeで応答することを導入コード実値なしで確認できるようにする。
 - `npm run release:check:full` を追加し、ローカルGit状態、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、GitHub Actions上の配布artifact、Vercel本番env名、`output/.env.production.local.generated`、Vercel本番スモーク、`output/local-ai-integration-result.json` を含む人間向けリリース判定を1コマンドで表示できるようにする。
+- `npm run release:check:full:strict` を追加し、署名Secret投入後の本番配布直前に `pending` / `warn` も失敗扱いで確認できるようにする。
 - `release:check` では、報告書の自動保存/手動保存、保存状態表示、手動バックアップ、復元、更新前バックアップの導線も静的に確認する。
 - `scripts/release_handoff.mjs` と `npm run release:handoff` を追加し、外部担当者へ渡す残作業サマリを秘密情報なしのMarkdownとして `output/release-handoff.md` に生成できるようにする。
 - `scripts/source_release_status.mjs` と `npm run release:source-status` を追加し、ローカルGitの未commit/未push状態を読み取り専用で確認できるようにする。

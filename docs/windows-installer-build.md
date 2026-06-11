@@ -109,6 +109,11 @@ npm run release:check:full
 ```
 
 `release:check:full` はGitHub Actions状態とVercel本番env名も読み取り専用で確認し、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、最新workflow run/artifactの有無、必要な `INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足、旧 `VITE_SUPABASE_*` の残存を表示します。
+署名Secret投入後の本番配布直前は、`pending` や `warn` も失敗扱いにする次のコマンドを使います。
+
+```bash
+npm run release:check:full:strict
+```
 
 証跡パスを変える場合:
 
@@ -147,10 +152,7 @@ npm run release:check -- \
 本番配布直前は、未確認項目も失敗扱いにします。
 
 ```bash
-npm run release:check -- \
-  --env-file .env.production.local \
-  --ai-receipt output/local-ai-integration-result.json \
-  --strict
+npm run release:check:full:strict
 ```
 
 `ok: true` は致命的な設定不備がない状態です。`ready: true` はローカル成果物、GitHub Actions上の配布artifact、Vercel本番env、AI結合証跡、署名付き自動更新公開Prerequisiteまで揃った状態です。GitHub Actions artifact、Vercel本番env、ローカルAI証跡が揃っている現在の状態では、`pending` は `RELEASES_GITHUB_TOKEN` と `WINDOWS_CSC_LINK` / `WINDOWS_CSC_KEY_PASSWORD` による署名付き自動更新公開Prerequisiteだけになります。

@@ -64,6 +64,7 @@ const REQUIRED_SCRIPTS = [
     'verify:vercel-env',
     'release:check',
     'release:check:full',
+    'release:check:full:strict',
     'release:handoff',
     'release:handoff:full',
     'release:github-status',
