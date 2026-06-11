@@ -53,6 +53,19 @@ test('editable select suggestions are keyboard reachable buttons', () => {
     assert.match(reportEdit, /type="button"[\s\S]*className="editable-select-option"[\s\S]*onClick=\{\(\) => handleSelect\(opt\)\}/)
 })
 
+test('editable select exposes combobox and listbox state to assistive technology', () => {
+    assert.match(reportEdit, /const inputId = `editable-select-\$\{name\}-input`/)
+    assert.match(reportEdit, /const optionListId = `editable-select-\$\{name\}-options`/)
+    assert.match(reportEdit, /<label className="label" htmlFor=\{inputId\}>/)
+    assert.match(reportEdit, /id=\{inputId\}/)
+    assert.match(reportEdit, /role="combobox"/)
+    assert.match(reportEdit, /aria-haspopup="listbox"/)
+    assert.match(reportEdit, /aria-expanded=\{isOpen\}/)
+    assert.match(reportEdit, /aria-controls=\{optionListId\}/)
+    assert.match(reportEdit, /id=\{optionListId\}[\s\S]*role="listbox"/)
+    assert.match(reportEdit, /role="presentation"[\s\S]*role="option"[\s\S]*aria-selected=\{value === opt\}/)
+})
+
 test('report edit screen uses template chips instead of dropdown template selectors', () => {
     assert.match(reportEdit, /template-chip-list/)
     assert.match(reportEdit, /template-chip-replace/)

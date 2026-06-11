@@ -141,6 +141,8 @@ const EditableSelect = ({ label, name, value, options, onChange }: {
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const inputId = `editable-select-${name}-input`;
+    const optionListId = `editable-select-${name}-options`;
 
     // Close on click outside
     useEffect(() => {
@@ -160,9 +162,10 @@ const EditableSelect = ({ label, name, value, options, onChange }: {
 
     return (
         <div ref={containerRef} style={{ position: 'relative' }}>
-            <label className="label">{label}</label>
+            <label className="label" htmlFor={inputId}>{label}</label>
             <div style={{ position: 'relative' }}>
                 <input
+                    id={inputId}
                     type="text"
                     name={name}
                     className="input"
@@ -172,11 +175,17 @@ const EditableSelect = ({ label, name, value, options, onChange }: {
                     placeholder="選択または入力..."
                     style={{ paddingRight: '2.5rem' }}
                     autoComplete="off"
+                    role="combobox"
+                    aria-haspopup="listbox"
+                    aria-expanded={isOpen}
+                    aria-controls={optionListId}
                 />
                 <button
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
                     aria-label={`${label}の候補を開く`}
+                    aria-expanded={isOpen}
+                    aria-controls={optionListId}
                     style={{
                         position: 'absolute',
                         right: '0',
@@ -196,27 +205,32 @@ const EditableSelect = ({ label, name, value, options, onChange }: {
                 </button>
 
                 {isOpen && (
-                    <ul style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        backgroundColor: 'var(--color-surface)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-md)',
-                        marginTop: '0.25rem',
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        boxShadow: 'var(--shadow-lg)',
-                        zIndex: 100,
-                        listStyle: 'none',
-                        padding: '0.25rem 0'
-                    }}>
+                    <ul
+                        id={optionListId}
+                        role="listbox"
+                        style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            backgroundColor: 'var(--color-surface)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: 'var(--radius-md)',
+                            marginTop: '0.25rem',
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                            boxShadow: 'var(--shadow-lg)',
+                            zIndex: 100,
+                            listStyle: 'none',
+                            padding: '0.25rem 0'
+                        }}>
                         {options.map((opt) => (
-                            <li key={opt}>
+                            <li key={opt} role="presentation">
                                 <button
                                     type="button"
                                     className="editable-select-option"
+                                    role="option"
+                                    aria-selected={value === opt}
                                     onClick={() => handleSelect(opt)}
                                 >
                                     {opt}
