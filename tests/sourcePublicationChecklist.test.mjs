@@ -24,6 +24,7 @@ test('source publication checklist summarizes local source status and review ste
     assert.match(markdown, /npm run release:source-status -- --details/)
     assert.match(markdown, /npm run test:local-app/)
     assert.match(markdown, /npm run release:check:full/)
+    assert.match(markdown, /npm run release:check:full:strict/)
     assert.match(markdown, /npm run release:github-status/)
     assert.match(markdown, /## 変更ファイル/)
     assert.match(markdown, /- \[modified\] package\.json/)

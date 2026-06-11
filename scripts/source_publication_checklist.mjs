@@ -49,6 +49,7 @@ export function createSourcePublicationChecklistMarkdown(options = {}) {
         '- [ ] `npm run lint` が通ることを確認する。',
         '- [ ] `npm run build` が通ることを確認する。',
         '- [ ] `npm run release:check:full` の残作業を確認する。',
+        '- [ ] 署名Secret投入後の本番配布直前は `npm run release:check:full:strict` が通ることを確認する。',
         '- [ ] commit/push またはPR作成後に `npm run release:github-status` を再実行する。',
         '',
         '## 自動安全確認',
