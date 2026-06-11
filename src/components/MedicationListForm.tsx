@@ -234,12 +234,15 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                     min-height: 2.65rem;
                     display: flex;
                     align-items: center;
+                    justify-content: flex-end;
                     padding: 0.625rem;
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-md);
-                    background-color: #f8fafc;
+                    border: 0;
+                    border-radius: 0;
+                    background-color: transparent;
                     color: var(--color-text-main);
-                    font-weight: 700;
+                    font-weight: 500;
+                    font-variant-numeric: tabular-nums;
+                    text-align: right;
                     white-space: nowrap;
                 }
 
@@ -275,6 +278,61 @@ export default function MedicationListForm({ title, items, onUpdate, onSearchDru
                 .medication-add-button:hover {
                     border-color: var(--color-primary);
                     background-color: #eff6ff;
+                }
+
+                .medication-row input[type="number"],
+                .medication-row input[type="date"],
+                .medication-row .medication-calculated {
+                    font-variant-numeric: tabular-nums;
+                    text-align: right;
+                }
+
+                .medication-grid-header {
+                    display: none;
+                }
+
+                .medication-row,
+                .medication-row-regular,
+                .medication-row-other {
+                    grid-template-columns: 1fr 1fr;
+                    gap: 0.875rem;
+                    align-items: start;
+                    border-color: var(--color-border);
+                    background-color: var(--color-surface);
+                }
+
+                .medication-drag-handle {
+                    grid-column: 1 / -1;
+                    height: auto;
+                    padding-bottom: 0;
+                    justify-content: flex-start;
+                }
+
+                .medication-row-name,
+                .medication-row-notes,
+                .medication-actual-reason,
+                .mobile-actions {
+                    grid-column: 1 / -1;
+                }
+
+                .medication-actual-reason {
+                    grid-template-columns: 1fr;
+                    margin-top: 0;
+                }
+
+                .mobile-actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    border-top: 1px dashed var(--color-border);
+                    padding-top: 0.75rem;
+                }
+
+                .medication-row-label {
+                    display: block !important;
+                    margin-bottom: 0.25rem;
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    color: var(--color-text-muted);
                 }
 
                 @media (max-width: 960px) {

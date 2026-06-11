@@ -1140,7 +1140,8 @@ function packageScriptsFixture() {
         'tests/sourcePublicationChecklist.test.mjs',
         'tests/macDemoReadiness.test.mjs',
         'tests/macDemoSmoke.test.mjs',
-        'tests/releaseHandoff.test.mjs'
+        'tests/releaseHandoff.test.mjs',
+        'tests/reportEditUiV3.test.mjs'
     ].join(' ')
     return scripts
 }

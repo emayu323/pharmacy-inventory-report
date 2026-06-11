@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { ArrowLeft, Bot, Save, ChevronDown, ChevronRight, Printer, Undo2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Bot, CheckCircle2, Save, ChevronDown, ChevronRight, Printer, Undo2 } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback, type ChangeEvent, type FormEvent } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { ReportPrint } from '../components/ReportPrint'
@@ -21,6 +21,7 @@ import {
     getReportPrintRecipients,
     getReportPrintWarnings,
     hasMissingCareManagerRecipient,
+    estimateReportPrintPages,
     resolvePatientAgeAtVisit,
     type ReportPrintTarget
 } from '../reportPrintModel'
@@ -59,6 +60,20 @@ type PatientMasterSaveChoice = 'report_only' | 'update_patient'
 const AI_DRAFT_TARGET_LABELS: Record<AiDraftTarget, string> = {
     chief_complaint: '主訴等',
     medication_instruction: '服薬指導内容'
+}
+
+const formatDateForUi = (value?: string) => value ? value.replace(/-/g, '/') : ''
+
+const getRegularMedicationSummary = (items: Report['medications_check_list'] = []) => {
+    const candidates = items
+        .filter(item => item.calculated_supply_until)
+        .sort((a, b) => String(a.calculated_supply_until).localeCompare(String(b.calculated_supply_until)))
+    const earliest = candidates[0]
+    return {
+        supplyUntil: earliest?.calculated_supply_until || '',
+        name: earliest?.name || '',
+        totalDays: earliest?.calculated_total_days || ''
+    }
 }
 
 // Mock for edit, would fetch based on ID in real app
@@ -232,7 +247,6 @@ export default function ReportEdit() {
     const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS)
     const [drugOptions, setDrugOptions] = useState<DrugMasterEntry[]>([])
     const [textTemplates, setTextTemplates] = useState<TextTemplate[]>([])
-    const [selectedTemplateIds, setSelectedTemplateIds] = useState<Partial<Record<TextTemplateTarget, string>>>({})
     const [sourcePatient, setSourcePatient] = useState<Patient | null>(null)
     const [patientMasterDiffs, setPatientMasterDiffs] = useState<PatientMasterDiff[]>([])
     const [isPatientMasterDialogOpen, setIsPatientMasterDialogOpen] = useState(false)
@@ -251,7 +265,6 @@ export default function ReportEdit() {
     const [aiError, setAiError] = useState('')
     const printRef = useRef<HTMLDivElement>(null)
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const selectedTemplateIdsRef = useRef<Partial<Record<TextTemplateTarget, string>>>({})
     const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastAutoSaveFingerprintRef = useRef('')
     const changedDuringSaveRef = useRef(false)
@@ -304,14 +317,7 @@ export default function ReportEdit() {
         return textTemplates.filter(template => template.target === target)
     }
 
-    const applyTextTemplate = (target: TextTemplateTarget, mode: TemplateInsertMode) => {
-        const templateId = selectedTemplateIdsRef.current[target] || selectedTemplateIds[target]
-        const template = textTemplates.find(item => item.id === templateId)
-        if (!template) {
-            toast.error('定型文を選択してください')
-            return
-        }
-
+    const applyTextTemplate = (target: TextTemplateTarget, template: TextTemplate, mode: TemplateInsertMode) => {
         setFormData(prev => {
             const currentValue = String(prev[target] || '')
             const nextValue = mode === 'replace'
@@ -403,28 +409,27 @@ export default function ReportEdit() {
         if (templates.length === 0) return null
 
         return (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                <select
-                    className="input"
-                    value={selectedTemplateIds[target] || ''}
-                    onChange={(e) => {
-                        selectedTemplateIdsRef.current[target] = e.target.value
-                        setSelectedTemplateIds(prev => ({ ...prev, [target]: e.target.value }))
-                    }}
-                    aria-label="定型文を選択"
-                    style={{ maxWidth: '18rem', padding: '0.45rem 0.6rem' }}
-                >
-                    <option value="">定型文を選択</option>
-                    {templates.map(template => (
-                        <option key={template.id} value={template.id}>{template.title}</option>
-                    ))}
-                </select>
-                <button type="button" className="btn btn-ghost" onClick={() => applyTextTemplate(target, 'append')} style={{ padding: '0.45rem 0.75rem' }}>
-                    追記
-                </button>
-                <button type="button" className="btn btn-ghost" onClick={() => applyTextTemplate(target, 'replace')} style={{ padding: '0.45rem 0.75rem' }}>
-                    置換
-                </button>
+            <div className="template-chip-list" aria-label="定型文">
+                {templates.map(template => (
+                    <div key={template.id} className="template-chip-group">
+                        <button
+                            type="button"
+                            className="template-chip"
+                            onClick={() => applyTextTemplate(target, template, 'append')}
+                            title={`${template.title}を追記`}
+                        >
+                            {template.title}
+                        </button>
+                        <button
+                            type="button"
+                            className="template-chip template-chip-replace"
+                            onClick={() => applyTextTemplate(target, template, 'replace')}
+                            title={`${template.title}で置換`}
+                        >
+                            置換
+                        </button>
+                    </div>
+                ))}
             </div>
         )
     }
@@ -466,6 +471,69 @@ export default function ReportEdit() {
     const printRecipients = getReportPrintRecipients(printTarget)
     const printWarnings = getReportPrintWarnings(reportForPrint, printTarget)
     const isCareManagerRecipientMissing = hasMissingCareManagerRecipient(reportForPrint, printTarget)
+    const reportPageCount = estimateReportPrintPages(reportForPrint)
+    const regularMedicationSummary = getRegularMedicationSummary(formData.medications_check_list || [])
+    const patientAgeAtVisit = resolvePatientAgeAtVisit(
+        formData.patient_dob,
+        formData.visit_date,
+        formData.patient_age_at_visit
+    )
+    const patientSummaryLabel = formData.patient_name
+        ? `${formData.patient_name} 様${typeof patientAgeAtVisit === 'number' ? ` / ${patientAgeAtVisit}歳` : ''}`
+        : '患者未選択'
+    const careManagerMissing = !String(formData.care_manager || '').trim()
+    const visitInfoSummary = [
+        formData.visit_date ? `訪問 ${formatDateForUi(formData.visit_date)}` : '',
+        formData.prescription_date ? `処方 ${formatDateForUi(formData.prescription_date)}` : '',
+        formData.pharmacist_name ? `担当 ${formData.pharmacist_name}` : ''
+    ].filter(Boolean).join(' / ') || '未入力'
+    const statusInfoSummary = [
+        formData.guidance_recipient ? `対象 ${formData.guidance_recipient}` : '',
+        formData.medication_status ? `服薬 ${formData.medication_status}` : '',
+        formData.storage_status ? `保管 ${formData.storage_status}` : ''
+    ].filter(Boolean).join(' / ') || '未入力'
+
+    const renderReportActions = (className = '') => (
+        <div className={`report-action-bar ${className}`.trim()}>
+            <div className="print-options" aria-label="印刷対象">
+                <button
+                    type="button"
+                    className={`btn ${printTarget === 'both' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setPrintTarget('both')}
+                >
+                    2通
+                </button>
+                <button
+                    type="button"
+                    className={`btn ${printTarget === 'medical' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setPrintTarget('medical')}
+                >
+                    医療機関
+                </button>
+                <button
+                    type="button"
+                    className={`btn ${printTarget === 'care_manager' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setPrintTarget('care_manager')}
+                >
+                    ケアマネ
+                </button>
+            </div>
+            {saveStatusLabel && (
+                <span className={`report-save-state report-save-state-${saveStatus}`}>
+                    {saveStatusLabel}
+                </span>
+            )}
+            <button type="button" onClick={handlePrintClick} className="btn btn-ghost report-print-button">
+                <Printer size={18} />
+                印刷 / PDFプレビュー
+            </button>
+            <button type="button" onClick={() => navigate(-1)} className="btn btn-ghost">キャンセル</button>
+            <button type="submit" className="btn btn-primary report-save-button" disabled={isSaving}>
+                <Save size={18} />
+                {isSaving ? '保存中...' : '保存する'}
+            </button>
+        </div>
+    )
 
     const handlePrintClick = () => {
         if (isCareManagerRecipientMissing) {
@@ -861,7 +929,7 @@ export default function ReportEdit() {
 
     return (
         <div>
-            <div style={{
+            <div className="report-sticky-header" style={{
                 marginBottom: '1.5rem',
                 position: 'sticky',
                 top: 0,
@@ -875,7 +943,7 @@ export default function ReportEdit() {
                     <ArrowLeft size={18} />
                     戻る
                 </button>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div className="report-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>
                         {id ? '報告書編集' : '新規報告書作成'}
                     </h2>
@@ -892,7 +960,7 @@ export default function ReportEdit() {
                         boxShadow: 'var(--shadow-sm)',
                         maxWidth: '100%',
                         whiteSpace: 'nowrap'
-                    }} className="no-scrollbar">
+                    }} className="report-quick-nav no-scrollbar">
                         <button type="button" onClick={() => scrollToSection('section-basic')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>基本情報</button>
                         <button type="button" onClick={() => scrollToSection('section-visit')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>訪問・処方</button>
                         <button type="button" onClick={() => scrollToSection('section-status')} className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', height: 'auto' }}>状況確認</button>
@@ -906,7 +974,7 @@ export default function ReportEdit() {
 
             <form
                 onSubmit={handleSubmit}
-                style={{ display: 'grid', gap: '1.5rem' }}
+                className="report-edit-form"
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                         // Allow Enter in Textareas, prevent in Inputs (except submit button which handles itself)
@@ -915,6 +983,8 @@ export default function ReportEdit() {
                     }
                 }}
             >
+                <div className="report-edit-layout">
+                    <div className="report-edit-main">
 
                 {/* 基本情報 */}
                 {/* 基本情報 */}
@@ -1031,36 +1101,41 @@ export default function ReportEdit() {
 
                 {/* 訪問情報 */}
                 <section id="section-visit" className="card" style={{ padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-                        訪問・処方情報
-                    </h3>
-                    <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                        <div>
-                            <label className="label">訪問日</label>
-                            <input type="date" name="visit_date" className="input" required value={formData.visit_date} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <label className="label">担当薬剤師</label>
-                            <input type="text" name="pharmacist_name" className="input" required value={formData.pharmacist_name} onChange={handleChange} />
-                        </div>
+                    <details className="compact-section-details">
+                        <summary>
+                            <span>訪問・処方情報</span>
+                            <span>{visitInfoSummary}</span>
+                        </summary>
+                        <div className="responsive-grid compact-section-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                            <div>
+                                <label className="label">訪問日</label>
+                                <input type="date" name="visit_date" className="input" required value={formData.visit_date} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <label className="label">担当薬剤師</label>
+                                <input type="text" name="pharmacist_name" className="input" required value={formData.pharmacist_name} onChange={handleChange} />
+                            </div>
 
-                        <div>
-                            <label className="label">処方日</label>
-                            <input type="date" name="prescription_date" className="input" value={formData.prescription_date} onChange={handleChange} />
+                            <div>
+                                <label className="label">処方日</label>
+                                <input type="date" name="prescription_date" className="input" value={formData.prescription_date} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <label className="label">調剤日</label>
+                                <input type="date" name="dispensing_date" className="input" value={formData.dispensing_date} onChange={handleChange} />
+                            </div>
                         </div>
-                        <div>
-                            <label className="label">調剤日</label>
-                            <input type="date" name="dispensing_date" className="input" value={formData.dispensing_date} onChange={handleChange} />
-                        </div>
-                    </div>
+                    </details>
                 </section>
 
                 {/* 状況確認 (New Section) */}
                 <section id="section-status" className="card" style={{ padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-                        状況確認
-                    </h3>
-                    <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                    <details className="compact-section-details">
+                        <summary>
+                            <span>状況確認</span>
+                            <span>{statusInfoSummary}</span>
+                        </summary>
+                        <div className="responsive-grid compact-section-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
 
                         <EditableSelect
                             label="指導を受けた人"
@@ -1121,12 +1196,13 @@ export default function ReportEdit() {
                                 onChange={handleChange}
                             />
                         </div>
-                    </div>
+                        </div>
+                    </details>
                 </section>
 
                 {/* 薬剤管理状況 */}
-                <div className="card" style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div className="card prescription-summary-card" style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
+                    <div className="prescription-days-row" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <label className="label" style={{ marginBottom: 0 }}>標準処方日数</label>
                         {[14, 21, 28].map(days => (
                             <button
@@ -1149,7 +1225,7 @@ export default function ReportEdit() {
                             min="1"
                         />
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div className="regular-supply-row" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <span className="label" style={{ marginBottom: 0 }}>定期薬</span>
                         <span style={{
                             fontWeight: 700,
@@ -1349,49 +1425,81 @@ export default function ReportEdit() {
                     </div>
                 </section>
 
-                <div className="report-action-bar">
-                    <div className="print-options" aria-label="印刷対象">
-                        <button
-                            type="button"
-                            className={`btn ${printTarget === 'both' ? 'btn-primary' : 'btn-ghost'}`}
-                            onClick={() => setPrintTarget('both')}
-                        >
-                            2通
-                        </button>
-                        <button
-                            type="button"
-                            className={`btn ${printTarget === 'medical' ? 'btn-primary' : 'btn-ghost'}`}
-                            onClick={() => setPrintTarget('medical')}
-                        >
-                            医療機関
-                        </button>
-                        <button
-                            type="button"
-                            className={`btn ${printTarget === 'care_manager' ? 'btn-primary' : 'btn-ghost'}`}
-                            onClick={() => setPrintTarget('care_manager')}
-                        >
-                            ケアマネ
-                        </button>
+                        {renderReportActions('report-action-bar-bottom')}
                     </div>
-                    {saveStatusLabel && (
-                        <span style={{
-                            color: saveStatus === 'error' ? '#991b1b' : 'var(--color-text-secondary)',
-                            fontSize: '0.9rem',
-                            fontWeight: 600,
-                            whiteSpace: 'nowrap'
-                        }}>
-                            {saveStatusLabel}
-                        </span>
-                    )}
-                    <button type="button" onClick={handlePrintClick} className="btn btn-ghost" style={{ border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}>
-                        <Printer size={18} />
-                        印刷 / PDFプレビュー
-                    </button>
-                    <button type="button" onClick={() => navigate(-1)} className="btn btn-ghost">キャンセル</button>
-                    <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 2rem' }} disabled={isSaving}>
-                        <Save size={18} />
-                        {isSaving ? '保存中...' : '保存する'}
-                    </button>
+
+                    <aside className="report-summary-rail" aria-label="報告書サマリー">
+                        <details className="report-summary-details" open>
+                            <summary>
+                                <span>作成サマリー</span>
+                                <span className={`summary-status summary-status-${saveStatus}`}>
+                                    {saveStatusLabel || '入力中'}
+                                </span>
+                            </summary>
+                            <div className="report-summary-content">
+                                <section className="summary-panel summary-patient-panel">
+                                    <div className="summary-panel-label">患者</div>
+                                    <div className="summary-patient-name">{patientSummaryLabel}</div>
+                                    <dl className="summary-definition-list">
+                                        <div>
+                                            <dt>医療機関</dt>
+                                            <dd>{formData.medical_institution_name || '未入力'}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>主治医</dt>
+                                            <dd>{formData.doctor_name || '未入力'}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>ケアマネ</dt>
+                                            <dd>{formData.care_manager || '未登録'}</dd>
+                                        </div>
+                                    </dl>
+                                    {careManagerMissing && (
+                                        <div className="summary-warning">
+                                            <AlertTriangle size={16} />
+                                            ケアマネ未登録
+                                        </div>
+                                    )}
+                                    {isCareManagerRecipientMissing && (
+                                        <div className="summary-warning">
+                                            <AlertTriangle size={16} />
+                                            ケアマネ向け宛先が不足
+                                        </div>
+                                    )}
+                                </section>
+
+                                <section className="summary-panel summary-supply-panel">
+                                    <div className="summary-panel-label">定期薬 最短</div>
+                                    <div className="summary-supply-date">
+                                        {regularMedicationSummary.supplyUntil
+                                            ? `${formatDateForUi(regularMedicationSummary.supplyUntil)}まで`
+                                            : '未計算'}
+                                    </div>
+                                    <div className="summary-supply-meta">
+                                        {regularMedicationSummary.name || '定期薬未入力'}
+                                        {regularMedicationSummary.totalDays ? ` / ${regularMedicationSummary.totalDays}日` : ''}
+                                    </div>
+                                </section>
+
+                                <section className="summary-panel">
+                                    <div className="summary-panel-label">A4ページ目安</div>
+                                    <div className={`summary-page-check ${reportPageCount > 1 ? 'summary-page-check-warning' : 'summary-page-check-ok'}`}>
+                                        {reportPageCount > 1 ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
+                                        <span>{reportPageCount}ページ見込み</span>
+                                    </div>
+                                    {printWarnings.length > 0 && (
+                                        <div className="summary-warning-list">
+                                            {printWarnings.map(warning => (
+                                                <div key={warning}>{warning}</div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </section>
+
+                                {renderReportActions('report-action-bar-rail')}
+                            </div>
+                        </details>
+                    </aside>
                 </div>
 
             </form>
@@ -1515,6 +1623,294 @@ export default function ReportEdit() {
 	          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 	        }
 
+            .report-edit-form {
+              display: block;
+            }
+
+            .report-header-row,
+            .report-quick-nav {
+              min-width: 0;
+            }
+
+            .report-quick-nav > .btn {
+              flex: 0 0 auto;
+            }
+
+            .report-edit-layout {
+              display: grid;
+              grid-template-columns: minmax(0, 760px) minmax(296px, 340px);
+              justify-content: center;
+              align-items: start;
+              gap: 1.25rem;
+            }
+
+            .report-edit-main {
+              display: grid;
+              gap: 1.5rem;
+              min-width: 0;
+              width: 100%;
+              max-width: 760px;
+            }
+
+            .report-edit-main > * {
+              max-width: 100%;
+              min-width: 0;
+            }
+
+            .report-summary-rail {
+              position: sticky;
+              top: 8.5rem;
+              min-width: 0;
+            }
+
+            .report-summary-details {
+              border: 1px solid var(--color-border);
+              border-radius: var(--radius-lg);
+              background: var(--color-surface);
+              box-shadow: var(--shadow-sm);
+              max-width: 100%;
+              min-width: 0;
+              overflow: hidden;
+            }
+
+            .report-edit-main .card {
+              min-width: 0;
+              width: 100%;
+            }
+
+            .report-summary-details > summary,
+            .compact-section-details > summary {
+              list-style: none;
+              cursor: pointer;
+            }
+
+            .report-summary-details > summary::-webkit-details-marker,
+            .compact-section-details > summary::-webkit-details-marker {
+              display: none;
+            }
+
+            .report-summary-details > summary {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 0.75rem;
+              padding: 0.9rem 1rem;
+              font-weight: 700;
+              border-bottom: 1px solid var(--color-border);
+            }
+
+            .summary-status {
+              font-size: 0.82rem;
+              font-weight: 700;
+              color: var(--color-text-muted);
+              white-space: nowrap;
+            }
+
+            .summary-status-saved,
+            .report-save-state-saved {
+              color: var(--color-success);
+            }
+
+            .summary-status-dirty,
+            .summary-status-saving,
+            .report-save-state-dirty,
+            .report-save-state-saving {
+              color: var(--color-warning);
+            }
+
+            .summary-status-error,
+            .report-save-state-error {
+              color: var(--color-danger);
+            }
+
+            .report-summary-content {
+              display: grid;
+              gap: 0.9rem;
+              padding: 1rem;
+            }
+
+            .summary-panel {
+              border-bottom: 1px solid var(--color-border);
+              display: grid;
+              gap: 0.5rem;
+              padding-bottom: 0.9rem;
+            }
+
+            .summary-panel:last-child {
+              border-bottom: none;
+              padding-bottom: 0;
+            }
+
+            .summary-panel-label {
+              color: var(--color-text-muted);
+              font-size: 0.78rem;
+              font-weight: 700;
+            }
+
+            .summary-patient-name {
+              font-size: 1rem;
+              font-weight: 700;
+              line-height: 1.45;
+            }
+
+            .summary-definition-list {
+              display: grid;
+              gap: 0.35rem;
+              margin: 0;
+            }
+
+            .summary-definition-list div {
+              display: grid;
+              grid-template-columns: 5.5rem minmax(0, 1fr);
+              gap: 0.5rem;
+            }
+
+            .summary-definition-list dt {
+              color: var(--color-text-muted);
+              font-size: 0.78rem;
+              font-weight: 700;
+            }
+
+            .summary-definition-list dd {
+              margin: 0;
+              min-width: 0;
+              overflow-wrap: anywhere;
+            }
+
+            .summary-warning,
+            .summary-warning-list {
+              align-items: center;
+              background: var(--color-warning-bg);
+              border: 1px solid #fbbf24;
+              border-radius: var(--radius-md);
+              color: #92400e;
+              display: flex;
+              gap: 0.45rem;
+              font-size: 0.86rem;
+              font-weight: 700;
+              min-width: 0;
+              overflow-wrap: anywhere;
+              padding: 0.55rem 0.65rem;
+            }
+
+            .summary-warning svg {
+              flex: 0 0 auto;
+            }
+
+            .summary-warning-list {
+              align-items: stretch;
+              flex-direction: column;
+              font-weight: 500;
+              line-height: 1.5;
+            }
+
+            .summary-warning-list div {
+              min-width: 0;
+              overflow-wrap: anywhere;
+              word-break: break-word;
+            }
+
+            .summary-supply-date {
+              color: var(--color-primary);
+              font-size: 1.65rem;
+              font-weight: 700;
+              font-variant-numeric: tabular-nums;
+              line-height: 1.2;
+            }
+
+            .summary-supply-meta {
+              color: var(--color-text-muted);
+              font-size: 0.9rem;
+              overflow-wrap: anywhere;
+            }
+
+            .summary-page-check {
+              align-items: center;
+              border-radius: var(--radius-md);
+              display: flex;
+              gap: 0.45rem;
+              font-weight: 700;
+              padding: 0.55rem 0.65rem;
+            }
+
+            .summary-page-check-ok {
+              background: var(--color-success-bg);
+              color: var(--color-success);
+            }
+
+            .summary-page-check-warning {
+              background: var(--color-warning-bg);
+              color: #92400e;
+            }
+
+            .compact-section-details > summary {
+              align-items: center;
+              display: flex;
+              gap: 0.75rem;
+              justify-content: space-between;
+              min-height: 2.75rem;
+              min-width: 0;
+              font-weight: 700;
+            }
+
+            .compact-section-details > summary span {
+              min-width: 0;
+            }
+
+            .compact-section-details > summary span:last-child {
+              color: var(--color-text-muted);
+              font-size: 0.9rem;
+              font-weight: 500;
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+
+            .compact-section-body {
+              border-top: 1px solid var(--color-border);
+              margin-top: 0.75rem;
+              padding-top: 1rem;
+            }
+
+            .template-chip-list {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 0.45rem;
+              margin-top: 0.5rem;
+            }
+
+            .template-chip-group {
+              display: inline-flex;
+              min-width: 0;
+            }
+
+            .template-chip {
+              border: 1px solid var(--color-border);
+              border-radius: 999px 0 0 999px;
+              color: var(--color-text-main);
+              font-size: 0.85rem;
+              font-weight: 600;
+              max-width: 18rem;
+              overflow: hidden;
+              padding: 0.35rem 0.65rem;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+
+            .template-chip:hover,
+            .template-chip:focus-visible {
+              border-color: var(--color-primary);
+              color: var(--color-primary);
+            }
+
+            .template-chip-replace {
+              border-left: 0;
+              border-radius: 0 999px 999px 0;
+              color: var(--color-text-muted);
+              max-width: none;
+            }
+
 	        #section-basic,
 	        #section-visit,
 	        #section-status,
@@ -1538,6 +1934,44 @@ export default function ReportEdit() {
 	          margin-top: 0.5rem;
 	        }
 
+            .report-action-bar-bottom {
+              display: none;
+            }
+
+            .report-action-bar-rail {
+              align-items: stretch;
+              border: 0;
+              box-shadow: none;
+              flex-direction: column;
+              margin-top: 0;
+              padding: 0;
+            }
+
+            .report-action-bar-rail .print-options {
+              display: grid;
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+              margin-right: 0;
+            }
+
+            .report-action-bar-rail .btn {
+              width: 100%;
+            }
+
+            .report-save-state {
+              font-size: 0.9rem;
+              font-weight: 700;
+              white-space: nowrap;
+            }
+
+            .report-print-button {
+              border: 1px solid var(--color-primary);
+              color: var(--color-primary);
+            }
+
+            .report-save-button {
+              padding: 0.75rem 2rem;
+            }
+
             .print-options {
               display: flex;
               gap: 0.5rem;
@@ -1560,7 +1994,69 @@ export default function ReportEdit() {
 	        .medication-row-label {
 	          display: none !important; /* Hide on Desktop by default */
 	        }
+            @media (max-width: 1099px) {
+              .report-edit-layout {
+                grid-template-columns: minmax(0, 1fr);
+              }
+
+              .report-edit-main {
+                max-width: none;
+              }
+
+              .report-summary-rail {
+                order: -1;
+                position: static;
+              }
+
+              .report-action-bar-rail {
+                display: none;
+              }
+
+              .report-action-bar-bottom {
+                display: flex;
+              }
+            }
+
 	        @media (max-width: 640px) {
+              .report-header-row {
+                align-items: stretch !important;
+              }
+
+              .report-sticky-header {
+                margin: 0 -0.75rem 1.5rem -0.75rem !important;
+                padding: 1rem 0.75rem 0.5rem 0.75rem !important;
+              }
+
+              .report-quick-nav {
+                width: 100%;
+                max-width: 100% !important;
+              }
+
+              .prescription-days-row {
+                display: grid !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                align-items: center !important;
+              }
+
+              .prescription-days-row .label {
+                grid-column: 1 / -1;
+              }
+
+              .prescription-days-row .input {
+                grid-column: 1 / -1;
+                width: 100% !important;
+              }
+
+              .regular-supply-row {
+                display: grid !important;
+                grid-template-columns: auto minmax(0, 1fr);
+              }
+
+              .regular-supply-row span:last-child {
+                min-width: 0;
+                overflow-wrap: anywhere;
+              }
+
 	          .report-action-bar {
 	            flex-direction: column;
                 align-items: stretch;
