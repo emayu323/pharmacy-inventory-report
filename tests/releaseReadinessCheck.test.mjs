@@ -26,6 +26,7 @@ const REQUIRED_FILES = [
     'scripts/verify_electron_package.mjs',
     'scripts/verify_vercel_production_env.mjs',
     'scripts/create_install_code_registry.mjs',
+    'scripts/create_windows_target_smoke_receipt.mjs',
     'scripts/local_ai_integration_check.mjs',
     'scripts/mac_demo_readiness.mjs',
     'scripts/mac_demo_smoke.mjs',
@@ -74,6 +75,7 @@ const REQUIRED_SCRIPTS = [
     'release:source-status',
     'release:source-checklist',
     'create:install-codes',
+    'create:windows-smoke-receipt',
     'demo:mac-readiness',
     'demo:mac-smoke',
     'test:local-ai-integration',
@@ -338,6 +340,7 @@ test('release readiness check can include Windows target smoke receipt as a fina
         assert.match(pendingCheck?.message || '', /Windows target smoke receipt was not found/)
         assert.equal(pendingAction?.docs, 'docs/windows-target-smoke.md')
         assert.deepEqual(pendingAction?.commands, [
+            'npm run create:windows-smoke-receipt -- --all-confirmed',
             'npm run release:check:full',
             'npm run release:check:full:strict'
         ])
@@ -1748,6 +1751,7 @@ function packageScriptsFixture() {
         'tests/vercelProductionSmoke.test.mjs',
         'tests/sourceReleaseStatus.test.mjs',
         'tests/sourcePublicationChecklist.test.mjs',
+        'tests/windowsTargetSmokeReceipt.test.mjs',
         'tests/macDemoReadiness.test.mjs',
         'tests/macDemoSmoke.test.mjs',
         'tests/releaseHandoff.test.mjs',

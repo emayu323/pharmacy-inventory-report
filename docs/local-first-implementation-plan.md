@@ -369,6 +369,7 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - `npm run release:source-status -- --details` では、GitHubへ反映する前に確認できるよう、変更ファイル一覧を任意表示できるようにする。通常のハンドオフには件数だけを出し、詳細は必要時だけ表示する。
 - `scripts/source_publication_checklist.mjs` と `npm run release:source-checklist` を追加し、GitHubへ反映する前の確認項目と変更ファイル一覧を `output/source-publication-checklist.md` に生成できるようにする。
 - `npm run release:handoff:full` を追加し、ローカルGit状態、GitHub Actions状態、現地AI結合証跡、Windows実機スモーク証跡を含む引き継ぎMarkdownを1コマンドで生成できるようにする。
+- `scripts/create_windows_target_smoke_receipt.mjs` と `npm run create:windows-smoke-receipt` を追加し、Windows実機スモーク完了後に個人情報を含まない証跡JSONを `output/windows-target-smoke-result.json` へ作成できるようにする。
 - `public/manual.html` に利用者向けのかんたんマニュアル/FAQを配置し、Vercel入口ページから開けるようにする。
 - mac開発デモでは、Vercel Functionが未起動でも `VITE_DEMO_INSTALL_CODES` と `VITE_WINDOWS_INSTALLER_URL` で導入コード確認を試せる。
 - mac開発デモ向けに `scripts/mac_demo_readiness.mjs` / `npm run demo:mac-readiness` を追加し、起動コマンドと外部待ちを本番判定とは分けて表示できるようにする。

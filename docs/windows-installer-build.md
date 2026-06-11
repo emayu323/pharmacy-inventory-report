@@ -178,6 +178,12 @@ npm run release:handoff -- --source-status --github-status --vercel-status
 
 Windows実機スモークの確認手順と証跡JSON形式は `docs/windows-target-smoke.md` にまとめます。証跡には患者情報、導入コード実値、秘密情報を書きません。
 
+実機確認後は、Windows上で次を実行して証跡JSONを作成します。
+
+```bash
+npm run create:windows-smoke-receipt -- --all-confirmed
+```
+
 ## 外部操作の明示承認
 
 GitHub Actions実行やVercel Production環境変数の変更は、外部CI、Secrets、本番設定に触れるため、読み取り確認とは分けて明示承認する。

@@ -94,6 +94,11 @@ test('local app test gate includes calculation print and drug master coverage', 
     assert.ok(pkg.scripts['test:local-app'].includes('reportSaveModel.test.ts'))
     assert.ok(pkg.scripts['test:local-app'].includes('drugMaster.test.ts'))
     assert.ok(pkg.scripts['test:local-app'].includes('preUpdateBackupCommand.test.mjs'))
+    assert.ok(pkg.scripts['test:local-app'].includes('windowsTargetSmokeReceipt.test.mjs'))
+    assert.equal(
+        pkg.scripts['create:windows-smoke-receipt'],
+        'node scripts/create_windows_target_smoke_receipt.mjs'
+    )
 })
 
 test('Windows updater helper calls the app pre-update backup CLI', () => {
@@ -164,6 +169,7 @@ test('Windows installer docs show handoff with GitHub status for external operat
     assert.match(windowsInstallerDocs, /GitHub ActionsのWindowsインストーラーworkflowを実行してよい/)
     assert.match(windowsInstallerDocs, /Vercel Production環境変数を更新してよい/)
     assert.match(windowsInstallerDocs, /署名付き自動更新公開Prerequisite、および `output\/windows-target-smoke-result\.json`/)
+    assert.match(windowsInstallerDocs, /npm run create:windows-smoke-receipt -- --all-confirmed/)
     assert.match(windowsInstallerDocs, /docs\/windows-target-smoke\.md/)
     assert.doesNotMatch(windowsInstallerDocs, /Windowsインストーラー、GitHub Actions上の配布artifact、実AI結合が `pending`/)
 })

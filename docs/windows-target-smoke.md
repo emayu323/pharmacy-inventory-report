@@ -28,9 +28,17 @@ mac開発環境やGitHub Actionsでは代替できないため、署名Secret設
 11. 自動更新前バックアップが作成される。
 12. 更新後もDBと保存済みテストデータが残っている。
 
-## 証跡JSON
+## 証跡作成
 
-確認後、次のJSONを `output/windows-target-smoke-result.json` として保存します。本文、患者名、薬剤名、導入コード実値、秘密情報は入れません。
+確認後、Windows実機上で次を実行します。
+
+```bash
+npm run create:windows-smoke-receipt -- --all-confirmed
+```
+
+このコマンドは `output/windows-target-smoke-result.json` を作成します。Windows以外では通常作成できません。本文、患者名、薬剤名、導入コード実値、秘密情報は保存しません。
+
+出力形式:
 
 ```json
 {
@@ -57,7 +65,7 @@ mac開発環境やGitHub Actionsでは代替できないため、署名Secret設
 }
 ```
 
-`source_revision` は、配布元ソースの40文字SHAにします。
+`source_revision` は、配布元ソースの40文字SHAです。通常はCLIが自動取得します。確認する場合:
 
 ```bash
 git rev-parse HEAD
