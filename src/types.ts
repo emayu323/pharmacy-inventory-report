@@ -104,12 +104,8 @@ export interface Report {
   // Plan
   // next_visit_plan: string; // Removed per user request
   next_visit_date?: string; // ISO Date string 'YYYY-MM-DD'
-  ai_transcript?: string;
-  ai_transcript_saved_at?: string;
-  ai_audio_file_path?: string;
-  ai_audio_file_name?: string;
-  ai_audio_mime_type?: string;
-  ai_audio_saved_at?: string;
+  ai_visit_memo?: string;
+  ai_visit_memo_saved_at?: string;
   memo?: string; // Snapshot of patient memo at time of report
 }
 
@@ -151,17 +147,10 @@ export interface AppSettings {
   backup_key?: string;
   last_app_version: string;
   ai_mode_enabled: boolean;
-  ai_consent_mode_enabled: boolean;
-  ai_save_audio_enabled: boolean;
-  ai_save_transcript_enabled: boolean;
   ai_ollama_url: string;
   ai_ollama_model: string;
-  ai_whisper_health_url: string;
-  ai_whisper_transcribe_url: string;
-  ai_whisper_file_field: string;
   ai_auto_start_enabled: boolean;
   ai_ollama_start_command: string;
-  ai_whisper_start_command: string;
   pin_enabled: boolean;
   pin_hash?: string;
   pin_salt?: string;

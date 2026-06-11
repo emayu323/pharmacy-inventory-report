@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, Save, Trash2 } from 'lucide-react'
-import { useAuth } from '../contexts/authContext'
 import type { InstitutionType } from '../types'
 import { deleteInstitution, getInstitutionById, saveInstitution } from '../institutionRepository'
 import toast from 'react-hot-toast'
@@ -13,7 +12,6 @@ export default function InstitutionEdit() {
     const location = useLocation()
     const [loading, setLoading] = useState(false)
     const [fetching, setFetching] = useState(!!id)
-    const { user } = useAuth()
 
     // Initial type from navigation state or default to hospital
     const initialType: InstitutionType = (location.state as { type?: InstitutionType } | null)?.type || 'hospital'
@@ -64,18 +62,13 @@ export default function InstitutionEdit() {
         try {
             setLoading(true)
 
-            // In Test Mode, supabase.auth.getUser() returns null
-            // We must use the user from AuthProvider
-
-
             const payload = {
                 type: formData.type,
                 name: formData.name,
                 address: formData.type === 'pharmacy' ? formData.address : null,
                 doctor_name: formData.type === 'hospital' ? formData.doctor_name : null,
                 tel: formData.tel,
-                fax: formData.fax,
-                user_id: user?.id
+                fax: formData.fax
             }
 
             await saveInstitution(id, payload)

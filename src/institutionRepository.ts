@@ -1,8 +1,7 @@
-import { supabase, hasSupabaseConfig } from './supabase'
 import type { Institution, InstitutionType } from './types'
 import { getNativeBridge } from './nativeBridge'
 
-export type InstitutionStorageMode = 'supabase' | 'local'
+export type InstitutionStorageMode = 'local'
 export type InstitutionInput = {
     type: InstitutionType
     name: string
@@ -15,24 +14,9 @@ export type InstitutionInput = {
 export type InstitutionUpdate = Partial<InstitutionInput>
 
 const LOCAL_INSTITUTIONS_KEY = 'pharmacy-report:institutions:v1'
-const LOCAL_STORAGE_MODE_KEY = 'report_storage_mode'
-const SUPPORTED_STORAGE_MODES = new Set<InstitutionStorageMode>(['supabase', 'local'])
 
-export const getInstitutionStorageMode = (): InstitutionStorageMode => {
-    const envMode = import.meta.env.VITE_REPORT_STORAGE
-    if (SUPPORTED_STORAGE_MODES.has(envMode as InstitutionStorageMode)) {
-        return envMode as InstitutionStorageMode
-    }
-
-    const browserMode = getBrowserStorage()?.getItem(LOCAL_STORAGE_MODE_KEY)
-    if (SUPPORTED_STORAGE_MODES.has(browserMode as InstitutionStorageMode)) {
-        return browserMode as InstitutionStorageMode
-    }
-
-    return hasSupabaseConfig ? 'supabase' : 'local'
-}
-
-export const isLocalInstitutionStorage = () => Boolean(getNativeBridge()) || getInstitutionStorageMode() === 'local'
+export const getInstitutionStorageMode = (): InstitutionStorageMode => 'local'
+export const isLocalInstitutionStorage = () => true
 
 export const listInstitutions = async (): Promise<Institution[]> => {
     const nativeBridge = getNativeBridge()
@@ -40,18 +24,7 @@ export const listInstitutions = async (): Promise<Institution[]> => {
         return nativeBridge.institutions.list()
     }
 
-    if (isLocalInstitutionStorage()) {
-        return readLocalInstitutions().sort(compareInstitutionsByName)
-    }
-
-    assertSupabaseConfigured()
-    const { data, error } = await supabase
-        .from('institutions')
-        .select('*')
-        .order('name')
-
-    if (error) throw error
-    return (data ?? []) as Institution[]
+    return readLocalInstitutions().sort(compareInstitutionsByName)
 }
 
 export const getInstitutionById = async (institutionId: string): Promise<Institution | null> => {
@@ -60,19 +33,7 @@ export const getInstitutionById = async (institutionId: string): Promise<Institu
         return nativeBridge.institutions.get(institutionId)
     }
 
-    if (isLocalInstitutionStorage()) {
-        return readLocalInstitutions().find(institution => institution.id === institutionId) ?? null
-    }
-
-    assertSupabaseConfigured()
-    const { data, error } = await supabase
-        .from('institutions')
-        .select('*')
-        .eq('id', institutionId)
-        .single()
-
-    if (error) throw error
-    return data as Institution
+    return readLocalInstitutions().find(institution => institution.id === institutionId) ?? null
 }
 
 export const findInstitutionByName = async (
@@ -86,26 +47,8 @@ export const findInstitutionByName = async (
         return nativeBridge.institutions.findByName(name, type)
     }
 
-    if (isLocalInstitutionStorage()) {
-        return readLocalInstitutions()
-            .find(institution => institution.name === name && (!type || institution.type === type)) ?? null
-    }
-
-    assertSupabaseConfigured()
-    let query = supabase
-        .from('institutions')
-        .select('*')
-        .eq('name', name)
-        .limit(1)
-
-    if (type) {
-        query = query.eq('type', type)
-    }
-
-    const { data, error } = await query.maybeSingle()
-
-    if (error) throw error
-    return data as Institution | null
+    return readLocalInstitutions()
+        .find(institution => institution.name === name && (!type || institution.type === type)) ?? null
 }
 
 export const saveInstitution = async (
@@ -117,31 +60,7 @@ export const saveInstitution = async (
         return nativeBridge.institutions.save(institutionId, institution)
     }
 
-    if (isLocalInstitutionStorage()) {
-        return saveLocalInstitution(institutionId, institution)
-    }
-
-    assertSupabaseConfigured()
-    if (institutionId) {
-        const { data, error } = await supabase
-            .from('institutions')
-            .update(institution)
-            .eq('id', institutionId)
-            .select()
-            .single()
-
-        if (error) throw error
-        return data as Institution
-    }
-
-    const { data, error } = await supabase
-        .from('institutions')
-        .insert([institution])
-        .select()
-        .single()
-
-    if (error) throw error
-    return data as Institution
+    return saveLocalInstitution(institutionId, institution)
 }
 
 export const deleteInstitution = async (institutionId: string): Promise<void> => {
@@ -151,19 +70,8 @@ export const deleteInstitution = async (institutionId: string): Promise<void> =>
         return
     }
 
-    if (isLocalInstitutionStorage()) {
-        const institutions = readLocalInstitutions()
-        writeLocalInstitutions(institutions.filter(institution => institution.id !== institutionId))
-        return
-    }
-
-    assertSupabaseConfigured()
-    const { error } = await supabase
-        .from('institutions')
-        .delete()
-        .eq('id', institutionId)
-
-    if (error) throw error
+    const institutions = readLocalInstitutions()
+    writeLocalInstitutions(institutions.filter(institution => institution.id !== institutionId))
 }
 
 const saveLocalInstitution = (
@@ -248,10 +156,4 @@ const isInstitutionLike = (value: unknown): value is Institution => {
     return typeof institution.id === 'string'
         && typeof institution.name === 'string'
         && typeof institution.type === 'string'
-}
-
-const assertSupabaseConfigured = () => {
-    if (!hasSupabaseConfig) {
-        throw new Error('Supabaseの接続情報が未設定です。ローカル保存モードで起動してください。')
-    }
 }

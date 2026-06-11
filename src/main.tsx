@@ -2,7 +2,6 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import App from './App' // Now simply the ProtectedLayout
-import Login from './pages/Login'
 import ReportList from './pages/ReportList'
 import ReportEdit from './pages/ReportEdit'
 import PatientDetail from './pages/PatientDetail'
@@ -25,7 +24,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           element={(
             <AuthProvider>
               <Routes>
-                <Route path="/login" element={<Login />} />
+                <Route path="/login" element={<Navigate to="/reports" replace />} />
                 <Route path="/" element={<App />}> {/* App is ProtectedLayout */}
                   <Route index element={<Navigate to="/reports" replace />} />
                   <Route path="reports" element={<ReportList />} />

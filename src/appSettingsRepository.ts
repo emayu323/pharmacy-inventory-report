@@ -6,7 +6,6 @@ export type AppSettingsInput = Partial<Omit<AppSettings, 'pin_hash' | 'pin_salt'
 const LOCAL_APP_SETTINGS_KEY = 'pharmacy-report:app-settings:v1'
 const DEFAULT_LOCK_TIMEOUT_MINUTES = 15
 const DEFAULT_OLLAMA_URL = 'http://127.0.0.1:11434'
-const DEFAULT_WHISPER_FILE_FIELD = 'audio'
 const DEFAULT_OLLAMA_START_COMMAND = 'ollama serve'
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -18,17 +17,10 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     backup_key: undefined,
     last_app_version: '',
     ai_mode_enabled: false,
-    ai_consent_mode_enabled: false,
-    ai_save_audio_enabled: false,
-    ai_save_transcript_enabled: false,
     ai_ollama_url: DEFAULT_OLLAMA_URL,
     ai_ollama_model: '',
-    ai_whisper_health_url: '',
-    ai_whisper_transcribe_url: '',
-    ai_whisper_file_field: DEFAULT_WHISPER_FILE_FIELD,
     ai_auto_start_enabled: false,
     ai_ollama_start_command: DEFAULT_OLLAMA_START_COMMAND,
-    ai_whisper_start_command: '',
     pin_enabled: false,
     lock_timeout_minutes: DEFAULT_LOCK_TIMEOUT_MINUTES
 }
@@ -171,17 +163,10 @@ const normalizeSettings = (settings: Partial<AppSettings>): AppSettings => ({
     backup_key: normalizeBackupKey(settings.backup_key),
     last_app_version: normalizeTextSetting(settings.last_app_version),
     ai_mode_enabled: Boolean(settings.ai_mode_enabled),
-    ai_consent_mode_enabled: Boolean(settings.ai_mode_enabled && settings.ai_consent_mode_enabled),
-    ai_save_audio_enabled: Boolean(settings.ai_mode_enabled && settings.ai_save_audio_enabled),
-    ai_save_transcript_enabled: Boolean(settings.ai_mode_enabled && settings.ai_save_transcript_enabled),
     ai_ollama_url: normalizeBaseUrl(settings.ai_ollama_url, DEFAULT_OLLAMA_URL),
     ai_ollama_model: normalizeTextSetting(settings.ai_ollama_model),
-    ai_whisper_health_url: normalizeUrlSetting(settings.ai_whisper_health_url),
-    ai_whisper_transcribe_url: normalizeUrlSetting(settings.ai_whisper_transcribe_url),
-    ai_whisper_file_field: normalizeTextSetting(settings.ai_whisper_file_field) || DEFAULT_WHISPER_FILE_FIELD,
     ai_auto_start_enabled: Boolean(settings.ai_auto_start_enabled),
     ai_ollama_start_command: normalizeCommandSetting(settings.ai_ollama_start_command, DEFAULT_OLLAMA_START_COMMAND),
-    ai_whisper_start_command: normalizeCommandSetting(settings.ai_whisper_start_command, ''),
     pin_enabled: Boolean(settings.pin_enabled && settings.pin_hash && settings.pin_salt),
     pin_hash: settings.pin_hash,
     pin_salt: settings.pin_salt,
@@ -199,10 +184,6 @@ const normalizeBackupKey = (value?: string) => {
 
 const normalizeTextSetting = (value?: string) => {
     return typeof value === 'string' ? value.trim() : ''
-}
-
-const normalizeUrlSetting = (value?: string) => {
-    return normalizeBaseUrl(value, '')
 }
 
 const normalizeBaseUrl = (value: unknown, fallback: string) => {

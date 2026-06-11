@@ -2,15 +2,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import {
-    createAiDraftFromAudio,
-    createAiDraftFromTranscript
-} from '../electron/localAiDraftService.mjs'
+import { createAiDraftFromVisitMemo } from '../electron/localAiDraftService.mjs'
 import { getLocalAiEnvironmentStatus } from '../electron/localAiEnvironment.mjs'
 
 const require = createRequire(import.meta.url)
 const packageJson = require('../package.json')
-const DEFAULT_TRANSCRIPT = '主訴等: 眠気の訴えあり。\n服薬指導内容: 主治医へ相談するよう説明。'
+const DEFAULT_VISIT_MEMO = '主訴等: 眠気の訴えあり。\n服薬指導内容: 主治医へ相談するよう説明。'
 
 export async function runLocalAiIntegrationCheck(options = {}) {
     const env = options.env || process.env
@@ -30,43 +27,23 @@ export async function runLocalAiIntegrationCheck(options = {}) {
         fetchImpl: options.fetchImpl || globalThis.fetch,
         timeoutMs: config.timeoutMs,
         ollamaUrl: config.ollamaUrl,
-        ollamaModel: config.ollamaModel,
-        whisperHealthUrl: config.whisperHealthUrl,
-        whisperTranscribeUrl: config.whisperTranscribeUrl,
-        whisperFieldName: config.whisperFieldName
+        ollamaModel: config.ollamaModel
     }
 
     const status = await getLocalAiEnvironmentStatus(serviceOptions)
     if (status.ollama.status !== 'ready') {
         throw new Error(`Ollamaが利用できません: ${status.ollama.message}`)
     }
-    if (config.requireWhisperHealth && status.whisper.status !== 'ready') {
-        throw new Error(`Whisperが利用できません: ${status.whisper.message}`)
-    }
 
-    const draft = await createAiDraftFromTranscript(config.transcript, serviceOptions)
+    const draft = await createAiDraftFromVisitMemo(config.visitMemo, serviceOptions)
     if (config.ollamaModel && draft.source !== 'local_llm') {
         throw new Error('Ollama経由の下書き作成を確認できませんでした')
-    }
-
-    let audioDraft
-    if (config.audioPath) {
-        if (!config.whisperTranscribeUrl) {
-            throw new Error('--audio-path を使う場合は --whisper-transcribe-url が必要です')
-        }
-        const audioBytes = fs.readFileSync(config.audioPath)
-        audioDraft = await createAiDraftFromAudio(audioBytes, serviceOptions)
-        if (config.ollamaModel && audioDraft.source !== 'local_llm') {
-            throw new Error('Whisper文字起こし後のOllama下書き作成を確認できませんでした')
-        }
     }
 
     const result = {
         skipped: false,
         status,
-        draft,
-        audioDraft,
-        audioPath: config.audioPath || undefined
+        draft
     }
     if (config.resultPath) {
         writeIntegrationReceipt(config.resultPath, result, {
@@ -84,13 +61,8 @@ export function buildIntegrationConfig(env = process.env, options = {}) {
         timeoutMs: readNumber(options.timeoutMs ?? env.LOCAL_AI_TIMEOUT_MS, 30000),
         ollamaUrl: String(options.ollamaUrl || env.LOCAL_OLLAMA_URL || 'http://127.0.0.1:11434').trim(),
         ollamaModel: String(options.ollamaModel || env.LOCAL_OLLAMA_MODEL || '').trim(),
-        whisperHealthUrl: String(options.whisperHealthUrl || env.LOCAL_WHISPER_HEALTH_URL || env.LOCAL_WHISPER_URL || '').trim(),
-        whisperTranscribeUrl: String(options.whisperTranscribeUrl || env.LOCAL_WHISPER_TRANSCRIBE_URL || '').trim(),
-        whisperFieldName: String(options.whisperFieldName || env.LOCAL_WHISPER_FILE_FIELD || 'audio').trim(),
-        transcript: String(options.transcript || env.LOCAL_AI_TEST_TRANSCRIPT || DEFAULT_TRANSCRIPT).trim(),
-        audioPath: String(options.audioPath || env.LOCAL_AI_TEST_AUDIO_PATH || '').trim(),
-        resultPath: String(options.resultPath || env.LOCAL_AI_INTEGRATION_RESULT_PATH || '').trim(),
-        requireWhisperHealth: options.requireWhisperHealth ?? readBoolean(env.LOCAL_AI_REQUIRE_WHISPER_HEALTH ?? '1')
+        visitMemo: String(options.visitMemo || env.LOCAL_AI_TEST_VISIT_MEMO || DEFAULT_VISIT_MEMO).trim(),
+        resultPath: String(options.resultPath || env.LOCAL_AI_INTEGRATION_RESULT_PATH || '').trim()
     }
 }
 
@@ -105,26 +77,14 @@ export function parseLocalAiIntegrationArgs(argv = []) {
 
         if (name === '--run') {
             options.enabled = true
-        } else if (name === '--text-only') {
-            options.requireWhisperHealth = false
-        } else if (name === '--require-whisper') {
-            options.requireWhisperHealth = true
         } else if (name === '--ollama-url') {
             options.ollamaUrl = readValue()
         } else if (name === '--ollama-model') {
             options.ollamaModel = readValue()
-        } else if (name === '--whisper-health-url') {
-            options.whisperHealthUrl = readValue()
-        } else if (name === '--whisper-transcribe-url') {
-            options.whisperTranscribeUrl = readValue()
-        } else if (name === '--whisper-file-field') {
-            options.whisperFieldName = readValue()
-        } else if (name === '--audio-path') {
-            options.audioPath = readValue()
         } else if (name === '--result-path') {
             options.resultPath = readValue()
-        } else if (name === '--transcript') {
-            options.transcript = readValue()
+        } else if (name === '--visit-memo') {
+            options.visitMemo = readValue()
         } else if (name === '--timeout-ms') {
             options.timeoutMs = readValue()
         } else {
@@ -167,24 +127,11 @@ export function createIntegrationReceipt(result, options = {}) {
                 ? result.status.ollama.installedModels.length
                 : 0
         },
-        whisper: {
-            status: result.status.whisper.status,
-            url: result.status.whisper.url
-        },
         draft: {
             source: result.draft.source,
             chiefComplaintPresent: Boolean(result.draft.chief_complaint),
             medicationInstructionPresent: Boolean(result.draft.medication_instruction)
-        },
-        audioDraft: result.audioDraft
-            ? {
-                source: result.audioDraft.source,
-                chiefComplaintPresent: Boolean(result.audioDraft.chief_complaint),
-                medicationInstructionPresent: Boolean(result.audioDraft.medication_instruction)
-            }
-            : undefined,
-        audioTested: Boolean(result.audioDraft),
-        audioPathProvided: Boolean(result.audioPath)
+        }
     }
 }
 

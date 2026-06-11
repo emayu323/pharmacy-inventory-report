@@ -1,9 +1,8 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { ArrowLeft, Bot, Mic, Pause, Play, Save, ChevronDown, ChevronRight, Printer, Square, Undo2 } from 'lucide-react'
+import { ArrowLeft, Bot, Save, ChevronDown, ChevronRight, Printer, Undo2 } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback, type ChangeEvent, type FormEvent } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { ReportPrint } from '../components/ReportPrint'
-import { supabase } from '../supabase'
 import type { AppSettings, Patient, Report, TextTemplate, TextTemplateTarget } from '../types'
 import { getReportById, isLocalReportStorage, saveReport } from '../reportRepository'
 import { getPatientById, updatePatient } from '../patientRepository'
@@ -46,7 +45,7 @@ import {
     type AiDraftFieldPatch,
     type AiDraftTarget
 } from '../aiDraft'
-import { getNativeBridge, type NativeAiAudioSaveResult } from '../nativeBridge'
+import { getNativeBridge } from '../nativeBridge'
 import { createCopiedReportDraft } from '../reportCopy'
 
 type FormFieldChange =
@@ -54,7 +53,7 @@ type FormFieldChange =
     | { target: { name: string; value: string } }
 
 type TemplateInsertMode = 'append' | 'replace'
-type AiRecordingState = 'idle' | 'recording' | 'paused' | 'processing' | 'stopped'
+type AiDraftState = 'idle' | 'processing' | 'ready'
 type PatientMasterSaveChoice = 'report_only' | 'update_patient'
 
 const AI_DRAFT_TARGET_LABELS: Record<AiDraftTarget, string> = {
@@ -244,20 +243,15 @@ export default function ReportEdit() {
     const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(false) // Default collapsed
     const [isLocalStorageMode] = useState(isLocalReportStorage)
     const [printTarget, setPrintTarget] = useState<ReportPrintTarget>('both')
-    const [aiTranscript, setAiTranscript] = useState('')
+    const [aiVisitMemo, setAiVisitMemo] = useState('')
     const [aiDraft, setAiDraft] = useState<AiDraft | null>(null)
     const [aiDraftChoices, setAiDraftChoices] = useState<Partial<Record<AiDraftTarget, AiDraftApplyMode>>>({})
     const [aiDraftAppliedFields, setAiDraftAppliedFields] = useState<Partial<Record<AiDraftTarget, AiDraftFieldPatch>>>({})
-    const [aiRecordingState, setAiRecordingState] = useState<AiRecordingState>('idle')
+    const [aiDraftState, setAiDraftState] = useState<AiDraftState>('idle')
     const [aiError, setAiError] = useState('')
-    const [aiAudioReady, setAiAudioReady] = useState(false)
     const printRef = useRef<HTMLDivElement>(null)
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const selectedTemplateIdsRef = useRef<Partial<Record<TextTemplateTarget, string>>>({})
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-    const mediaStreamRef = useRef<MediaStream | null>(null)
-    const recordedAudioChunksRef = useRef<BlobPart[]>([])
-    const aiRecordedAudioBlobRef = useRef<Blob | null>(null)
     const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastAutoSaveFingerprintRef = useRef('')
     const changedDuringSaveRef = useRef(false)
@@ -328,132 +322,36 @@ export default function ReportEdit() {
         markUnsaved()
     }
 
-    const stopAiMediaStream = useCallback(() => {
-        mediaStreamRef.current?.getTracks().forEach(track => track.stop())
-        mediaStreamRef.current = null
-    }, [])
-
-    const handleAiRecordStart = async () => {
+    const handleCreateAiDraftFromVisitMemo = async () => {
         setAiError('')
         if (!appSettings.ai_mode_enabled) {
             toast.error('AIモードがOFFです')
             return
         }
-        if (!appSettings.ai_consent_mode_enabled) {
-            toast.error('患者会話録音がOFFです')
-            return
-        }
-        if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-            toast.error('この環境では録音できません')
+        if (!aiVisitMemo.trim()) {
+            toast.error('訪問メモを入力してください')
             return
         }
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-            const recorder = new MediaRecorder(stream)
-            mediaStreamRef.current = stream
-            mediaRecorderRef.current = recorder
-            recordedAudioChunksRef.current = []
-
-            recorder.ondataavailable = (event) => {
-                if (event.data.size > 0) recordedAudioChunksRef.current.push(event.data)
-            }
-            recorder.onstop = () => {
-                void handleAiRecordingStopped()
-            }
-
-            recorder.start()
-            setAiRecordingState('recording')
-        } catch (error) {
-            console.error(error)
-            setAiError('録音を開始できませんでした')
-            toast.error('録音を開始できませんでした')
-            stopAiMediaStream()
-            setAiRecordingState('idle')
-        }
-    }
-
-    const handleAiRecordingStopped = async () => {
-        stopAiMediaStream()
-        setAiRecordingState('processing')
-        try {
-            const audioBlob = new Blob(recordedAudioChunksRef.current, { type: 'audio/webm' })
-            aiRecordedAudioBlobRef.current = audioBlob
-            setAiAudioReady(audioBlob.size > 0)
-            recordedAudioChunksRef.current = []
-            const bridge = getNativeBridge()
-            if (!bridge?.ai) {
-                throw new Error('ローカルアプリで開くと録音から下書きを作成できます')
-            }
-
-            const draft = await bridge.ai.transcribeAndDraft(new Uint8Array(await audioBlob.arrayBuffer()))
-            setAiTranscript(draft.transcript)
-            setAiDraft(draft)
-            setAiDraftChoices({})
-            setAiDraftAppliedFields({})
-            markUnsaved()
-            toast.success('AI下書きを作成しました')
-            setAiRecordingState('stopped')
-        } catch (error) {
-            console.error(error)
-            const message = error instanceof Error ? error.message : 'AI下書きを作成できませんでした'
-            setAiError(message)
-            toast.error(message)
-            setAiRecordingState('stopped')
-        }
-    }
-
-    const handleAiRecordPause = () => {
-        const recorder = mediaRecorderRef.current
-        if (!recorder || recorder.state !== 'recording') return
-        recorder.pause()
-        setAiRecordingState('paused')
-    }
-
-    const handleAiRecordResume = () => {
-        const recorder = mediaRecorderRef.current
-        if (!recorder || recorder.state !== 'paused') return
-        recorder.resume()
-        setAiRecordingState('recording')
-    }
-
-    const handleAiRecordStop = () => {
-        const recorder = mediaRecorderRef.current
-        if (!recorder || recorder.state === 'inactive') {
-            stopAiMediaStream()
-            setAiRecordingState('stopped')
-            return
-        }
-        recorder.stop()
-    }
-
-    const handleCreateAiDraftFromTranscript = async () => {
-        if (!appSettings.ai_mode_enabled) {
-            toast.error('AIモードがOFFです')
-            return
-        }
-        if (!aiTranscript.trim()) {
-            toast.error('文字起こしを入力してください')
-            return
-        }
-
-        try {
-            setAiRecordingState('processing')
+            setAiDraftState('processing')
             const bridge = getNativeBridge()
             const draft = bridge?.ai
-                ? await bridge.ai.createDraftFromTranscript(aiTranscript)
-                : createRuleBasedAiDraft(aiTranscript)
+                ? await bridge.ai.createDraftFromVisitMemo(aiVisitMemo)
+                : createRuleBasedAiDraft(aiVisitMemo)
             setAiDraft(draft)
             setAiDraftChoices({})
             setAiDraftAppliedFields({})
             toast.success('AI下書きを作成しました')
+            setAiDraftState('ready')
         } catch (error) {
             console.error(error)
             const message = error instanceof Error ? error.message : 'AI下書きを作成できませんでした'
             setAiError(message)
             toast.error(message)
+            setAiDraftState('idle')
         } finally {
-            setAiRecordingState('stopped')
+            setAiDraftState(current => current === 'processing' ? 'idle' : current)
         }
     }
 
@@ -549,22 +447,7 @@ export default function ReportEdit() {
             } catch (localSearchError) {
                 console.warn('Local drug master search failed', localSearchError)
             }
-
-            const { data, error } = await supabase
-                .from('medications')
-                .select('name')
-                .ilike('name', `%${query}%`)
-                .limit(20)
-
-            if (error) {
-                console.error('Search error', error)
-            } else if (data) {
-                setDrugOptions(data.map(d => ({
-                    name: d.name,
-                    kana: '',
-                    unit: ''
-                })))
-            }
+            setDrugOptions([])
         }, 300)
     }
 
@@ -633,12 +516,6 @@ export default function ReportEdit() {
             cancelled = true
         }
     }, [])
-
-    useEffect(() => {
-        return () => {
-            stopAiMediaStream()
-        }
-    }, [stopAiMediaStream])
 
     useEffect(() => {
         setActiveReportId(id)
@@ -727,9 +604,7 @@ export default function ReportEdit() {
             // Load the snapshot memo if it exists
             if (data.memo) setPatientMemo(data.memo)
             else setPatientMemo('')
-            setAiTranscript(data.ai_transcript || '')
-            aiRecordedAudioBlobRef.current = null
-            setAiAudioReady(false)
+            setAiVisitMemo(data.ai_visit_memo || (data as Report & { ai_transcript?: string }).ai_transcript || '')
             void loadSourcePatient(data.patient_id)
         } catch (error) {
             console.error(error)
@@ -752,9 +627,7 @@ export default function ReportEdit() {
 
                 setFormData(copied.report)
                 setPatientMemo(copied.patientMemo)
-                setAiTranscript('')
-                aiRecordedAudioBlobRef.current = null
-                setAiAudioReady(false)
+                setAiVisitMemo('')
                 setActiveReportId(undefined)
                 lastAutoSaveFingerprintRef.current = ''
                 setSaveStatus('idle')
@@ -774,9 +647,7 @@ export default function ReportEdit() {
                 pharmacist_name: pharmacistDisplayName
             }))
             setPatientMemo('') // Start empty for new report
-            setAiTranscript('')
-            aiRecordedAudioBlobRef.current = null
-            setAiAudioReady(false)
+            setAiVisitMemo('')
             setActiveReportId(undefined)
             lastAutoSaveFingerprintRef.current = ''
             setSaveStatus('idle')
@@ -839,39 +710,13 @@ export default function ReportEdit() {
         })
     }, [id, location.state, pharmacistDisplayName, fetchReport, isLocalStorageMode, loadSourcePatient])
 
-    const buildReportInputForSave = useCallback((
-        audioResult?: NativeAiAudioSaveResult
-    ): Omit<Report, 'id' | 'created_at' | 'updated_at'> => {
+    const buildReportInputForSave = useCallback((): Omit<Report, 'id' | 'created_at' | 'updated_at'> => {
         return createReportInputForSave({
             formData: buildReportSnapshot(formData),
             patientMemo,
-            aiTranscript,
-            appSettings,
-            audioResult
+            aiVisitMemo
         })
-    }, [aiTranscript, appSettings, formData, patientMemo])
-
-    const savePendingAiAudio = async (reportId: string): Promise<NativeAiAudioSaveResult | null> => {
-        if (!appSettings.ai_save_audio_enabled) return null
-
-        const audioBlob = aiRecordedAudioBlobRef.current
-        if (!audioBlob || audioBlob.size === 0) return null
-
-        const bridge = getNativeBridge()
-        if (!bridge?.ai?.saveAudio) {
-            toast.error('音声保存はローカルアプリで開いた場合のみ利用できます')
-            return null
-        }
-
-        const result = await bridge.ai.saveAudio(
-            reportId,
-            new Uint8Array(await audioBlob.arrayBuffer()),
-            audioBlob.type || 'audio/webm'
-        )
-        aiRecordedAudioBlobRef.current = null
-        setAiAudioReady(false)
-        return result
-    }
+    }, [aiVisitMemo, formData, patientMemo])
 
     const runAutoSave = useCallback(async () => {
         if (isSaving || isPatientMasterDialogOpen) return
@@ -928,13 +773,9 @@ export default function ReportEdit() {
         setIsSaving(true)
         setSaveStatus('saving')
         try {
-            let savedReport = await saveReport(activeReportId || id, buildReportInputForSave())
-            const audioResult = await savePendingAiAudio(savedReport.id)
-            if (audioResult) {
-                savedReport = await saveReport(savedReport.id, buildReportInputForSave(audioResult))
-            }
+            const savedReport = await saveReport(activeReportId || id, buildReportInputForSave())
             setActiveReportId(savedReport.id)
-            lastAutoSaveFingerprintRef.current = createReportAutoSaveFingerprint(buildReportInputForSave(audioResult || undefined))
+            lastAutoSaveFingerprintRef.current = createReportAutoSaveFingerprint(buildReportInputForSave())
 
             if (choice === 'update_patient' && sourcePatient && savedReport.patient_id === sourcePatient.id) {
                 const diffs = patientMasterDiffs.length > 0
@@ -1377,79 +1218,34 @@ export default function ReportEdit() {
                                 </span>
                             </div>
 
-                            <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
-                                録音を使う場合は薬局の運用ルールに従って同意確認を行います。
-                            </div>
-                            <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
-                                保存設定:
-                                文字起こし{appSettings.ai_save_transcript_enabled ? '保存ON' : '保存OFF'} /
-                                音声{appSettings.ai_save_audio_enabled ? (aiAudioReady ? '保存ON・録音あり' : '保存ON') : '保存OFF'}
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                <button
-                                    type="button"
-                                    className="btn btn-primary"
-                                    onClick={handleAiRecordStart}
-                                    disabled={!appSettings.ai_mode_enabled || !appSettings.ai_consent_mode_enabled || aiRecordingState === 'recording' || aiRecordingState === 'paused' || aiRecordingState === 'processing'}
-                                >
-                                    <Mic size={18} />
-                                    録音開始
-                                </button>
-                                {aiRecordingState === 'recording' && (
-                                    <button type="button" className="btn btn-ghost" onClick={handleAiRecordPause}>
-                                        <Pause size={18} />
-                                        一時停止
-                                    </button>
-                                )}
-                                {aiRecordingState === 'paused' && (
-                                    <button type="button" className="btn btn-ghost" onClick={handleAiRecordResume}>
-                                        <Play size={18} />
-                                        再開
-                                    </button>
-                                )}
-                                {(aiRecordingState === 'recording' || aiRecordingState === 'paused') && (
-                                    <button type="button" className="btn btn-ghost" onClick={handleAiRecordStop}>
-                                        <Square size={18} />
-                                        停止
-                                    </button>
-                                )}
-                                {aiRecordingState === 'processing' && (
-                                    <span style={{ color: 'var(--color-text-secondary)', alignSelf: 'center', fontSize: '0.9rem' }}>
-                                        処理中...
-                                    </span>
-                                )}
-                            </div>
-
-                            {!appSettings.ai_consent_mode_enabled && appSettings.ai_mode_enabled && (
-                                <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
-                                    録音を使うには設定画面で患者会話録音をONにしてください。
-                                </div>
-                            )}
-
                             <div>
-                                <label className="label">文字起こし</label>
+                                <label className="label">訪問メモ</label>
                                 <textarea
                                     className="input"
                                     rows={3}
-                                    value={aiTranscript}
+                                    value={aiVisitMemo}
                                     onChange={(e) => {
                                         markUnsaved()
-                                        setAiTranscript(e.target.value)
+                                        setAiVisitMemo(e.target.value)
                                     }}
-                                    disabled={!appSettings.ai_mode_enabled || aiRecordingState === 'processing'}
-                                    placeholder="録音後の文字起こし、または手入力した会話メモ"
+                                    disabled={!appSettings.ai_mode_enabled || aiDraftState === 'processing'}
+                                    placeholder="訪問内容のメモ。Windowsの音声入力（Win+H）でも入力できます"
                                 />
                                 <button
                                     type="button"
                                     className="btn btn-ghost"
-                                    onClick={handleCreateAiDraftFromTranscript}
-                                    disabled={!appSettings.ai_mode_enabled || aiRecordingState === 'processing' || !aiTranscript.trim()}
+                                    onClick={handleCreateAiDraftFromVisitMemo}
+                                    disabled={!appSettings.ai_mode_enabled || aiDraftState === 'processing' || !aiVisitMemo.trim()}
                                     style={{ marginTop: '0.5rem' }}
                                 >
                                     <Bot size={18} />
-                                    下書き作成
+                                    訪問メモからAI下書き
                                 </button>
+                                {aiDraftState === 'processing' && (
+                                    <span style={{ color: 'var(--color-text-secondary)', marginLeft: '0.75rem', fontSize: '0.9rem' }}>
+                                        処理中...
+                                    </span>
+                                )}
                             </div>
 
                             {aiError && (

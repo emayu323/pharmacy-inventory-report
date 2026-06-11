@@ -11,7 +11,7 @@ import {
     type AiDraft
 } from '../src/aiDraft.ts'
 
-test('creates draft for chief complaint and instruction from transcript labels', () => {
+test('creates draft for chief complaint and instruction from visit memo labels', () => {
     const draft = createRuleBasedAiDraft(`
         主訴等: 朝薬服用後の眠気の訴えあり。
         服薬指導内容: 眠気が続く場合は主治医へ相談するよう説明。
@@ -30,7 +30,7 @@ test('applies draft directly to empty fields', () => {
     const draft: AiDraft = {
         chief_complaint: '眠気の訴えあり。',
         medication_instruction: '服用タイミングを確認。',
-        transcript: 'transcript',
+        visitMemo: 'visit memo',
         source: 'rule_based'
     }
 
@@ -48,7 +48,7 @@ test('requires append or replace choice when existing text is present', () => {
     const draft: AiDraft = {
         chief_complaint: '追加主訴',
         medication_instruction: '置換指導',
-        transcript: 'transcript',
+        visitMemo: 'visit memo',
         source: 'rule_based'
     }
 
@@ -72,7 +72,7 @@ test('cancels field when no choice is made for existing text', () => {
     const draft: AiDraft = {
         chief_complaint: '追加主訴',
         medication_instruction: '新規指導',
-        transcript: 'transcript',
+        visitMemo: 'visit memo',
         source: 'rule_based'
     }
 
@@ -90,7 +90,7 @@ test('creates reversible patch for one applied AI draft field', () => {
     const draft: AiDraft = {
         chief_complaint: '追加主訴',
         medication_instruction: '置換指導',
-        transcript: 'transcript',
+        visitMemo: 'visit memo',
         source: 'rule_based'
     }
 
@@ -120,7 +120,7 @@ test('does not create reversible patch for cancel or empty draft value', () => {
     const draft: AiDraft = {
         chief_complaint: '',
         medication_instruction: '',
-        transcript: 'transcript',
+        visitMemo: 'visit memo',
         source: 'rule_based'
     }
 

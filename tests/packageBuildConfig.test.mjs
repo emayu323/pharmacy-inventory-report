@@ -17,6 +17,8 @@ test('package metadata is ready for local app distribution', () => {
     assert.equal(pkg.author.length > 0, true)
     assert.match(pkg.engines.node, /24/)
     assert.equal(pkg.devDependencies['electron-builder'], '^26.15.2')
+    assert.equal(pkg.dependencies['electron-updater'], '^6.8.9')
+    assert.equal(pkg.dependencies['@supabase/supabase-js'], undefined)
 })
 
 test('electron-builder config creates a Windows NSIS installer with local assets', () => {
@@ -35,6 +37,8 @@ test('electron-builder config creates a Windows NSIS installer with local assets
     assert.ok(pkg.build.files.includes('electron/**/*'))
     assert.ok(pkg.build.files.includes('scripts/local_health_service.js'))
     assert.ok(pkg.build.files.includes('src/data/drug-master.generated.json'))
+    assert.ok(pkg.build.files.includes('node_modules/electron-updater/**/*'))
+    assert.ok(pkg.build.files.includes('node_modules/builder-util-runtime/**/*'))
     assert.ok(pkg.build.files.includes('node_modules/csv-parse/**/*'))
     assert.ok(pkg.build.files.includes('node_modules/iconv-lite/**/*'))
     assert.ok(pkg.build.files.includes('!release/**/*'))
@@ -42,7 +46,20 @@ test('electron-builder config creates a Windows NSIS installer with local assets
     assert.equal(pkg.build.mac.identity, null)
     assert.ok(pkg.scripts['dist:win'].includes('--win nsis --x64'))
     assert.ok(pkg.scripts['dist:win'].includes('--publish never'))
+    assert.ok(pkg.scripts['dist:win:publish'].includes('--publish always'))
     assert.equal(pkg.scripts['verify:electron-package'], 'node scripts/verify_electron_package.mjs')
+})
+
+test('electron-builder config is prepared for signed GitHub auto updates', () => {
+    assert.equal(pkg.build.win.publish[0].provider, 'github')
+    assert.equal(pkg.build.win.publish[0].owner, 'emayu323')
+    assert.equal(pkg.build.win.publish[0].repo, 'pharmacy-report-releases')
+    assert.equal(pkg.build.win.publish[0].private, false)
+    assert.match(electronMain, /autoUpdateService\.mjs/)
+    assert.match(electronMain, /electron-updater/)
+    assert.match(electronMain, /runPreUpdateBackupCommand/)
+    assert.match(electronMain, /updates:check-now/)
+    assert.ok(pkg.scripts['test:local-app'].includes('autoUpdateService.test.mjs'))
 })
 
 test('Electron startup configures Windows login auto launch for packaged app', () => {
@@ -89,6 +106,9 @@ test('Windows installer workflow builds and verifies distributable artifact', ()
     assert.match(windowsInstallerWorkflow, /release\/release-readiness\.txt/)
     assert.match(windowsInstallerWorkflow, /WINDOWS_CSC_LINK/)
     assert.match(windowsInstallerWorkflow, /WINDOWS_CSC_KEY_PASSWORD/)
+    assert.match(windowsInstallerWorkflow, /dist:win:publish/)
+    assert.match(windowsInstallerWorkflow, /AUTO_UPDATE_RELEASE_PUBLISH_ENABLED/)
+    assert.match(windowsInstallerWorkflow, /LOCAL_CODE_SIGNING_ENABLED/)
 })
 
 test('Windows installer docs show handoff with GitHub status for external operators', () => {

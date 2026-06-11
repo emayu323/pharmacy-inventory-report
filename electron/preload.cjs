@@ -49,9 +49,7 @@ contextBridge.exposeInMainWorld('pharmacyReportNative', {
     },
     ai: {
         getStatus: () => ipcRenderer.invoke('ai:get-status'),
-        createDraftFromTranscript: transcript => ipcRenderer.invoke('ai:create-draft-from-transcript', transcript),
-        transcribeAndDraft: audioBytes => ipcRenderer.invoke('ai:transcribe-and-draft', audioBytes),
-        saveAudio: (reportId, audioBytes, mimeType) => ipcRenderer.invoke('ai:save-audio', reportId, audioBytes, mimeType)
+        createDraftFromVisitMemo: visitMemo => ipcRenderer.invoke('ai:create-draft-from-visit-memo', visitMemo)
     },
     backups: {
         create: password => ipcRenderer.invoke('backups:create', password),
@@ -60,5 +58,14 @@ contextBridge.exposeInMainWorld('pharmacyReportNative', {
     },
     security: {
         getStatus: () => ipcRenderer.invoke('security:get-status')
+    },
+    updates: {
+        getStatus: () => ipcRenderer.invoke('updates:get-status'),
+        checkNow: () => ipcRenderer.invoke('updates:check-now'),
+        onStatusChanged: callback => {
+            const listener = (_event, status) => callback(status)
+            ipcRenderer.on('updates:status-changed', listener)
+            return () => ipcRenderer.removeListener('updates:status-changed', listener)
+        }
     }
 })

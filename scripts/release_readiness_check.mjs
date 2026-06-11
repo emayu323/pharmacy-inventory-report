@@ -14,6 +14,7 @@ const REQUIRED_FILES = [
     'docs/vercel-production-env.md',
     'docs/local-ai-integration-check.md',
     'electron/main.mjs',
+    'electron/autoUpdateService.mjs',
     'electron/localSecurityStatus.mjs',
     'electron/preUpdateBackupCommand.mjs',
     'electron/windowsAutoLaunch.mjs',
@@ -30,7 +31,6 @@ const REQUIRED_FILES = [
     'scripts/source_publication_checklist.mjs',
     'scripts/release_handoff.mjs',
     'src/data/drug-master.generated.json',
-    'src/authMode.ts',
     'src/main.tsx',
     'src/pages/EntryPortal.tsx',
     'src/pages/ReportEdit.tsx',
@@ -51,6 +51,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
     'build',
     'build:electron',
     'dist:win',
+    'dist:win:publish',
     'verify:electron-package',
     'verify:vercel-env',
     'release:check',
@@ -64,12 +65,12 @@ const REQUIRED_PACKAGE_SCRIPTS = [
     'demo:mac-readiness',
     'demo:mac-smoke',
     'test:local-ai-integration',
-    'test:local-ai-text',
-    'test:local-ai-audio'
+    'test:local-ai-text'
 ]
 
 const REQUIRED_LOCAL_APP_TESTS = [
     'tests/localSqliteBackupRepository.test.mjs',
+    'tests/autoUpdateService.test.mjs',
     'tests/preUpdateBackupCommand.test.mjs',
     'tests/packageBuildConfig.test.mjs',
     'tests/createInstallCodeRegistry.test.mjs',
@@ -99,7 +100,7 @@ const NEXT_ACTION_DETAILS = {
         docs: 'public/manual.html'
     },
     native_local_storage_priority: {
-        description: 'Windowsローカルアプリでは、Supabase設定の有無にかかわらずネイティブSQLiteブリッジを優先します。',
+        description: 'アプリ本体はローカルDB専用にし、患者データのSupabase経路を戻さないでください。',
         docs: 'docs/local-first-requirements.md'
     },
     operational_workflows: {
@@ -152,7 +153,6 @@ const NEXT_ACTION_DETAILS = {
         docs: 'docs/local-ai-integration-check.md',
         commands: [
             'npm run test:local-ai-text -- --ollama-model <model>',
-            'npm run test:local-ai-audio -- --ollama-model <model> --whisper-health-url http://127.0.0.1:8178/health --whisper-transcribe-url http://127.0.0.1:8178/transcribe --audio-path <sample.webm>',
             'npm run release:check -- --ai-receipt output/local-ai-integration-result.json'
         ]
     }
@@ -364,7 +364,6 @@ function areAppRoutesInsideAuthProvider(source) {
 
     const authBlock = source.slice(authStart, authEnd)
     return [
-        'path="/login"',
         'path="reports"',
         'path="settings"'
     ].every(snippet => authBlock.includes(snippet))
@@ -385,6 +384,12 @@ function checkRuntimeConfiguration(rootDir) {
         }
         if (!pkg.devDependencies?.['@vercel/config']) {
             errors.push('@vercel/config must be installed for vercel.ts configuration')
+        }
+        if (!pkg.dependencies?.['electron-updater']) {
+            errors.push('electron-updater must be installed for signed desktop auto updates')
+        }
+        if (pkg.dependencies?.['@supabase/supabase-js']) {
+            errors.push('@supabase/supabase-js must not remain in app dependencies')
         }
     }
 
@@ -428,28 +433,33 @@ function checkNativeLocalStoragePriority(rootDir) {
     const repositoryChecks = [
         {
             file: 'src/patientRepository.ts',
-            pattern: /isLocalPatientStorage\s*=\s*\(\)\s*=>\s*Boolean\(getNativeBridge\(\)\)\s*\|\|/
+            pattern: /isLocalPatientStorage\s*=\s*\(\)\s*=>\s*true/
         },
         {
             file: 'src/reportRepository.ts',
-            pattern: /isLocalReportStorage\s*=\s*\(\)\s*=>\s*Boolean\(getNativeBridge\(\)\)\s*\|\|/
+            pattern: /isLocalReportStorage\s*=\s*\(\)\s*=>\s*true/
         },
         {
             file: 'src/institutionRepository.ts',
-            pattern: /isLocalInstitutionStorage\s*=\s*\(\)\s*=>\s*Boolean\(getNativeBridge\(\)\)\s*\|\|/
+            pattern: /isLocalInstitutionStorage\s*=\s*\(\)\s*=>\s*true/
         }
     ]
 
     for (const check of repositoryChecks) {
         const source = readTextFile(path.join(rootDir, check.file))
         if (!source.includes('getNativeBridge') || !check.pattern.test(source)) {
-            errors.push(`${check.file} must prefer getNativeBridge() for local SQLite storage`)
+            errors.push(`${check.file} must use local storage only while keeping native SQLite priority`)
         }
     }
 
     const authProvider = readTextFile(path.join(rootDir, 'src', 'contexts', 'AuthProvider.tsx'))
-    if (!authProvider.includes('shouldUseLocalAuthMode') || !authProvider.includes('hasNativeBridge: Boolean(getNativeBridge())')) {
-        errors.push('src/contexts/AuthProvider.tsx must use local auth mode when getNativeBridge() is present')
+    if (containsSupabaseReference(authProvider)) {
+        errors.push('src/contexts/AuthProvider.tsx must not use Supabase auth')
+    }
+
+    const appSupabaseRefs = findAppSupabaseReferences(rootDir)
+    if (appSupabaseRefs.length > 0) {
+        errors.push(`app source must not reference Supabase: ${appSupabaseRefs.join(', ')}`)
     }
 
     return {
@@ -458,7 +468,7 @@ function checkNativeLocalStoragePriority(rootDir) {
         status: errors.length ? 'fail' : 'pass',
         message: errors.length
             ? errors.join('; ')
-            : 'Native SQLite bridge is preferred for app auth and local data storage'
+            : 'App source is local-only and native SQLite wins when the desktop bridge is present'
     }
 }
 
@@ -540,11 +550,6 @@ function checkLatestReportSelection(rootDir) {
     if (reportRepository.includes('sort(compareReportsByNewestCreatedAt)[0]')) {
         errors.push('src/reportRepository.ts must not select previous reports by created_at first')
     }
-    const supabaseVisitOrderIndex = reportRepository.indexOf(".order('visit_date', { ascending: false })")
-    const supabaseCreatedOrderIndex = reportRepository.indexOf(".order('created_at', { ascending: false })")
-    if (supabaseVisitOrderIndex < 0 || supabaseCreatedOrderIndex < 0 || supabaseVisitOrderIndex > supabaseCreatedOrderIndex) {
-        errors.push('Supabase previous-report lookup must order by visit_date before created_at')
-    }
     if (!reportSelection.includes('selectLatestReportByVisitDate') || !reportSelection.includes('visit_date') || !reportSelection.includes('created_at')) {
         errors.push('src/reportSelection.ts must compare visit_date first and created_at as a tie breaker')
     }
@@ -575,6 +580,9 @@ function checkWindowsWorkflow(rootDir) {
         'runs-on: windows-latest',
         'node-version: 24',
         'npm run dist:win',
+        'npm run dist:win:publish',
+        'AUTO_UPDATE_RELEASE_PUBLISH_ENABLED',
+        'LOCAL_CODE_SIGNING_ENABLED',
         'windows_pre_update_backup.ps1',
         'npm run release:check -- --format text',
         'release-readiness.txt',
@@ -753,7 +761,7 @@ function checkLocalAiIntegrationReceipt(env, explicitReceiptPath, rootDir) {
             id: 'local_ai_integration',
             label: 'Local AI integration receipt',
             status: 'pending',
-            message: 'Run npm run test:local-ai-audio on the target PC and pass the saved receipt to release:check'
+            message: 'Run npm run test:local-ai-text on the target PC and pass the saved receipt to release:check'
         }
     }
 
@@ -837,19 +845,9 @@ function getAiReceiptPendingReason(receipt) {
         blockingErrors.push('ollama.status must be ready')
     }
     blockingErrors.push(...getAiDraftReceiptErrors(receipt.draft, 'draft'))
-    if (receipt.audioPathProvided || receipt.audioTested) {
-        if (receipt.audioTested !== true) {
-            blockingErrors.push('audioTested must be true when audioPathProvided is true')
-        }
-        blockingErrors.push(...getAiDraftReceiptErrors(receipt.audioDraft, 'audioDraft'))
-    }
     if (blockingErrors.length > 0) return ''
 
-    const whisperStatus = normalizeText(receipt.whisper?.status) || 'not_configured'
-    if (whisperStatus !== 'ready') {
-        return `text-only のAI下書きは確認済みですが、Whisper が ${whisperStatus} です。対象PCで音声/Whisper確認を実行してください`
-    }
-    return 'text-only のAI下書きは確認済みですが、ローカルAI全体の ready 確認は未完了です'
+    return '訪問メモからのAI下書きは確認済みですが、ローカルAI全体の ready 確認は未完了です'
 }
 
 function getAiReceiptCompletionErrors(receipt) {
@@ -863,12 +861,6 @@ function getAiReceiptCompletionErrors(receipt) {
         errors.push('ollama.status must be ready')
     }
     errors.push(...getAiDraftReceiptErrors(receipt.draft, 'draft'))
-    if (receipt.audioPathProvided || receipt.audioTested) {
-        if (receipt.audioTested !== true) {
-            errors.push('audioTested must be true when audioPathProvided is true')
-        }
-        errors.push(...getAiDraftReceiptErrors(receipt.audioDraft, 'audioDraft'))
-    }
     return errors
 }
 
@@ -925,6 +917,21 @@ function findFiles(startDir, predicate) {
     return matches.sort()
 }
 
+function findAppSupabaseReferences(rootDir) {
+    const appDirs = [
+        path.join(rootDir, 'src'),
+        path.join(rootDir, 'electron')
+    ]
+    return appDirs.flatMap(appDir => findFiles(appDir, filePath => {
+        if (!/\.(?:ts|tsx|js|mjs|cjs)$/.test(filePath)) return false
+        return containsSupabaseReference(readTextFile(filePath))
+    })).map(filePath => path.relative(rootDir, filePath))
+}
+
+function containsSupabaseReference(source) {
+    return /(?:\bsupabase\b|\bSupabase\b|@supabase\b|VITE_SUPABASE\b)/.test(source)
+}
+
 function readTopLevelFiles(dir) {
     try {
         return fs.readdirSync(dir, { withFileTypes: true })
@@ -939,6 +946,8 @@ function readTopLevelFiles(dir) {
 const AI_RECEIPT_UNSAFE_FIELD_NAMES = new Set([
     'transcript',
     'transcription',
+    'visit_memo',
+    'visitmemo',
     'chief_complaint',
     'medication_instruction',
     'audio_path',

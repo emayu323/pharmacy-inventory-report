@@ -112,11 +112,6 @@ export function buildAiProcessDefinitions(settings = {}) {
             id: 'ollama',
             label: 'Ollama',
             commandLine: normalizeCommand(settings.ai_ollama_start_command)
-        },
-        {
-            id: 'whisper',
-            label: 'Whisper',
-            commandLine: normalizeCommand(settings.ai_whisper_start_command)
         }
     ].filter(definition => definition.commandLine)
 }

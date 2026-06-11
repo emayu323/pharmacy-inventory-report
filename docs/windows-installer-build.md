@@ -33,6 +33,7 @@ release/
 - ローカルヘルスAPI
 - 初期薬剤マスタJSON
 - CSV更新に必要な `csv-parse` / `iconv-lite`
+- 自動更新に必要な `electron-updater`
 
 ## macでのデモ
 
@@ -189,9 +190,10 @@ CIで実行する内容:
 2. `npm ci` で依存関係を復元する。
 3. `npm run test:local-app` を実行する。
 4. `npm run dist:win` でNSISインストーラーを作成する。
-5. `windows_pre_update_backup.ps1` で更新前バックアップCLIをWindows上で実行確認する。
-6. `npm run release:check -- --format text` を実行し、`release/release-readiness.txt` を作成する。
-7. `release/*.exe`、`release/*.blockmap`、`release/release-readiness.txt` をartifactとして保存する。
+5. タグpushかつ自動更新公開フラグとコード署名フラグが有効な場合だけ、`npm run dist:win:publish` で公開リリース用リポジトリへ `latest.yml` とインストーラーを公開する。
+6. `windows_pre_update_backup.ps1` で更新前バックアップCLIをWindows上で実行確認する。
+7. `npm run release:check -- --format text` を実行し、`release/release-readiness.txt` を作成する。
+8. `release/*.exe`、`release/*.blockmap`、`release/release-readiness.txt` をartifactとして保存する。
 
 コード署名する場合は、GitHub Secretsへ次を設定します。
 
@@ -237,6 +239,14 @@ Windowsパッケージ版は、通常起動時にElectronのLogin Item設定を�
 
 GitHub Actionsでは、上記に対応するSecretsとして `WINDOWS_CSC_LINK` と `WINDOWS_CSC_KEY_PASSWORD` を使います。
 
+自動更新の本番有効化はコード署名が有効になってから行います。GitHub Actionsで公開リリースへ出す場合は、次を設定します。
+
+- `RELEASES_GITHUB_TOKEN`: 公開リリース用リポジトリへ書き込めるトークン
+- `AUTO_UPDATE_RELEASE_PUBLISH_ENABLED=1`: GitHub Actions Variables
+- `LOCAL_CODE_SIGNING_ENABLED=1`: GitHub Actions Variables
+
+アプリ本体側の自動更新確認も、実行環境で `LOCAL_AUTO_UPDATE_ENABLED=1` と `LOCAL_CODE_SIGNING_ENABLED=1` が揃うまで無効です。
+
 ## アップロード
 
 インストーラーURLを確定したら、Vercel本番環境変数へ設定します。
@@ -270,3 +280,4 @@ vercel env add INSTALL_CODE_USAGE_TABLE production
 - 初回起動時にローカルDB、1日1回の自動バックアップ、薬局キーが作成される。
 - Windows再ログイン後にローカルアプリが自動起動し、Vercel入口から接続確認できる。
 - 更新前に `--pre-update-backup` または `windows_pre_update_backup.ps1` でアップデート前バックアップが作成される。
+- コード署名有効化後は、旧バージョンを入れたWindows実機で、公開リリース作成、アプリ終了時更新、更新前バックアップ、DB無傷を確認する。

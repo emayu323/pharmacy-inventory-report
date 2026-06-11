@@ -13,17 +13,10 @@ test('creates copyable TSV for backup key ledger', () => {
         backup_key: 'prk_test-key',
         last_app_version: '',
         ai_mode_enabled: false,
-        ai_consent_mode_enabled: false,
-        ai_save_audio_enabled: false,
-        ai_save_transcript_enabled: false,
         ai_ollama_url: 'http://127.0.0.1:11434',
         ai_ollama_model: '',
-        ai_whisper_health_url: '',
-        ai_whisper_transcribe_url: '',
-        ai_whisper_file_field: 'audio',
         ai_auto_start_enabled: false,
         ai_ollama_start_command: 'ollama serve',
-        ai_whisper_start_command: '',
         pin_enabled: false,
         lock_timeout_minutes: 15
     }

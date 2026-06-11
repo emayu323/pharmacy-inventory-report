@@ -1,12 +1,10 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import electronUpdater from 'electron-updater'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { createAutoUpdateService } from './autoUpdateService.mjs'
 import { startLocalHealthServer } from '../scripts/local_health_service.js'
-import {
-    createAiDraftFromAudio,
-    createAiDraftFromTranscript
-} from './localAiDraftService.mjs'
-import { saveAiAudioArtifact } from './localAiArtifactRepository.mjs'
+import { createAiDraftFromVisitMemo } from './localAiDraftService.mjs'
 import { getLocalAiEnvironmentStatus } from './localAiEnvironment.mjs'
 import { createLocalAiProcessManager } from './localAiProcessManager.mjs'
 import { getLocalSecurityStatus } from './localSecurityStatus.mjs'
@@ -75,11 +73,13 @@ const projectRoot = path.resolve(__dirname, '..')
 const devUrl = process.env.ELECTRON_START_URL || ''
 const localAppUrl = process.env.LOCAL_APP_URL || 'pharmacy-report://open'
 const preUpdateBackupCommand = parsePreUpdateBackupCommand(process.argv)
+const { autoUpdater } = electronUpdater
 
 let mainWindow = null
 let healthServer = null
 let localDatabase = null
 let localDatabasePath = ''
+let autoUpdateService = null
 const localAiProcessManager = createLocalAiProcessManager()
 
 const gotSingleInstanceLock = preUpdateBackupCommand ? true : app.requestSingleInstanceLock()
@@ -120,6 +120,7 @@ app.whenReady()
         registerIpcHandlers()
         await startHealthApi(databaseState)
         await createMainWindow()
+        configureAutoUpdates()
     })
     .catch(error => {
         console.error('Electron startup failed:', error)
@@ -140,7 +141,9 @@ app.on('activate', () => {
     }
 })
 
-app.on('before-quit', () => {
+app.on('before-quit', event => {
+    if (autoUpdateService?.handleBeforeQuit(event)) return
+
     localAiProcessManager.stopAll()
     if (healthServer) {
         healthServer.close()
@@ -376,21 +379,8 @@ function registerIpcHandlers() {
         return getLocalAiEnvironmentStatus(getLocalAiOptionsFromSettings(getReadyDatabase()))
     })
 
-    ipcMain.handle('ai:create-draft-from-transcript', (_event, transcript) => {
-        return createAiDraftFromTranscript(transcript, getLocalAiOptionsFromSettings(getReadyDatabase()))
-    })
-
-    ipcMain.handle('ai:transcribe-and-draft', (_event, audioBytes) => {
-        return createAiDraftFromAudio(audioBytes, getLocalAiOptionsFromSettings(getReadyDatabase()))
-    })
-
-    ipcMain.handle('ai:save-audio', (_event, reportId, audioBytes, mimeType) => {
-        return saveAiAudioArtifact({
-            outputDir: getAiArtifactDirectory(),
-            reportId,
-            audioBytes,
-            mimeType
-        })
+    ipcMain.handle('ai:create-draft-from-visit-memo', (_event, visitMemo) => {
+        return createAiDraftFromVisitMemo(visitMemo, getLocalAiOptionsFromSettings(getReadyDatabase()))
     })
 
     ipcMain.handle('backups:create', (_event, password) => {
@@ -458,6 +448,14 @@ function registerIpcHandlers() {
     ipcMain.handle('security:get-status', () => {
         return getLocalSecurityStatus()
     })
+
+    ipcMain.handle('updates:get-status', () => {
+        return autoUpdateService?.getStatus() || createAutoUpdateUnavailableStatus()
+    })
+
+    ipcMain.handle('updates:check-now', () => {
+        return autoUpdateService?.checkForUpdates({ manual: true }) || createAutoUpdateUnavailableStatus()
+    })
 }
 
 function getReadyDatabase() {
@@ -492,10 +490,6 @@ function getBeforeRestoreDirectory() {
     return process.env.LOCAL_BEFORE_RESTORE_DIR || path.join(app.getPath('userData'), 'before-restore')
 }
 
-function getAiArtifactDirectory() {
-    return process.env.LOCAL_AI_ARTIFACT_DIR || path.join(app.getPath('userData'), 'ai-artifacts', 'audio')
-}
-
 function getAppVersion() {
     return process.env.LOCAL_APP_VERSION || (app.isPackaged ? app.getVersion() : '0.1.0-dev')
 }
@@ -521,10 +515,7 @@ function getLocalAiOptionsFromSettings(db) {
     const settings = getAppSettings(db)
     return {
         ollamaUrl: settings.ai_ollama_url,
-        ollamaModel: settings.ai_ollama_model,
-        whisperHealthUrl: settings.ai_whisper_health_url,
-        whisperTranscribeUrl: settings.ai_whisper_transcribe_url,
-        whisperFieldName: settings.ai_whisper_file_field
+        ollamaModel: settings.ai_ollama_model
     }
 }
 
@@ -545,6 +536,54 @@ function startConfiguredAiServices(db) {
         }
     } catch (error) {
         console.warn('Electron local AI auto start failed:', error)
+    }
+}
+
+function configureAutoUpdates() {
+    autoUpdateService = createAutoUpdateService({
+        app,
+        autoUpdater,
+        runPreUpdateBackup: runAutoUpdatePreUpdateBackup,
+        getCurrentVersion: getAppVersion,
+        notifyStatus: emitAutoUpdateStatus
+    })
+    const status = autoUpdateService.start()
+    if (status.enabled) {
+        void autoUpdateService.checkForUpdates()
+    } else {
+        console.log(`Electron auto update disabled: ${status.message}`)
+    }
+}
+
+async function runAutoUpdatePreUpdateBackup({ toVersion }) {
+    const db = getReadyDatabase()
+    const settings = ensureBackupKey(db)
+    return runPreUpdateBackupCommand({
+        dbPath: localDatabasePath,
+        outputDir: getBackupDirectory(),
+        googleDriveFolder: settings.google_drive_folder,
+        fromVersion: getAppVersion(),
+        toVersion,
+        currentVersion: getAppVersion()
+    })
+}
+
+function emitAutoUpdateStatus(status) {
+    if (!mainWindow) return
+    mainWindow.webContents.send('updates:status-changed', status)
+}
+
+function createAutoUpdateUnavailableStatus() {
+    return {
+        enabled: false,
+        status: 'disabled',
+        currentVersion: getAppVersion(),
+        updateVersion: '',
+        message: '自動更新はまだ初期化されていません',
+        lastCheckedAt: '',
+        lastError: '',
+        backupCreated: false,
+        backupFilePath: ''
     }
 }
 
@@ -912,15 +951,11 @@ async function runBackupIpcSmoke() {
                 is_active: true
             })
             await bridge.settings.save({
-                ai_ollama_url: ' http://127.0.0.1:11435/ ',
-                ai_whisper_health_url: ' http://127.0.0.1:8178/health/ ',
-                ai_whisper_transcribe_url: ' http://127.0.0.1:8178/transcribe/ ',
-                ai_whisper_file_field: ' file '
+                ai_ollama_url: ' http://127.0.0.1:11435/ '
             })
             const settings = await bridge.settings.ensureBackupKey()
             const aiStatus = await bridge.ai.getStatus()
-            const aiDraft = await bridge.ai.createDraftFromTranscript('主訴等: 眠気の訴えあり。\\n服薬指導内容: 主治医へ相談するよう説明。')
-            const aiAudio = await bridge.ai.saveAudio('smoke-report', new Uint8Array([1, 2, 3]), 'audio/webm')
+            const aiDraft = await bridge.ai.createDraftFromVisitMemo('主訴等: 眠気の訴えあり。\\n服薬指導内容: 主治医へ相談するよう説明。')
             const backup = await bridge.backups.create('backup-pass-123')
             const preUpdateBackup = await bridge.backups.createPreUpdate('0.2.0-smoke')
             const rotatedSettings = await bridge.settings.rotateBackupKey()
@@ -930,12 +965,8 @@ async function runBackupIpcSmoke() {
                 hasBackupKey: Boolean(settings.backup_key),
                 backupKeyRotated: Boolean(rotatedSettings.backup_key && rotatedSettings.backup_key !== settings.backup_key),
                 aiOllamaUrl: aiStatus.ollama.url,
-                aiWhisperUrl: aiStatus.whisper.url,
-                aiWhisperField: settings.ai_whisper_file_field,
                 aiReady: Boolean(aiStatus.ready),
                 aiDraftChiefComplaint: aiDraft.chief_complaint,
-                aiAudioFileName: aiAudio.fileName,
-                aiAudioBytes: aiAudio.byteLength,
                 filePath: backup.filePath,
                 patientsCount: backup.summary.patients_count,
                 reportsCount: backup.summary.reports_count,

@@ -29,7 +29,10 @@ const emptyReport: ReportDraft = {
 }
 
 test('copied report keeps fixed info and medications but clears visit-specific text fields', () => {
-    const source: Report = {
+    const source: Report & {
+        ai_transcript?: string
+        ai_audio_file_path?: string
+    } = {
         id: 'report-previous',
         created_at: '2026-06-01T00:00:00.000Z',
         updated_at: '2026-06-01T00:00:00.000Z',
@@ -47,6 +50,7 @@ test('copied report keeps fixed info and medications but clears visit-specific t
         medication_instruction: '前回の服薬指導',
         side_effects: '前回のその他伝達事項',
         memo: '前回の申し送り',
+        ai_visit_memo: '前回の訪問メモ',
         ai_transcript: '前回の文字起こし',
         ai_audio_file_path: '/tmp/previous.webm',
         default_prescription_days: '28',
@@ -94,8 +98,9 @@ test('copied report keeps fixed info and medications but clears visit-specific t
     assert.equal(copied.report.next_visit_date, '')
     assert.equal(copied.report.memo, '')
     assert.equal(copied.patientMemo, '')
-    assert.equal(copied.report.ai_transcript, undefined)
-    assert.equal(copied.report.ai_audio_file_path, undefined)
+    assert.equal(copied.report.ai_visit_memo, undefined)
+    assert.equal((copied.report as Report & { ai_transcript?: string }).ai_transcript, undefined)
+    assert.equal((copied.report as Report & { ai_audio_file_path?: string }).ai_audio_file_path, undefined)
 
     assert.equal(copied.report.medications_check_list?.[0].name, '定期薬A')
     assert.equal(copied.report.medications_check_list?.[0].previous_supply_until, '2026-07-02')

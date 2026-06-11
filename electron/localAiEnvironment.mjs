@@ -6,19 +6,17 @@ const DEFAULT_TIMEOUT_MS = 1200
 
 export async function getLocalAiEnvironmentStatus(options = {}) {
     const config = normalizeAiEnvironmentOptions(options)
-    const [ollama, whisper, disk] = await Promise.all([
+    const [ollama, disk] = await Promise.all([
         probeOllama(config),
-        probeWhisper(config),
         getDiskStatus(config)
     ])
 
     return {
-        ready: ollama.status === 'ready' && whisper.status === 'ready',
+        ready: ollama.status === 'ready' && disk.status !== 'low_space',
         ollama,
-        whisper,
         disk,
         performance: getPerformanceStatus(),
-        estimate: createProcessingEstimate(config)
+        estimate: createProcessingEstimate()
     }
 }
 
@@ -29,7 +27,6 @@ export function normalizeAiEnvironmentOptions(options = {}) {
         timeoutMs: options.timeoutMs ?? readNumber(env.LOCAL_AI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS),
         ollamaUrl: normalizeBaseUrl(options.ollamaUrl || env.LOCAL_OLLAMA_URL || DEFAULT_OLLAMA_URL),
         ollamaModel: options.ollamaModel || env.LOCAL_OLLAMA_MODEL || '',
-        whisperHealthUrl: options.whisperHealthUrl || env.LOCAL_WHISPER_HEALTH_URL || env.LOCAL_WHISPER_URL || '',
         requiredFreeBytes: readNumber(options.requiredFreeBytes ?? env.LOCAL_AI_REQUIRED_FREE_BYTES, 0),
         diskPath: options.diskPath || env.LOCAL_AI_DISK_PATH || os.homedir(),
         statfsImpl: options.statfsImpl || statfs
@@ -71,31 +68,6 @@ async function probeOllama(config) {
         requiredModel: config.ollamaModel || undefined,
         installedModels,
         message: 'Ollamaに接続できます'
-    }
-}
-
-async function probeWhisper(config) {
-    if (!config.whisperHealthUrl) {
-        return {
-            status: 'not_configured',
-            url: '',
-            message: 'Whisper系エンジンのURLが未設定です'
-        }
-    }
-
-    const response = await fetchJson(config.whisperHealthUrl, config)
-    if (!response.ok) {
-        return {
-            status: response.error === 'timeout' ? 'not_running' : 'error',
-            url: config.whisperHealthUrl,
-            message: 'Whisper系エンジンに接続できません'
-        }
-    }
-
-    return {
-        status: 'ready',
-        url: config.whisperHealthUrl,
-        message: 'Whisper系エンジンに接続できます'
     }
 }
 
@@ -163,15 +135,14 @@ function getPerformanceStatus() {
         gpu: 'unknown',
         message: cpuCount >= 8
             ? 'CPU処理は中程度以上の見込みです'
-            : 'GPUなしPCでは録音時間と同等以上かかる可能性があります'
+            : 'CPU処理のため、下書き作成に時間がかかる可能性があります'
     }
 }
 
-function createProcessingEstimate(config) {
+function createProcessingEstimate() {
     return {
-        basis: 'cpu_only_default',
-        transcriptionTimeRatio: '1x-3x',
-        message: 'GPUなしPCでは、文字起こしに録音時間と同等から数倍の時間がかかる可能性があります'
+        basis: 'ollama_text_only',
+        message: '訪問メモから下書きを作成します。長いメモでは処理に時間がかかる場合があります'
     }
 }
 

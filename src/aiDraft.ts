@@ -6,7 +6,7 @@ export type AiDraftApplyMode = 'append' | 'replace' | 'cancel'
 export type AiDraft = {
     chief_complaint: string
     medication_instruction: string
-    transcript: string
+    visitMemo: string
     source: 'local_llm' | 'rule_based'
 }
 
@@ -29,14 +29,14 @@ export type AiDraftFieldPatch = {
 
 type ReportDraftFields = Pick<Report, 'chief_complaint' | 'medication_instruction'>
 
-export const createRuleBasedAiDraft = (transcript: string): AiDraft => {
-    const normalizedTranscript = normalizeText(transcript)
-    const lines = normalizedTranscript.split('\n').map(line => line.trim()).filter(Boolean)
+export const createRuleBasedAiDraft = (visitMemo: string): AiDraft => {
+    const normalizedVisitMemo = normalizeText(visitMemo)
+    const lines = normalizedVisitMemo.split('\n').map(line => line.trim()).filter(Boolean)
 
     return {
-        chief_complaint: pickFieldText(lines, ['主訴', '家族', '訴え', '体調', '副作用']) || normalizedTranscript,
+        chief_complaint: pickFieldText(lines, ['主訴', '家族', '訴え', '体調', '副作用']) || normalizedVisitMemo,
         medication_instruction: pickFieldText(lines, ['指導', '説明', '対応', '確認', '提案']) || '',
-        transcript: normalizedTranscript,
+        visitMemo: normalizedVisitMemo,
         source: 'rule_based'
     }
 }

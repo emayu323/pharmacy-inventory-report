@@ -24,8 +24,6 @@ export const createAiSetupGuide = (
         createAiModeStep(settings),
         createOllamaServerStep(settings, status),
         createOllamaModelStep(settings, status),
-        createWhisperConfigStep(settings, status),
-        createWhisperServerStep(settings, status),
         createPerformanceStep(status)
     ]
 
@@ -115,57 +113,12 @@ function createOllamaModelStep(
     }
 }
 
-function createWhisperConfigStep(
-    settings: AppSettings,
-    status: NativeAiEnvironmentStatus | null
-): AiSetupStep {
-    if (settings.ai_whisper_health_url && settings.ai_whisper_transcribe_url) {
-        return {
-            id: 'whisper_config',
-            title: 'Whisper接続設定',
-            detail: 'WhisperヘルスURLと文字起こしURLが設定されています。',
-            status: 'done'
-        }
-    }
-
-    return {
-        id: 'whisper_config',
-        title: 'Whisper接続設定',
-        detail: status?.whisper.status === 'not_configured'
-            ? 'Whisper系エンジンのURLが未設定です。使用するローカルWhisperサーバーのURLを入力してください。'
-            : 'WhisperヘルスURLと文字起こしURLを入力してください。',
-        status: 'todo'
-    }
-}
-
-function createWhisperServerStep(
-    settings: AppSettings,
-    status: NativeAiEnvironmentStatus | null
-): AiSetupStep {
-    if (status?.whisper.status === 'ready') {
-        return {
-            id: 'whisper_server',
-            title: 'Whisper起動',
-            detail: 'Whisper系エンジンに接続できます。',
-            status: 'done'
-        }
-    }
-
-    return {
-        id: 'whisper_server',
-        title: 'Whisper起動',
-        detail: 'Whisper系エンジンが起動していないか、接続できません。設定したローカルサーバーを起動してください。',
-        status: status ? 'todo' : 'warning',
-        command: settings.ai_whisper_start_command || undefined
-    }
-}
-
 function createPerformanceStep(status: NativeAiEnvironmentStatus | null): AiSetupStep {
     if (!status) {
         return {
             id: 'performance',
             title: '処理時間目安',
-            detail: '状態確認を実行すると、PC性能と文字起こし時間の目安を表示できます。',
+            detail: '状態確認を実行すると、PC性能と下書き作成時間の目安を表示できます。',
             status: 'warning'
         }
     }

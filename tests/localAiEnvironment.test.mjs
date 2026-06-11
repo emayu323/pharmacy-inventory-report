@@ -2,60 +2,42 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { getLocalAiEnvironmentStatus } from '../electron/localAiEnvironment.mjs'
 
-test('local AI status is ready when Ollama model and Whisper health are available', async () => {
+test('local AI status is ready when Ollama model and disk are ready', async () => {
     const status = await getLocalAiEnvironmentStatus({
         ollamaModel: 'llama3.1:8b',
-        whisperHealthUrl: 'http://127.0.0.1:8178/health',
         timeoutMs: 20,
         fetchImpl: async (url) => {
-            if (String(url).endsWith('/api/tags')) {
-                return jsonResponse({
-                    models: [
-                        { name: 'llama3.1:8b' }
-                    ]
-                })
-            }
-            return jsonResponse({ ok: true })
+            assert.equal(String(url).endsWith('/api/tags'), true)
+            return jsonResponse({
+                models: [
+                    { name: 'llama3.1:8b' }
+                ]
+            })
         }
     })
 
     assert.equal(status.ready, true)
     assert.equal(status.ollama.status, 'ready')
-    assert.equal(status.whisper.status, 'ready')
-    assert.equal(status.estimate.transcriptionTimeRatio, '1x-3x')
+    assert.equal(status.estimate.basis, 'ollama_text_only')
 })
 
 test('local AI status reports missing Ollama model', async () => {
     const status = await getLocalAiEnvironmentStatus({
         ollamaModel: 'llama3.1:8b',
-        whisperHealthUrl: 'http://127.0.0.1:8178/health',
         timeoutMs: 20,
         fetchImpl: async (url) => {
-            if (String(url).endsWith('/api/tags')) {
-                return jsonResponse({
-                    models: [
-                        { name: 'qwen2.5:7b' }
-                    ]
-                })
-            }
-            return jsonResponse({ ok: true })
+            assert.equal(String(url).endsWith('/api/tags'), true)
+            return jsonResponse({
+                models: [
+                    { name: 'qwen2.5:7b' }
+                ]
+            })
         }
     })
 
     assert.equal(status.ready, false)
     assert.equal(status.ollama.status, 'model_missing')
     assert.equal(status.ollama.requiredModel, 'llama3.1:8b')
-})
-
-test('local AI status keeps app usable when Whisper URL is not configured', async () => {
-    const status = await getLocalAiEnvironmentStatus({
-        timeoutMs: 20,
-        fetchImpl: async () => jsonResponse({ models: [] })
-    })
-
-    assert.equal(status.ready, false)
-    assert.equal(status.whisper.status, 'not_configured')
-    assert.match(status.whisper.message, /未設定/)
 })
 
 test('local AI status reports enough disk space when required bytes are configured', async () => {

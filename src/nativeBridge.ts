@@ -45,7 +45,6 @@ export type NativeAiServiceStatus = {
 export type NativeAiEnvironmentStatus = {
     ready: boolean
     ollama: NativeAiServiceStatus
-    whisper: NativeAiServiceStatus
     disk: {
         status: 'not_checked' | 'ready' | 'low_space' | 'unknown'
         path?: string
@@ -60,16 +59,8 @@ export type NativeAiEnvironmentStatus = {
     }
     estimate: {
         basis: string
-        transcriptionTimeRatio: string
         message: string
     }
-}
-export type NativeAiAudioSaveResult = {
-    fileName: string
-    filePath: string
-    mimeType: string
-    byteLength: number
-    saved_at: string
 }
 export type NativeBackupSummary = {
     created_at: string
@@ -107,6 +98,17 @@ export type NativeSecurityStatus = {
         message: string
         detail?: string
     }
+}
+export type NativeUpdateStatus = {
+    enabled: boolean
+    status: 'disabled' | 'idle' | 'checking' | 'downloading' | 'backup_running' | 'downloaded' | 'installing' | 'error'
+    currentVersion: string
+    updateVersion: string
+    message: string
+    lastCheckedAt: string
+    lastError: string
+    backupCreated: boolean
+    backupFilePath: string
 }
 
 export type PharmacyReportNativeBridge = {
@@ -158,9 +160,7 @@ export type PharmacyReportNativeBridge = {
     }
     ai: {
         getStatus: () => Promise<NativeAiEnvironmentStatus>
-        createDraftFromTranscript: (transcript: string) => Promise<AiDraft>
-        transcribeAndDraft: (audioBytes: Uint8Array) => Promise<AiDraft>
-        saveAudio: (reportId: string, audioBytes: Uint8Array, mimeType: string) => Promise<NativeAiAudioSaveResult>
+        createDraftFromVisitMemo: (visitMemo: string) => Promise<AiDraft>
     }
     backups: {
         create: (password: string) => Promise<NativeBackupCreateResult>
@@ -169,6 +169,11 @@ export type PharmacyReportNativeBridge = {
     }
     security: {
         getStatus: () => Promise<NativeSecurityStatus>
+    }
+    updates: {
+        getStatus: () => Promise<NativeUpdateStatus>
+        checkNow: () => Promise<NativeUpdateStatus>
+        onStatusChanged: (callback: (status: NativeUpdateStatus) => void) => () => void
     }
 }
 

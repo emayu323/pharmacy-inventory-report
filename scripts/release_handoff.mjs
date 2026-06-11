@@ -97,7 +97,7 @@ export function createReleaseHandoffMarkdown(options = {}) {
         '',
         '- 秘密情報、Service Role Key、導入コード実値、患者情報はこの文書に書かない。',
         '- 本番Vercel環境変数はVercel側へ直接設定し、`.env.production.local` はローカル検査用にだけ使う。',
-        '- 現地AI結合証跡には文字起こし本文、AI下書き本文、音声パス、音声ファイル本体を含めない。',
+        '- 現地AI結合証跡には訪問メモ本文とAI下書き本文を含めない。',
         '',
         '## release:check 出力',
         '',

@@ -59,7 +59,6 @@ const DEFAULT_EXTERNAL_PENDING = [
         docs: 'docs/local-ai-integration-check.md',
         commands: [
             'npm run test:local-ai-text -- --ollama-model <model>',
-            'npm run test:local-ai-audio -- --ollama-model <model> --whisper-health-url http://127.0.0.1:8178/health --whisper-transcribe-url http://127.0.0.1:8178/transcribe --audio-path <sample.webm>',
             'npm run release:check -- --ai-receipt output/local-ai-integration-result.json'
         ]
     }

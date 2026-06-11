@@ -1,8 +1,7 @@
-import { supabase, hasSupabaseConfig } from './supabase'
 import type { Patient } from './types'
 import { getNativeBridge } from './nativeBridge'
 
-export type PatientStorageMode = 'supabase' | 'local'
+export type PatientStorageMode = 'local'
 export type PatientInput = Omit<Patient, 'id' | 'created_at'> & { user_id?: string }
 export type PatientUpdate = Partial<Omit<Patient, 'id' | 'created_at'>>
 export type LogicalDeleteResult = {
@@ -11,24 +10,9 @@ export type LogicalDeleteResult = {
 }
 
 const LOCAL_PATIENTS_KEY = 'pharmacy-report:patients:v1'
-const LOCAL_STORAGE_MODE_KEY = 'report_storage_mode'
-const SUPPORTED_STORAGE_MODES = new Set<PatientStorageMode>(['supabase', 'local'])
 
-export const getPatientStorageMode = (): PatientStorageMode => {
-    const envMode = import.meta.env.VITE_REPORT_STORAGE
-    if (SUPPORTED_STORAGE_MODES.has(envMode as PatientStorageMode)) {
-        return envMode as PatientStorageMode
-    }
-
-    const browserMode = getBrowserStorage()?.getItem(LOCAL_STORAGE_MODE_KEY)
-    if (SUPPORTED_STORAGE_MODES.has(browserMode as PatientStorageMode)) {
-        return browserMode as PatientStorageMode
-    }
-
-    return hasSupabaseConfig ? 'supabase' : 'local'
-}
-
-export const isLocalPatientStorage = () => Boolean(getNativeBridge()) || getPatientStorageMode() === 'local'
+export const getPatientStorageMode = (): PatientStorageMode => 'local'
+export const isLocalPatientStorage = () => true
 
 export const listPatients = async (): Promise<Patient[]> => {
     const nativeBridge = getNativeBridge()
@@ -36,21 +20,9 @@ export const listPatients = async (): Promise<Patient[]> => {
         return nativeBridge.patients.list()
     }
 
-    if (isLocalPatientStorage()) {
-        return readLocalPatients()
-            .filter(patient => !patient.deleted_at)
-            .sort(comparePatientsByName)
-    }
-
-    assertSupabaseConfigured()
-    const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .is('deleted_at', null)
-        .order('name', { ascending: true })
-
-    if (error) throw error
-    return (data ?? []) as Patient[]
+    return readLocalPatients()
+        .filter(patient => !patient.deleted_at)
+        .sort(comparePatientsByName)
 }
 
 export const listDeletedPatients = async (): Promise<Patient[]> => {
@@ -59,21 +31,9 @@ export const listDeletedPatients = async (): Promise<Patient[]> => {
         return nativeBridge.patients.listDeleted()
     }
 
-    if (isLocalPatientStorage()) {
-        return readLocalPatients()
-            .filter(patient => Boolean(patient.deleted_at))
-            .sort(comparePatientsByNewestDeletedAt)
-    }
-
-    assertSupabaseConfigured()
-    const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .not('deleted_at', 'is', null)
-        .order('deleted_at', { ascending: false })
-
-    if (error) throw error
-    return (data ?? []) as Patient[]
+    return readLocalPatients()
+        .filter(patient => Boolean(patient.deleted_at))
+        .sort(comparePatientsByNewestDeletedAt)
 }
 
 export const getPatientById = async (patientId: string): Promise<Patient | null> => {
@@ -82,20 +42,7 @@ export const getPatientById = async (patientId: string): Promise<Patient | null>
         return nativeBridge.patients.get(patientId)
     }
 
-    if (isLocalPatientStorage()) {
-        return readLocalPatients().find(patient => patient.id === patientId && !patient.deleted_at) ?? null
-    }
-
-    assertSupabaseConfigured()
-    const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('id', patientId)
-        .is('deleted_at', null)
-        .single()
-
-    if (error) throw error
-    return data as Patient
+    return readLocalPatients().find(patient => patient.id === patientId && !patient.deleted_at) ?? null
 }
 
 export const createPatient = async (patient: PatientInput): Promise<Patient> => {
@@ -104,30 +51,15 @@ export const createPatient = async (patient: PatientInput): Promise<Patient> => 
         return nativeBridge.patients.create(patient)
     }
 
-    if (isLocalPatientStorage()) {
-        const patients = readLocalPatients()
-        const savedPatient: Patient = {
-            ...patient,
-            id: createLocalPatientId(),
-            created_at: new Date().toISOString(),
-            is_active: patient.is_active ?? true
-        } as Patient
-        writeLocalPatients([savedPatient, ...patients])
-        return savedPatient
-    }
-
-    assertSupabaseConfigured()
-    const { data, error } = await supabase
-        .from('patients')
-        .insert([{
-            id: crypto.randomUUID(),
-            ...patient
-        }])
-        .select()
-        .single()
-
-    if (error) throw error
-    return data as Patient
+    const patients = readLocalPatients()
+    const savedPatient: Patient = {
+        ...patient,
+        id: createLocalPatientId(),
+        created_at: new Date().toISOString(),
+        is_active: patient.is_active ?? true
+    } as Patient
+    writeLocalPatients([savedPatient, ...patients])
+    return savedPatient
 }
 
 export const updatePatient = async (patientId: string, update: PatientUpdate): Promise<Patient> => {
@@ -136,31 +68,18 @@ export const updatePatient = async (patientId: string, update: PatientUpdate): P
         return nativeBridge.patients.update(patientId, update)
     }
 
-    if (isLocalPatientStorage()) {
-        const patients = readLocalPatients()
-        const index = patients.findIndex(patient => patient.id === patientId && !patient.deleted_at)
-        if (index < 0) {
-            throw new Error('患者が見つかりません')
-        }
-        const updatedPatient = {
-            ...patients[index],
-            ...update
-        } as Patient
-        patients[index] = updatedPatient
-        writeLocalPatients(patients)
-        return updatedPatient
+    const patients = readLocalPatients()
+    const index = patients.findIndex(patient => patient.id === patientId && !patient.deleted_at)
+    if (index < 0) {
+        throw new Error('患者が見つかりません')
     }
-
-    assertSupabaseConfigured()
-    const { data, error } = await supabase
-        .from('patients')
-        .update(update)
-        .eq('id', patientId)
-        .select()
-        .single()
-
-    if (error) throw error
-    return data as Patient
+    const updatedPatient = {
+        ...patients[index],
+        ...update
+    } as Patient
+    patients[index] = updatedPatient
+    writeLocalPatients(patients)
+    return updatedPatient
 }
 
 export const deletePatient = async (patientId: string): Promise<LogicalDeleteResult> => {
@@ -170,29 +89,14 @@ export const deletePatient = async (patientId: string): Promise<LogicalDeleteRes
     }
 
     const deletedAt = new Date().toISOString()
-    if (isLocalPatientStorage()) {
-        const patients = readLocalPatients()
-        const index = patients.findIndex(patient => patient.id === patientId && !patient.deleted_at)
-        if (index < 0) return { deleted: false }
-        patients[index] = {
-            ...patients[index],
-            deleted_at: deletedAt
-        }
-        writeLocalPatients(patients)
-        return {
-            deleted: true,
-            deleted_at: deletedAt
-        }
+    const patients = readLocalPatients()
+    const index = patients.findIndex(patient => patient.id === patientId && !patient.deleted_at)
+    if (index < 0) return { deleted: false }
+    patients[index] = {
+        ...patients[index],
+        deleted_at: deletedAt
     }
-
-    assertSupabaseConfigured()
-    const { error } = await supabase
-        .from('patients')
-        .update({ deleted_at: deletedAt })
-        .eq('id', patientId)
-        .is('deleted_at', null)
-
-    if (error) throw error
+    writeLocalPatients(patients)
     return {
         deleted: true,
         deleted_at: deletedAt
@@ -205,27 +109,14 @@ export const restorePatient = async (patientId: string): Promise<Patient | null>
         return nativeBridge.patients.restore(patientId)
     }
 
-    if (isLocalPatientStorage()) {
-        const patients = readLocalPatients()
-        const index = patients.findIndex(patient => patient.id === patientId && patient.deleted_at)
-        if (index < 0) return null
-        const restoredPatient = { ...patients[index] }
-        delete restoredPatient.deleted_at
-        patients[index] = restoredPatient
-        writeLocalPatients(patients)
-        return restoredPatient
-    }
-
-    assertSupabaseConfigured()
-    const { data, error } = await supabase
-        .from('patients')
-        .update({ deleted_at: null })
-        .eq('id', patientId)
-        .select()
-        .single()
-
-    if (error) throw error
-    return data as Patient
+    const patients = readLocalPatients()
+    const index = patients.findIndex(patient => patient.id === patientId && patient.deleted_at)
+    if (index < 0) return null
+    const restoredPatient = { ...patients[index] }
+    delete restoredPatient.deleted_at
+    patients[index] = restoredPatient
+    writeLocalPatients(patients)
+    return restoredPatient
 }
 
 const readLocalPatients = (): Patient[] => {
@@ -289,10 +180,4 @@ const isPatientLike = (value: unknown): value is Patient => {
         && typeof patient.name === 'string'
         && typeof patient.dob === 'string'
         && typeof patient.gender === 'string'
-}
-
-const assertSupabaseConfigured = () => {
-    if (!hasSupabaseConfig) {
-        throw new Error('Supabaseの接続情報が未設定です。ローカル保存モードで起動してください。')
-    }
 }

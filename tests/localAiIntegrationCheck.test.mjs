@@ -21,12 +21,13 @@ test('local AI integration check skips unless explicitly enabled', async () => {
     assert.match(result.reason, /LOCAL_AI_INTEGRATION/)
 })
 
-test('local AI integration CLI args support text-only checks without shell env syntax', () => {
+test('local AI integration CLI args support visit memo checks without shell env syntax', () => {
     const options = parseLocalAiIntegrationArgs([
         '--run',
-        '--text-only',
         '--ollama-model',
         'llama3.1:8b',
+        '--visit-memo',
+        '主訴等: 眠気の訴えあり。',
         '--result-path',
         'output/local-ai-integration-result.json',
         '--timeout-ms=20'
@@ -34,8 +35,8 @@ test('local AI integration CLI args support text-only checks without shell env s
     const config = buildIntegrationConfig({}, options)
 
     assert.equal(config.enabled, true)
-    assert.equal(config.requireWhisperHealth, false)
     assert.equal(config.ollamaModel, 'llama3.1:8b')
+    assert.equal(config.visitMemo, '主訴等: 眠気の訴えあり。')
     assert.equal(config.resultPath, 'output/local-ai-integration-result.json')
     assert.equal(config.timeoutMs, 20)
 })
@@ -54,11 +55,10 @@ test('local AI integration check requires an Ollama model when enabled', async (
     )
 })
 
-test('local AI integration text-only mode does not require Whisper health', async () => {
+test('local AI integration check does not call non-Ollama services', async () => {
     const result = await runLocalAiIntegrationCheck({
         ...parseLocalAiIntegrationArgs([
             '--run',
-            '--text-only',
             '--ollama-model',
             'llama3.1:8b',
             '--timeout-ms',
@@ -72,7 +72,6 @@ test('local AI integration text-only mode does not require Whisper health', asyn
     })
 
     assert.equal(result.skipped, false)
-    assert.equal(result.status.whisper.status, 'not_configured')
     assert.equal(result.draft.source, 'local_llm')
 })
 
@@ -81,7 +80,6 @@ test('local AI integration check verifies Ollama draft path with fake services',
         env: {
             LOCAL_AI_INTEGRATION: '1',
             LOCAL_OLLAMA_MODEL: 'llama3.1:8b',
-            LOCAL_WHISPER_HEALTH_URL: 'http://127.0.0.1:8178/health',
             LOCAL_AI_TIMEOUT_MS: '20'
         },
         fetchImpl: fakeFetch
@@ -91,32 +89,6 @@ test('local AI integration check verifies Ollama draft path with fake services',
     assert.equal(result.status.ready, true)
     assert.equal(result.draft.source, 'local_llm')
     assert.equal(result.draft.chief_complaint, '眠気の訴えあり。')
-    assert.equal(result.audioDraft, undefined)
-})
-
-test('local AI integration check can verify audio transcription when sample audio is provided', async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'report-ai-integration-'))
-    const audioPath = path.join(tmpDir, 'sample.webm')
-    fs.writeFileSync(audioPath, Buffer.from([1, 2, 3]))
-
-    try {
-        const result = await runLocalAiIntegrationCheck({
-            env: {
-                LOCAL_AI_INTEGRATION: '1',
-                LOCAL_OLLAMA_MODEL: 'llama3.1:8b',
-                LOCAL_WHISPER_HEALTH_URL: 'http://127.0.0.1:8178/health',
-                LOCAL_WHISPER_TRANSCRIBE_URL: 'http://127.0.0.1:8178/transcribe',
-                LOCAL_AI_TEST_AUDIO_PATH: audioPath,
-                LOCAL_AI_TIMEOUT_MS: '20'
-            },
-            fetchImpl: fakeFetch
-        })
-
-        assert.equal(result.audioDraft?.chief_complaint, '眠気の訴えあり。')
-        assert.equal(result.audioDraft?.source, 'local_llm')
-    } finally {
-        fs.rmSync(tmpDir, { recursive: true, force: true })
-    }
 })
 
 test('local AI integration check writes privacy-safe receipt when requested', async () => {
@@ -128,7 +100,6 @@ test('local AI integration check writes privacy-safe receipt when requested', as
             env: {
                 LOCAL_AI_INTEGRATION: '1',
                 LOCAL_OLLAMA_MODEL: 'llama3.1:8b',
-                LOCAL_WHISPER_HEALTH_URL: 'http://127.0.0.1:8178/health',
                 LOCAL_AI_INTEGRATION_RESULT_PATH: receiptPath,
                 LOCAL_AI_TIMEOUT_MS: '20'
             },
@@ -159,6 +130,7 @@ async function fakeFetch(url, init = {}) {
     }
     if (urlValue.endsWith('/api/chat')) {
         assert.equal(JSON.parse(String(init.body)).model, 'llama3.1:8b')
+        assert.match(JSON.parse(String(init.body)).messages.at(-1).content, /訪問メモ/)
         return jsonResponse({
             message: {
                 content: JSON.stringify({
@@ -167,14 +139,6 @@ async function fakeFetch(url, init = {}) {
                 })
             }
         })
-    }
-    if (urlValue.endsWith('/transcribe')) {
-        return jsonResponse({
-            text: '主訴等: 眠気の訴えあり。\n服薬指導内容: 主治医へ相談するよう説明。'
-        })
-    }
-    if (urlValue.endsWith('/health')) {
-        return jsonResponse({ ok: true })
     }
     return new Response('', { status: 404 })
 }

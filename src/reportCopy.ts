@@ -20,10 +20,19 @@ export const createCopiedReportDraft = (
         pharmacistName: string
     }
 ): CopiedReportDraft => {
-    const rest: Partial<Report> = { ...source }
+    const rest: Partial<Report> & {
+        ai_transcript?: string
+        ai_transcript_saved_at?: string
+        ai_audio_file_path?: string
+        ai_audio_file_name?: string
+        ai_audio_mime_type?: string
+        ai_audio_saved_at?: string
+    } = { ...source }
     delete rest.id
     delete rest.created_at
     delete rest.updated_at
+    delete rest.ai_visit_memo
+    delete rest.ai_visit_memo_saved_at
     delete rest.ai_transcript
     delete rest.ai_transcript_saved_at
     delete rest.ai_audio_file_path

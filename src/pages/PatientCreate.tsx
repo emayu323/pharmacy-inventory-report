@@ -2,17 +2,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, User as UserIcon, Building2 } from 'lucide-react'
-import { useAuth } from '../contexts/authContext'
 import type { Institution, InstitutionType, Gender } from '../types'
-import { createPatient, isLocalPatientStorage } from '../patientRepository'
+import { createPatient } from '../patientRepository'
 import { listInstitutions } from '../institutionRepository'
 import toast from 'react-hot-toast'
 import { calculateAge } from '../utils'
 
 export default function PatientCreate() {
     const navigate = useNavigate()
-    const { user } = useAuth()
-    const [isLocalStorageMode] = useState(isLocalPatientStorage)
     const [institutions, setInstitutions] = useState<Institution[]>([])
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
@@ -94,8 +91,6 @@ export default function PatientCreate() {
         try {
             setLoading(true)
 
-            if (!isLocalStorageMode && !user) throw new Error('No authenticated user')
-
             const data = await createPatient({
                 name: formData.name,
                 kana: formData.kana,
@@ -112,8 +107,7 @@ export default function PatientCreate() {
                 care_manager: formData.care_manager,
                 visiting_nursing_station_name: formData.visiting_nursing_station_name,
                 pharmacy_name: formData.pharmacy_name,
-                is_active: true,
-                user_id: user?.id
+                is_active: true
             })
 
             toast.success('患者登録を行いました')

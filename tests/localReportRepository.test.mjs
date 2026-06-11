@@ -40,12 +40,8 @@ test('saves, reads, updates, and indexes report snapshots in SQLite', async () =
             next_visit_date: '2026-06-24',
             medication_instruction: '朝薬服用後の眠気について主治医へ共有。',
             regular_medication_supply_until: '2026-07-07',
-            ai_transcript: '主訴等: 眠気の訴えあり。',
-            ai_transcript_saved_at: '2026-06-10T12:00:00.000Z',
-            ai_audio_file_path: '/tmp/audio/local-report.webm',
-            ai_audio_file_name: 'local-report.webm',
-            ai_audio_mime_type: 'audio/webm',
-            ai_audio_saved_at: '2026-06-10T12:01:00.000Z'
+            ai_visit_memo: '主訴等: 眠気の訴えあり。',
+            ai_visit_memo_saved_at: '2026-06-10T12:00:00.000Z'
         }))
 
         assert.match(saved.id, /^local-report-/)
@@ -56,8 +52,7 @@ test('saves, reads, updates, and indexes report snapshots in SQLite', async () =
         const fetched = getReportById(initialized.db, saved.id)
         assert.equal(fetched?.patient_name, '鈴木 一郎')
         assert.equal(fetched?.medication_instruction, '朝薬服用後の眠気について主治医へ共有。')
-        assert.equal(fetched?.ai_transcript, '主訴等: 眠気の訴えあり。')
-        assert.equal(fetched?.ai_audio_file_path, '/tmp/audio/local-report.webm')
+        assert.equal(fetched?.ai_visit_memo, '主訴等: 眠気の訴えあり。')
 
         const medicationRows = initialized.db.prepare(`
             SELECT category, name

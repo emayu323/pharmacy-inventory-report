@@ -1,6 +1,5 @@
 import { useCallback, useState, useEffect } from 'react'
 import { useAuth } from '../contexts/authContext'
-import { supabase } from '../supabase'
 import { Bot, Building2, Copy, Database, Download, Edit2, Eye, EyeOff, FolderSync, Lock, Plus, RefreshCw, RotateCcw, Save, Trash2, Upload, User as UserIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { AppSettings, Patient, Report, TextTemplate, TextTemplateTarget } from '../types'
@@ -8,7 +7,7 @@ import { deleteTextTemplate, listTextTemplates, saveTextTemplate } from '../temp
 import { getTextTemplateTargetLabel, TEXT_TEMPLATE_TARGETS } from '../templateTargets'
 import { clearLocalPin, DEFAULT_APP_SETTINGS, ensureBackupKey, getAppSettings, rotateBackupKey, saveAppSettings, setLocalPin } from '../appSettingsRepository'
 import { createEncryptedLocalBackup, restoreEncryptedLocalBackup, type LocalBackupSummary } from '../localBackupRepository'
-import { getNativeBridge, type NativeAiEnvironmentStatus, type NativeBackupSummary, type NativeDrugMasterStatus, type NativeSecurityStatus } from '../nativeBridge'
+import { getNativeBridge, type NativeAiEnvironmentStatus, type NativeBackupSummary, type NativeDrugMasterStatus, type NativeSecurityStatus, type NativeUpdateStatus } from '../nativeBridge'
 import { createAiSetupGuide, type AiSetupStep } from '../aiSetupGuide'
 import { createBackupKeyLedgerTsv } from '../backupKeyLedger'
 import { isLocalPatientStorage, listDeletedPatients, restorePatient } from '../patientRepository'
@@ -20,7 +19,6 @@ type BackupSummaryView = LocalBackupSummary | NativeBackupSummary
 export default function Settings() {
     const { user } = useAuth()
     const [displayName, setDisplayName] = useState('')
-    const [isLoading, setIsLoading] = useState(false)
     const [settingsLoading, setSettingsLoading] = useState(false)
     const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS)
     const [backupPassword, setBackupPassword] = useState('')
@@ -38,10 +36,13 @@ export default function Settings() {
     const [aiEnvironmentLoading, setAiEnvironmentLoading] = useState(false)
     const [securityStatus, setSecurityStatus] = useState<NativeSecurityStatus | null>(null)
     const [securityLoading, setSecurityLoading] = useState(false)
+    const [updateStatus, setUpdateStatus] = useState<NativeUpdateStatus | null>(null)
+    const [updateChecking, setUpdateChecking] = useState(false)
     const [hasNativeDrugMaster, setHasNativeDrugMaster] = useState(false)
     const [hasNativeBackup, setHasNativeBackup] = useState(false)
     const [hasNativeAi, setHasNativeAi] = useState(false)
     const [hasNativeSecurity, setHasNativeSecurity] = useState(false)
+    const [hasNativeUpdates, setHasNativeUpdates] = useState(false)
     const [showBackupKey, setShowBackupKey] = useState(false)
     const [pinForm, setPinForm] = useState({
         enablePin: false,
@@ -135,9 +136,11 @@ export default function Settings() {
         setHasNativeBackup(Boolean(bridge?.backups))
         setHasNativeAi(Boolean(bridge?.ai))
         setHasNativeSecurity(Boolean(bridge?.security))
-        if (!bridge?.drugMaster && !bridge?.ai && !bridge?.security) return
+        setHasNativeUpdates(Boolean(bridge?.updates))
+        if (!bridge?.drugMaster && !bridge?.ai && !bridge?.security && !bridge?.updates) return
 
         let cancelled = false
+        let unsubscribeUpdates: (() => void) | undefined
         if (bridge.drugMaster) {
             bridge.drugMaster.getStatus()
                 .then(status => {
@@ -165,33 +168,24 @@ export default function Settings() {
                     console.error(error)
                 })
         }
+        if (bridge.updates) {
+            bridge.updates.getStatus()
+                .then(status => {
+                    if (!cancelled) setUpdateStatus(status)
+                })
+                .catch(error => {
+                    console.error(error)
+                })
+            unsubscribeUpdates = bridge.updates.onStatusChanged(status => {
+                if (!cancelled) setUpdateStatus(status)
+            })
+        }
 
         return () => {
             cancelled = true
+            unsubscribeUpdates?.()
         }
     }, [])
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setIsLoading(true)
-
-        try {
-            const { error } = await supabase.auth.updateUser({
-                data: { display_name: displayName }
-            })
-
-            if (error) throw error
-
-            toast.success('設定を保存しました')
-            // Refresh logic might be handled by AuthProvider subscription automatically
-        } catch (error) {
-            console.error(error)
-            const message = error instanceof Error ? error.message : '不明なエラー'
-            toast.error(`保存に失敗しました: ${message}`)
-        } finally {
-            setIsLoading(false)
-        }
-    }
 
     const resetTemplateForm = () => {
         setTemplateForm({
@@ -269,17 +263,10 @@ export default function Settings() {
                 pharmacy_fax: appSettings.pharmacy_fax,
                 google_drive_folder: appSettings.google_drive_folder,
                 ai_mode_enabled: appSettings.ai_mode_enabled,
-                ai_consent_mode_enabled: appSettings.ai_consent_mode_enabled,
-                ai_save_audio_enabled: appSettings.ai_save_audio_enabled,
-                ai_save_transcript_enabled: appSettings.ai_save_transcript_enabled,
                 ai_ollama_url: appSettings.ai_ollama_url,
                 ai_ollama_model: appSettings.ai_ollama_model,
-                ai_whisper_health_url: appSettings.ai_whisper_health_url,
-                ai_whisper_transcribe_url: appSettings.ai_whisper_transcribe_url,
-                ai_whisper_file_field: appSettings.ai_whisper_file_field,
                 ai_auto_start_enabled: appSettings.ai_auto_start_enabled,
                 ai_ollama_start_command: appSettings.ai_ollama_start_command,
-                ai_whisper_start_command: appSettings.ai_whisper_start_command,
                 lock_timeout_minutes: appSettings.lock_timeout_minutes
             })
 
@@ -553,6 +540,30 @@ export default function Settings() {
         }
     }
 
+    const handleUpdateCheck = async () => {
+        const bridge = getNativeBridge()
+        if (!bridge?.updates) {
+            toast.error('ローカルアプリで開いてください')
+            return
+        }
+
+        try {
+            setUpdateChecking(true)
+            const status = await bridge.updates.checkNow()
+            setUpdateStatus(status)
+            if (status.status === 'error') {
+                toast.error(status.lastError || status.message || '更新確認に失敗しました')
+            } else {
+                toast.success(status.message || '更新状態を確認しました')
+            }
+        } catch (error) {
+            console.error(error)
+            toast.error('更新状態を確認できませんでした')
+        } finally {
+            setUpdateChecking(false)
+        }
+    }
+
     const handleRestorePatient = async (patient: Patient) => {
         try {
             setDeletedItemsLoading(true)
@@ -601,7 +612,7 @@ export default function Settings() {
                     プロフィール設定
                 </h3>
 
-                <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.5rem' }}>
+                <div style={{ display: 'grid', gap: '1.5rem' }}>
                     <div>
                         <label className="label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 500 }}>
                             メールアドレス
@@ -614,7 +625,7 @@ export default function Settings() {
                             style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text-secondary)', cursor: 'not-allowed' }}
                         />
                         <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
-                            メールアドレスの変更はできません
+                            ローカルアプリではオンライン認証を使用しません
                         </p>
                     </div>
 
@@ -625,27 +636,15 @@ export default function Settings() {
                         <input
                             type="text"
                             value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
+                            disabled
                             className="input"
-                            placeholder="例: 山田 太郎"
+                            style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text-secondary)', cursor: 'not-allowed' }}
                         />
                         <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
-                            報告書の「担当薬剤師」欄に自動入力されます
+                            報告書の「担当薬剤師」欄は、報告書作成画面で入力します
                         </p>
                     </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={isLoading}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                        >
-                            <Save size={18} />
-                            {isLoading ? '保存中...' : '保存する'}
-                        </button>
-                    </div>
-                </form>
+                </div>
             </section>
 
             <section className="card" style={{ padding: '2rem', marginTop: '1.5rem' }}>
@@ -929,6 +928,51 @@ export default function Settings() {
 
                     <div>
                         <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <RefreshCw size={18} />
+                            アプリ更新
+                        </h4>
+                        <div style={{
+                            display: 'grid',
+                            gap: '0.75rem',
+                            padding: '1rem',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: 'var(--radius-md)',
+                            backgroundColor: 'var(--color-bg)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                <div>
+                                    <div style={{ fontWeight: 700, color: getUpdateStatusColor(updateStatus?.status) }}>
+                                        {getUpdateStatusLabel(updateStatus?.status)}
+                                    </div>
+                                    <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                                        {updateStatus?.message || (hasNativeUpdates ? '更新状態を確認できます' : 'ローカルアプリで確認')}
+                                    </div>
+                                    <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem', marginTop: '0.25rem' }}>
+                                        現在のバージョン: {updateStatus?.currentVersion || '-'}
+                                        {updateStatus?.updateVersion ? ` / 更新版: ${updateStatus.updateVersion}` : ''}
+                                    </div>
+                                    {updateStatus?.lastCheckedAt && (
+                                        <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem', marginTop: '0.25rem' }}>
+                                            最終確認: {formatDateTime(updateStatus.lastCheckedAt)}
+                                        </div>
+                                    )}
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost"
+                                    onClick={handleUpdateCheck}
+                                    disabled={!hasNativeUpdates || updateChecking}
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                                >
+                                    <RefreshCw size={16} />
+                                    {updateChecking ? '確認中...' : '更新を確認'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Bot size={18} />
                             AIモード
                         </h4>
@@ -944,48 +988,10 @@ export default function Settings() {
                                 <input
                                     type="checkbox"
                                     checked={appSettings.ai_mode_enabled}
-                                    onChange={(e) => setAppSettings(prev => ({
-                                        ...prev,
-                                        ai_mode_enabled: e.target.checked,
-                                        ai_consent_mode_enabled: e.target.checked ? prev.ai_consent_mode_enabled : false,
-                                        ai_save_audio_enabled: e.target.checked ? prev.ai_save_audio_enabled : false,
-                                        ai_save_transcript_enabled: e.target.checked ? prev.ai_save_transcript_enabled : false
-                                    }))}
+                                    onChange={(e) => setAppSettings(prev => ({ ...prev, ai_mode_enabled: e.target.checked }))}
                                 />
                                 AIモードを有効にする
                             </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: appSettings.ai_mode_enabled ? 'inherit' : 'var(--color-text-secondary)' }}>
-                                <input
-                                    type="checkbox"
-                                    disabled={!appSettings.ai_mode_enabled}
-                                    checked={appSettings.ai_mode_enabled && appSettings.ai_consent_mode_enabled}
-                                    onChange={(e) => setAppSettings(prev => ({ ...prev, ai_consent_mode_enabled: e.target.checked }))}
-                                />
-                                患者会話録音を使う
-                            </label>
-                            <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
-                                録音を使う場合は、薬局の運用ルールに従って同意確認を行います。初期設定では音声と文字起こしは保存しません。
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: appSettings.ai_mode_enabled ? 'inherit' : 'var(--color-text-secondary)' }}>
-                                    <input
-                                        type="checkbox"
-                                        disabled={!appSettings.ai_mode_enabled}
-                                        checked={appSettings.ai_mode_enabled && appSettings.ai_save_audio_enabled}
-                                        onChange={(e) => setAppSettings(prev => ({ ...prev, ai_save_audio_enabled: e.target.checked }))}
-                                    />
-                                    音声を保存する
-                                </label>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: appSettings.ai_mode_enabled ? 'inherit' : 'var(--color-text-secondary)' }}>
-                                    <input
-                                        type="checkbox"
-                                        disabled={!appSettings.ai_mode_enabled}
-                                        checked={appSettings.ai_mode_enabled && appSettings.ai_save_transcript_enabled}
-                                        onChange={(e) => setAppSettings(prev => ({ ...prev, ai_save_transcript_enabled: e.target.checked }))}
-                                    />
-                                    文字起こしを保存する
-                                </label>
-                            </div>
 
                             <div style={{
                                 display: 'grid',
@@ -1023,18 +1029,6 @@ export default function Settings() {
                                             placeholder="ollama serve"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 500 }}>
-                                            Whisper起動コマンド
-                                        </label>
-                                        <input
-                                            className="input"
-                                            value={appSettings.ai_whisper_start_command}
-                                            disabled={!appSettings.ai_mode_enabled}
-                                            onChange={(e) => setAppSettings(prev => ({ ...prev, ai_whisper_start_command: e.target.value }))}
-                                            placeholder="例: whisper-server --port 8178"
-                                        />
-                                    </div>
                                 </div>
                             </div>
 
@@ -1049,7 +1043,7 @@ export default function Settings() {
                                 <div>
                                     <div style={{ fontWeight: 700 }}>接続設定</div>
                                     <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginTop: '0.15rem' }}>
-                                        薬局PC内で起動しているOllama / Whisper系サーバーを指定します。
+                                        薬局PC内で起動しているOllamaを指定します。
                                     </div>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
@@ -1075,39 +1069,6 @@ export default function Settings() {
                                             placeholder="例: llama3.1:8b"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 500 }}>
-                                            WhisperヘルスURL
-                                        </label>
-                                        <input
-                                            className="input"
-                                            value={appSettings.ai_whisper_health_url}
-                                            onChange={(e) => setAppSettings(prev => ({ ...prev, ai_whisper_health_url: e.target.value }))}
-                                            placeholder="例: http://127.0.0.1:8178/health"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 500 }}>
-                                            Whisper文字起こしURL
-                                        </label>
-                                        <input
-                                            className="input"
-                                            value={appSettings.ai_whisper_transcribe_url}
-                                            onChange={(e) => setAppSettings(prev => ({ ...prev, ai_whisper_transcribe_url: e.target.value }))}
-                                            placeholder="例: http://127.0.0.1:8178/transcribe"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 500 }}>
-                                            Whisperファイル項目名
-                                        </label>
-                                        <input
-                                            className="input"
-                                            value={appSettings.ai_whisper_file_field}
-                                            onChange={(e) => setAppSettings(prev => ({ ...prev, ai_whisper_file_field: e.target.value }))}
-                                            placeholder="audio"
-                                        />
-                                    </div>
                                 </div>
                             </div>
 
@@ -1123,7 +1084,7 @@ export default function Settings() {
                                     <div>
                                         <div style={{ fontWeight: 700 }}>ローカルAI環境</div>
                                         <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginTop: '0.15rem' }}>
-                                            Ollama / Whisper / 処理時間目安
+                                            Ollama / 空き容量 / 処理時間目安
                                         </div>
                                     </div>
                                     <button
@@ -1140,7 +1101,6 @@ export default function Settings() {
                                 {aiEnvironmentStatus ? (
                                     <div style={{ display: 'grid', gap: '0.5rem' }}>
                                         <AiStatusLine label="Ollama" status={aiEnvironmentStatus.ollama.status} message={aiEnvironmentStatus.ollama.message} />
-                                        <AiStatusLine label="Whisper" status={aiEnvironmentStatus.whisper.status} message={aiEnvironmentStatus.whisper.message} />
                                         <AiStatusLine label="空き容量" status={getDiskAiStatus(aiEnvironmentStatus.disk.status)} message={aiEnvironmentStatus.disk.message} />
                                         <AiStatusLine label="PC性能" status="ready" message={`CPU ${aiEnvironmentStatus.performance.cpuCount}コア / ${aiEnvironmentStatus.performance.message}`} />
                                         <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
@@ -1621,6 +1581,25 @@ const getSecurityStatusColor = (status?: NativeSecurityStatus['dbProtection']['s
     if (status === 'protected') return '#166534'
     if (status === 'unprotected' || status === 'error') return '#991b1b'
     if (status === 'unknown' || status === 'not_windows') return '#92400e'
+    return 'var(--color-text-secondary)'
+}
+
+const getUpdateStatusLabel = (status?: NativeUpdateStatus['status']) => {
+    if (status === 'idle') return '最新状態を確認できます'
+    if (status === 'checking') return '確認中'
+    if (status === 'downloading') return 'ダウンロード中'
+    if (status === 'backup_running') return '更新前バックアップ中'
+    if (status === 'downloaded') return '更新準備済み'
+    if (status === 'installing') return '更新中'
+    if (status === 'error') return '確認できません'
+    if (status === 'disabled') return '無効'
+    return '未確認'
+}
+
+const getUpdateStatusColor = (status?: NativeUpdateStatus['status']) => {
+    if (status === 'downloaded' || status === 'idle') return '#166534'
+    if (status === 'error') return '#991b1b'
+    if (status === 'checking' || status === 'downloading' || status === 'backup_running' || status === 'installing') return '#92400e'
     return 'var(--color-text-secondary)'
 }
 

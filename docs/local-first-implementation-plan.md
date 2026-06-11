@@ -11,17 +11,17 @@
 ## 2. 推奨技術構成
 
 - UI: 既存React/Viteを継続
-- Windowsローカルアプリ: TauriまたはElectron
+- Windowsローカルアプリ: Electron
 - ローカルDB: SQLite
 - ローカルAPI/DBアクセス: デスクトップアプリ側のバックエンド
-- AI音声認識: Whisper系ローカル実行
+- AI補助: Ollamaローカル実行。初期版は訪問メモのテキスト入力のみ。
 - ローカルLLM: Ollama
 - 配布入口: Vercel
 - バックアップ: 暗号化ZIPまたは暗号化DBエクスポート
 
-Tauri/Electronの選定は技術検証で決める。既存React資産を流用しやすく、Windowsインストーラー、自動起動、ローカルプロセス管理、ファイル操作、印刷/PDF、アップデート配布が実現しやすい方を採用する。
+Electronを正式採用する。既存React資産を流用し、Windowsインストーラー、自動起動、ローカルプロセス管理、ファイル操作、印刷、アップデート配布をElectron側で扱う。
 
-最優先の選定基準は印刷制御とする。医療機関向け/ケアマネ向けの2通出力、A4レイアウト再現性、印刷ダイアログ制御を先に検証する。Electronは `webContents.print` が比較的枯れているため有力候補とし、Tauri採用時はWebView2印刷APIの挙動を必ず確認する。
+帳票はHTML印刷を継続する。医療機関向け/ケアマネ向けの2通出力、A4レイアウト再現性、印刷ダイアログ制御はElectronと `react-to-print` の組み合わせで検証する。
 
 ローカルDB本体の暗号化は、SQLCipher採用またはBitLocker有効化を導入要件にする案を比較する。初期版では少なくともBitLocker有効化を導入チェック項目に入れる。
 
@@ -84,14 +84,13 @@ Tauri/Electronの選定は技術検証で決める。既存React資産を流用�
 - `ReportEdit.tsx` は患者氏名、生年月日、性別、訪問日、担当薬剤師が揃った報告書を2秒デバウンスで自動保存する。新規報告書は初回自動保存後のIDを保持し、以後は同じ下書きを更新する。同一内容の重複保存はfingerprintで避ける。
 - `src/reportPatientMasterSync.ts` で報告書入力と患者マスタの差分を検出し、保存時に差分がある場合は「今回だけ変更」「患者マスタにも反映」「キャンセル」の3択を表示する。
 - 「患者マスタにも反映」を選んだ場合だけ `src/patientRepository.ts` 経由で患者マスタの氏名、生年月日、性別、医療機関、主治医、居宅介護支援事業所、ケアマネージャー、薬局名を更新する。報告書スナップショットは保存済み内容を維持する。
-- 前回報告書コピー時は固定情報と薬剤リストを引き継ぎ、主訴等、服薬指導内容、その他伝達事項、次回訪問予定日、申し送り事項、AI文字起こし/音声情報は空にする。
+- 前回報告書コピー時は固定情報と薬剤リストを引き継ぎ、主訴等、服薬指導内容、その他伝達事項、次回訪問予定日、申し送り事項、AI訪問メモは空にする。
 - ケアマネ向け印刷時に居宅介護支援事業所または事業所FAXが未入力なら、印刷を止めて基本情報欄を開き、今回報告書だけの一時入力または患者マスタ反映を選べる導線にする。
 - Web先行実装では `src/components/LocalPinLock.tsx` が起動時ロックと無操作ロックを担当する。
 - Web先行実装では `src/localBackupRepository.ts` が `localStorage` 上の患者、関係機関、報告書、定型文、設定をパスワード付きAES-GCM暗号化JSONとして作成/復元する。
-- 標準はSupabase保存のまま維持する。
-- mac開発デモ用に `VITE_REPORT_STORAGE=local` でブラウザ `localStorage` 保存へ切り替えられる。
-- `localStorage` はSQLite実装前の動作確認用であり、本番の正本DBとは扱わない。
-- ローカルデモ起動例: `VITE_ENABLE_TEST_MODE=true VITE_REPORT_STORAGE=local npm run dev -- --host 127.0.0.1 --port 5174`
+- アプリ本体はローカル保存のみとし、Electron環境ではSQLite、mac開発デモなどブラウザ単体では `localStorage` を使う。
+- `localStorage` はブラウザ開発デモ用であり、本番の正本DBとは扱わない。
+- ローカルデモ起動例: `npm run dev -- --host 127.0.0.1 --port 5174`
 
 主要テーブル候補:
 
@@ -134,7 +133,7 @@ Tauri/Electronの選定は技術検証で決める。既存React資産を流用�
 注意:
 
 - 薬価、後発品区分、経過措置、HOT/JANは初期版では使わない。
-- 現行 `scripts/upload_drugs.js` はSupabaseアップロード用なので、ローカルDB取り込み用に別スクリプト化する。
+- 旧 `scripts/upload_drugs.js` はSupabaseアップロード用のため `legacy/supabase/scripts/` に退避し、ローカルDB取り込みは別スクリプトで扱う。
 
 完了条件:
 
@@ -150,7 +149,7 @@ Tauri/Electronの選定は技術検証で決める。既存React資産を流用�
 - SQLite取り込み時に検索用正規化文字列を保存し、全角/半角、長音、大小かな、スペース差異を吸収する。
 - Electron環境では、設定画面の「CSVを選択して更新」から支払基金CSVを選択し、Shift_JIS/CP932として読み込んで `drug_master` を更新する。
 - 薬剤マスタ更新は1トランザクションで実行し、取り込み可能行がない場合や途中失敗時は既存マスタを残す。
-- 支払基金マスタに該当する候補がある場合はSupabaseへ問い合わせない。
+- 支払基金マスタに該当する候補がある場合は外部DBへ問い合わせない。
 - 臨時薬・その他では、薬剤候補選択時にマスタ単位を自動入力する。
 - ローカルDB版では、この検索APIの裏側をSQLite `drug_master` に差し替える。
 
@@ -300,6 +299,7 @@ Tauri/Electronの選定は技術検証で決める。既存React資産を流用�
 - 導入コード入力画面を作る。
 - 導入コードの発行、失効、利用台数管理のための最小管理表を用意する。
 - Windowsインストーラーのダウンロード導線を作る。
+- 日常利用の主導線はWindowsデスクトップショートカットとし、Vercel入口は初回導入、更新案内、接続確認に限定する。
 - ローカルアプリは `127.0.0.1` の固定ポート候補でHTTP APIを起動する。
 - VercelページからローカルHTTP APIへ接続確認する。CORSはVercelドメインとlocalhostを標準許可し、カスタム入口ドメインは `LOCAL_HEALTH_ALLOWED_ORIGINS` で追加する。
 - ポート競合時に複数ポート候補を順に試す。
@@ -318,10 +318,12 @@ Tauri/Electronの選定は技術検証で決める。既存React資産を流用�
 - Vercelアカウントは利用者に共有しない。
 - インストーラー本体はサイズに応じてVercel、GitHub Releases、または専用ストレージに置く。
 - 使用者からはVercel上の「Windows版をインストール」ボタンだけに見せる。
+- Vercel↔localhostブリッジは凍結機能として残し、バグ修正以外の新規投資はしない。
 
 完了条件:
 
 - Vercel URLからインストール案内、接続確認、更新案内まで辿れる。
+- 普段の操作はWindowsデスクトップショートカットから開始できる。
 
 現行Web版での先行実装:
 
@@ -346,6 +348,11 @@ Tauri/Electronの選定は技術検証で決める。既存React資産を流用�
 - Windowsパッケージ版の起動時にElectronのLogin Item設定を有効化し、Windowsログイン後にローカルアプリが自動起動してローカルDB/ローカルAPI/AI状態確認が戻るようにする。検証や管理用に `LOCAL_DISABLE_WINDOWS_AUTO_LAUNCH=1` で無効化できる。
 - `.github/workflows/windows-installer.yml` を追加し、GitHub ActionsのWindows runnerで `npm run test:local-app`、`npm run dist:win`、更新前バックアップCLIスモーク、インストーラーartifact保存を実行できるようにする。
 - CIのコード署名は `WINDOWS_CSC_LINK` と `WINDOWS_CSC_KEY_PASSWORD` のSecretsが設定されている場合に使う。秘密情報はリポジトリへ置かない。
+- `electron-updater` を導入し、署名有効化後は起動時に更新確認、バックグラウンドダウンロード、アプリ終了時の `quitAndInstall` を行う。既定では `LOCAL_AUTO_UPDATE_ENABLED` と `LOCAL_CODE_SIGNING_ENABLED` が揃わない限り無効。
+- 自動更新インストール前に `preUpdateBackupCommand` 経由で更新前バックアップを作成する。バックアップ失敗時はその回の自動更新を見送り、次回起動時に再確認する。
+- `package.json` のWindows publish先を公開リリース用リポジトリ `emayu323/pharmacy-report-releases` に向け、`dist:win:publish` を追加する。
+- CIには、タグpushかつ `AUTO_UPDATE_RELEASE_PUBLISH_ENABLED=1` と `LOCAL_CODE_SIGNING_ENABLED=1` の場合だけ `dist:win:publish` を実行する段を用意する。
+- 設定画面に現在バージョン、更新状態、手動の「更新を確認」ボタンを追加する。
 - `docs/windows-installer-build.md` に、macでの同梱物検証、WindowsでのNSIS作成、コード署名、アップロード、Vercel環境変数設定の手順をまとめる。
 - `docs/vercel-production-env.md` に、本番環境変数、Supabase台数管理用の任意環境変数、設定/確認コマンドをまとめる。
 - `scripts/verify_vercel_production_env.mjs` と `npm run verify:vercel-env` を追加し、`INSTALL_CODE_REGISTRY`、`WINDOWS_INSTALLER_URL`、任意のSupabase台数管理envを本番投入前に検査できるようにする。検査結果にはService Role Keyを出さない。
@@ -367,22 +374,23 @@ Tauri/Electronの選定は技術検証で決める。既存React資産を流用�
 未実装:
 
 - GitHub ActionsまたはWindows実機でのNSISインストーラー作成実行、署名Secrets設定、アップロード実行。
+- リリース成果物専用の公開GitHubリポジトリ作成と `RELEASES_GITHUB_TOKEN` 設定。
+- コード署名有効化後のWindows実機での自動更新スモーク。
 - 実値を使ったVercel本番環境変数の設定。
 
 ## 11. フェーズ9: AIモード
 
 目的:
 
-- ローカル音声認識とローカルLLMにより、主訴等と服薬指導内容の入力を補助する。
+- 訪問メモとローカルLLMにより、主訴等と服薬指導内容の入力を補助する。
 
 作業:
 
 - AIモードのオン/オフを追加する。
-- Ollama、Whisper系エンジン、必要モデル、空き容量、PC性能の状態確認を行う。
-- GPUなしPCでは処理に時間がかかるため、録音時間に対する推定処理時間の目安を表示する。
+- Ollama、必要モデル、空き容量、PC性能の状態確認を行う。
+- 長い訪問メモでは処理に時間がかかる可能性があるため、処理時間の目安を表示する。
 - 足りないものを順番に案内するセットアップ画面を作る。
-- 録音開始、一時停止、再開、停止を実装する。
-- 停止後にローカル文字起こしを行う。
+- 訪問メモを入力または貼り付けできる。
 - LLMで主訴等、服薬指導内容へ振り分ける。
 - 空欄なら直接入力、既存文があれば追記/置換/キャンセルを選ばせる。
 - AI失敗時はエラー表示して通常手入力に戻す。
@@ -390,43 +398,39 @@ Tauri/Electronの選定は技術検証で決める。既存React資産を流用�
 完了条件:
 
 - AIなしでも通常機能が使える。
-- AIモードON時に録音から2項目への反映までできる。
-- 音声/文字起こしは初期設定では保存されない。
+- AIモードON時に訪問メモから2項目への反映までできる。
+- 訪問メモは報告書に保存され、前回報告書コピー時は引き継がない。
 
 現行先行実装:
 
-- `app_settings` にAIモード、患者会話録音、音声保存、文字起こし保存の設定を追加する。初期値はすべてOFF。
-- 設定画面にAIモードON/OFF、患者会話録音、音声保存、文字起こし保存の切り替えを追加する。
-- 設定画面にローカルAI環境の状態確認を追加する。Electron環境ではOllama、Whisper系エンジン、空き容量、CPU数、処理時間目安を確認できる。
+- `app_settings` にAIモード、Ollama URL、Ollamaモデル、自動起動、Ollama起動コマンドの設定を追加する。AIモード初期値はOFF。
+- 設定画面にAIモードON/OFF、Ollama接続設定、自動起動設定を追加する。
+- 設定画面にローカルAI環境の状態確認を追加する。Electron環境ではOllama、空き容量、CPU数、処理時間目安を確認できる。
 - Electron IPC/Preload経由で `ai.getStatus()` を呼び出せる。
 - ElectronのローカルヘルスAPIはAI状態を起動時に確認し、AI未セットアップの場合も通常機能を開ける状態として返す。
-- GPUなしPC向けに、文字起こし時間が録音時間と同等から数倍かかる可能性がある旨を表示する。
+- GPUなしPC向けに、長い訪問メモでは処理に時間がかかる可能性がある旨を表示する。
 - AI未セットアップでも、設定保存、ローカルDB、バックアップ、通常帳票機能は止めない。
 - 報告書編集画面の指導内容セクションにAI下書きパネルを追加する。
-- AIモードONかつ患者会話録音ONの時だけ、録音開始、一時停止、再開、停止を操作できる。
-- Electron IPC/Preload経由で `ai.transcribeAndDraft()` と `ai.createDraftFromTranscript()` を呼び出せる。
-- 設定画面からOllama URL、Ollamaモデル、WhisperヘルスURL、Whisper文字起こしURL、Whisperファイル項目名を保存できる。設定値はAIモードOFFでも保持する。
-- ElectronのAI状態確認、文字起こし、LLM抽出は、DBに保存されたローカルAI接続設定を使用する。未設定時は環境変数/既定値へフォールバックする。
-- Whisper文字起こしURLが設定されている場合、録音停止後に音声をローカルWhisper系エンジンへPOSTし、文字起こし結果から下書きを作成する。
+- AIモードONの時だけ、訪問メモからAI下書きを作成できる。
+- Electron IPC/Preload経由で `ai.createDraftFromVisitMemo()` を呼び出せる。
+- 設定画面からOllama URL、Ollamaモデルを保存できる。設定値はAIモードOFFでも保持する。
+- ElectronのAI状態確認、LLM抽出は、DBに保存されたローカルAI接続設定を使用する。未設定時は環境変数/既定値へフォールバックする。
 - Ollamaモデルが設定されている場合、Ollama `/api/chat` で主訴等と服薬指導内容だけをJSON抽出する。未設定または失敗時はルールベース下書きにフォールバックする。
-- 文字起こしを手入力または貼り付けて下書き作成できる。ブラウザのmac開発デモではこの経路で確認できる。
+- 訪問メモを手入力または貼り付けて下書き作成できる。ブラウザのmac開発デモではこの経路で確認できる。
 - AI下書きは主訴等と服薬指導内容だけに限定し、副作用、残薬、服薬状況は自動反映しない。
 - 空欄は直接反映し、既存文がある場合は追記/置換/キャンセルを選ばせる。
 - AI下書きを反映した項目には一時的に「AI反映済み」を表示し、直前のAI反映を「元に戻す」できる。反映後に手入力で編集された場合は自動復元しない。
-- 設定画面からローカルAIサーバーの自動起動ON/OFF、Ollama起動コマンド、Whisper起動コマンドを保存できる。初期値は自動起動OFF、Ollamaは `ollama serve`、Whisperは空欄。
+- 設定画面からローカルAIサーバーの自動起動ON/OFF、Ollama起動コマンドを保存できる。初期値は自動起動OFF、Ollamaは `ollama serve`。
 - Electron起動時に、AIモードONかつ自動起動ONの場合だけ、保存された起動コマンドをshellなしでプロセス起動する。同一プロセス種別は重複起動せず、アプリ終了時にアプリが起動したプロセスを停止する。
 - 検証や障害対応用に `LOCAL_DISABLE_AI_AUTO_START=1` で自動起動を無効化できる。
-- 文字起こし保存ONの場合、報告書保存時に文字起こし本文と保存日時を報告書スナップショットへ保存する。前回報告書コピー時はAI文字起こしを引き継がない。
-- 音声保存ONの場合、録音停止後の音声Blobを報告書保存時まで保持し、Electron環境では音声ファイルを `userData/ai-artifacts/audio` 配下へ保存して、報告書にはファイルパス、ファイル名、MIME、保存日時だけを保存する。DBへ音声バイナリは入れない。
-- Electronの音声保存先は `LOCAL_AI_ARTIFACT_DIR` で検証用に差し替えできる。
-- 設定画面にセットアップ手順を表示する。AIモード、Ollama起動、Ollamaモデル、Whisper接続設定、Whisper起動、処理時間目安を、状態確認結果に応じて完了/対応必要/確認待ちで表示する。
-- Ollamaモデル未ダウンロード時は `ollama pull <モデル名>` を提示し、Ollama/Whisper起動コマンドもコピーできる。実際のモデル取得は薬局Wi-Fi環境で利用者が実行する。
+- 報告書保存時に訪問メモ本文と保存日時を報告書スナップショットへ保存する。前回報告書コピー時はAI訪問メモを引き継がない。
+- 設定画面にセットアップ手順を表示する。AIモード、Ollama起動、Ollamaモデル、処理時間目安を、状態確認結果に応じて完了/対応必要/確認待ちで表示する。
+- Ollamaモデル未ダウンロード時は `ollama pull <モデル名>` を提示し、Ollama起動コマンドもコピーできる。実際のモデル取得は薬局Wi-Fi環境で利用者が実行する。
 - `npm run test:local-ai-text -- --ollama-model <モデル名>` で、実運用Ollamaとのtext-only結合テストを実行できる。
-- `npm run test:local-ai-audio -- --ollama-model <モデル名> --whisper-health-url <URL> --whisper-transcribe-url <URL> --audio-path <音声ファイル>` で、Whisper文字起こしからOllama下書き作成まで確認できる。内部実装は `npm run test:local-ai-integration` と共通。
-- 結合テストではOllama状態確認、指定モデル確認、Ollama `/api/chat` の2項目JSON抽出を確認する。音声パス指定時はWhisper文字起こしからOllama下書き作成まで確認する。
-- `test:local-ai-text` と `test:local-ai-audio` は、現地PCでの結合テスト結果を `output/local-ai-integration-result.json` に保存する。証跡には接続状態と成否だけを保存し、文字起こし本文、AI下書き本文、音声本体は保存しない。
+- 結合テストではOllama状態確認、指定モデル確認、Ollama `/api/chat` の2項目JSON抽出を確認する。
+- `test:local-ai-text` は、現地PCでの結合テスト結果を `output/local-ai-integration-result.json` に保存する。証跡には接続状態と成否だけを保存し、訪問メモ本文とAI下書き本文は保存しない。
 - 結合テスト手順は `docs/local-ai-integration-check.md` に記載する。
-- `npm run release:check -- --ai-receipt <証跡JSON>` で、現地PCのAI結合テスト完了をリリース前チェックに含められるようにする。証跡JSONに文字起こし本文、AI下書き本文、音声パス/バイナリ系フィールドが含まれる場合は失敗として扱う。
+- `npm run release:check -- --ai-receipt <証跡JSON>` で、現地PCのAI結合テスト完了をリリース前チェックに含められるようにする。証跡JSONに訪問メモ本文、AI下書き本文が含まれる場合は失敗として扱う。
 
 未実装:
 

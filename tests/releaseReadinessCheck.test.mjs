@@ -16,6 +16,7 @@ const REQUIRED_FILES = [
     'docs/vercel-production-env.md',
     'docs/local-ai-integration-check.md',
     'electron/main.mjs',
+    'electron/autoUpdateService.mjs',
     'electron/localSecurityStatus.mjs',
     'electron/preUpdateBackupCommand.mjs',
     'electron/windowsAutoLaunch.mjs',
@@ -32,7 +33,6 @@ const REQUIRED_FILES = [
     'scripts/source_publication_checklist.mjs',
     'scripts/release_handoff.mjs',
     'src/data/drug-master.generated.json',
-    'src/authMode.ts',
     'src/main.tsx',
     'src/pages/EntryPortal.tsx',
     'src/pages/ReportEdit.tsx',
@@ -53,6 +53,7 @@ const REQUIRED_SCRIPTS = [
     'build',
     'build:electron',
     'dist:win',
+    'dist:win:publish',
     'verify:electron-package',
     'verify:vercel-env',
     'release:check',
@@ -66,8 +67,7 @@ const REQUIRED_SCRIPTS = [
     'demo:mac-readiness',
     'demo:mac-smoke',
     'test:local-ai-integration',
-    'test:local-ai-text',
-    'test:local-ai-audio'
+    'test:local-ai-text'
 ]
 
 test('release readiness check reports external pending items without failing normal mode', () => {
@@ -141,7 +141,6 @@ test('release readiness check includes concrete next actions for external pendin
         assert.equal(aiAction?.docs, 'docs/local-ai-integration-check.md')
         assert.deepEqual(aiAction?.commands, [
             'npm run test:local-ai-text -- --ollama-model <model>',
-            'npm run test:local-ai-audio -- --ollama-model <model> --whisper-health-url http://127.0.0.1:8178/health --whisper-transcribe-url http://127.0.0.1:8178/transcribe --audio-path <sample.webm>',
             'npm run release:check -- --ai-receipt output/local-ai-integration-result.json'
         ])
     } finally {
@@ -444,20 +443,19 @@ test('release readiness check fails invalid env or AI receipt without leaking se
     }
 })
 
-test('release readiness check rejects AI receipts containing transcript draft or audio details', () => {
+test('release readiness check rejects AI receipts containing visit memo or draft details', () => {
     const tmpDir = createFixture()
     const receiptPath = path.join(tmpDir, 'unsafe-ai-receipt.json')
-    const transcriptText = '患者会話の文字起こし本文'
+    const visitMemoText = '患者会話の訪問メモ本文'
     fs.writeFileSync(receiptPath, JSON.stringify({
         created_at: '2026-06-11T09:00:00.000Z',
         ok: true,
         skipped: false,
-        transcript: transcriptText,
+        visitMemo: visitMemoText,
         draft: {
             source: 'local_llm',
             chief_complaint: '朝薬服用後の眠気あり'
-        },
-        audioPath: '/tmp/patient-audio.webm'
+        }
     }))
 
     try {
@@ -471,7 +469,7 @@ test('release readiness check rejects AI receipts containing transcript draft or
         assert.equal(report.ok, false)
         assert.equal(check?.status, 'fail')
         assert.match(check?.message || '', /privacy/i)
-        assert.equal(JSON.stringify(report).includes(transcriptText), false)
+        assert.equal(JSON.stringify(report).includes(visitMemoText), false)
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true })
     }
@@ -536,15 +534,11 @@ test('release readiness check rejects incomplete AI receipts even when ok is tru
     }
 })
 
-test('release readiness check treats text-only local AI receipt as pending instead of failed', () => {
+test('release readiness check treats non-ready local AI receipt as pending instead of failed', () => {
     const tmpDir = createFixture()
-    const receiptPath = path.join(tmpDir, 'text-only-ai-receipt.json')
+    const receiptPath = path.join(tmpDir, 'pending-ai-receipt.json')
     fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture({
-        ready: false,
-        whisper: {
-            status: 'not_configured',
-            url: ''
-        }
+        ready: false
     })))
 
     try {
@@ -558,10 +552,8 @@ test('release readiness check treats text-only local AI receipt as pending inste
         assert.equal(report.ok, true)
         assert.equal(report.ready, false)
         assert.equal(check?.status, 'pending')
-        assert.match(check?.message || '', /text-only/i)
-        assert.match(check?.message || '', /Whisper/i)
-        assert.match(report.nextActions.find(item => item.id === 'local_ai_integration')?.description || '', /text-only/i)
-        assert.match(report.nextActions.find(item => item.id === 'local_ai_integration')?.description || '', /Whisper/i)
+        assert.match(check?.message || '', /訪問メモ/)
+        assert.match(report.nextActions.find(item => item.id === 'local_ai_integration')?.description || '', /ローカルAI結合テスト/)
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true })
     }
@@ -802,7 +794,7 @@ test('release readiness check keeps app routes inside authentication', () => {
     }
 })
 
-test('release readiness check requires native local storage to win over Supabase config', () => {
+test('release readiness check requires local-only app repositories', () => {
     const tmpDir = createFixture()
     writeFixtureFile(tmpDir, 'src/patientRepository.ts', [
         "import { getNativeBridge } from './nativeBridge'",
@@ -819,7 +811,7 @@ test('release readiness check requires native local storage to win over Supabase
         assert.equal(report.ok, false)
         assert.equal(storageCheck?.status, 'fail')
         assert.match(storageCheck?.message || '', /patientRepository/)
-        assert.match(storageCheck?.message || '', /getNativeBridge/)
+        assert.match(storageCheck?.message || '', /local storage only/)
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true })
     }
@@ -873,14 +865,15 @@ test('release readiness check requires previous report lookup to prefer visit da
     }
 })
 
-test('release readiness check requires Supabase previous report lookup to order by visit date first', () => {
+test('release readiness check rejects Supabase references in app source', () => {
     const tmpDir = createFixture()
     writeFixtureFile(tmpDir, 'src/reportRepository.ts', [
-        "import { selectLatestReportByVisitDate } from './reportSelection'",
+        "import { supabase } from './supabase'",
         "import { getNativeBridge } from './nativeBridge'",
-        "export const isLocalReportStorage = () => Boolean(getNativeBridge()) || getReportStorageMode() === 'local'",
-        'const localLatest = selectLatestReportByVisitDate(reports)',
-        "const supabaseLatest = supabase.from('reports').select('*').order('created_at', { ascending: false }).limit(1)"
+        "import { selectLatestReportByVisitDate } from './reportSelection'",
+        "export const isLocalReportStorage = () => true",
+        'const latest = selectLatestReportByVisitDate(reports)',
+        "const leaked = supabase.from('reports').select('*')"
     ].join('\n'))
 
     try {
@@ -888,12 +881,12 @@ test('release readiness check requires Supabase previous report lookup to order 
             rootDir: tmpDir,
             env: {}
         })
-        const selectionCheck = report.checks.find(item => item.id === 'latest_report_selection')
+        const storageCheck = report.checks.find(item => item.id === 'native_local_storage_priority')
 
         assert.equal(report.ok, false)
-        assert.equal(selectionCheck?.status, 'fail')
-        assert.match(selectionCheck?.message || '', /Supabase/)
-        assert.match(selectionCheck?.message || '', /visit_date/)
+        assert.equal(storageCheck?.status, 'fail')
+        assert.match(storageCheck?.message || '', /Supabase/)
+        assert.match(storageCheck?.message || '', /src\/reportRepository\.ts/)
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true })
     }
@@ -1043,6 +1036,9 @@ function createFixture(options = {}) {
         devDependencies: {
             '@vercel/config': '^0.5.2'
         },
+        dependencies: {
+            'electron-updater': '^6.8.9'
+        },
         scripts: packageScriptsFixture()
     }))
 
@@ -1076,17 +1072,11 @@ function aiReceiptFixture(overrides = {}) {
             requiredModel: 'llama3.1:8b',
             installedModelCount: 1
         },
-        whisper: {
-            status: 'ready',
-            url: 'http://127.0.0.1:8178/health'
-        },
         draft: {
             source: 'local_llm',
             chiefComplaintPresent: true,
             medicationInstructionPresent: true
         },
-        audioTested: false,
-        audioPathProvided: false,
         ...overrides
     }
 }
@@ -1118,6 +1108,9 @@ function workflowFixture() {
 runs-on: windows-latest
 node-version: 24
 npm run dist:win
+npm run dist:win:publish
+AUTO_UPDATE_RELEASE_PUBLISH_ENABLED
+LOCAL_CODE_SIGNING_ENABLED
 windows_pre_update_backup.ps1
 npm run release:check -- --format text
 release-readiness.txt
@@ -1137,6 +1130,7 @@ function packageScriptsFixture() {
     const scripts = Object.fromEntries(REQUIRED_SCRIPTS.map(script => [script, `echo ${script}`]))
     scripts['test:local-app'] = [
         'node --test --experimental-strip-types',
+        'tests/autoUpdateService.test.mjs',
         'tests/localSqliteBackupRepository.test.mjs',
         'tests/preUpdateBackupCommand.test.mjs',
         'tests/packageBuildConfig.test.mjs',
@@ -1179,7 +1173,6 @@ function fileContentFixture(file) {
             '    <Route path="/*" element=(',
             '      <AuthProvider>',
             '        <Routes>',
-            '          <Route path="/login" element={<Login />} />',
             '          <Route path="/" element={<App />}>',
             '            <Route path="reports" element={<ReportList />} />',
             '            <Route path="settings" element={<Settings />} />',
@@ -1242,16 +1235,17 @@ function fileContentFixture(file) {
     if (file === 'src/patientRepository.ts') {
         return [
             "import { getNativeBridge } from './nativeBridge'",
-            "export const isLocalPatientStorage = () => Boolean(getNativeBridge()) || getPatientStorageMode() === 'local'"
+            "export const isLocalPatientStorage = () => true",
+            'const bridge = getNativeBridge()'
         ].join('\n')
     }
     if (file === 'src/reportRepository.ts') {
         return [
             "import { getNativeBridge } from './nativeBridge'",
             "import { selectLatestReportByVisitDate } from './reportSelection'",
-            "export const isLocalReportStorage = () => Boolean(getNativeBridge()) || getReportStorageMode() === 'local'",
-            'const latest = selectLatestReportByVisitDate(reports)',
-            "const supabaseLatest = supabase.from('reports').select('*').order('visit_date', { ascending: false }).order('created_at', { ascending: false }).limit(1)"
+            "export const isLocalReportStorage = () => true",
+            'const bridge = getNativeBridge()',
+            'const latest = selectLatestReportByVisitDate(reports)'
         ].join('\n')
     }
     if (file === 'src/reportSelection.ts') {
@@ -1264,13 +1258,14 @@ function fileContentFixture(file) {
     if (file === 'src/institutionRepository.ts') {
         return [
             "import { getNativeBridge } from './nativeBridge'",
-            "export const isLocalInstitutionStorage = () => Boolean(getNativeBridge()) || getInstitutionStorageMode() === 'local'"
+            "export const isLocalInstitutionStorage = () => true",
+            'const bridge = getNativeBridge()'
         ].join('\n')
     }
     if (file === 'src/contexts/AuthProvider.tsx') {
         return [
-            "import { shouldUseLocalAuthMode } from '../authMode'",
-            'const isLocalAuthMode = shouldUseLocalAuthMode({ hasNativeBridge: Boolean(getNativeBridge()) })'
+            'const LOCAL_USER = { id: "local-user", user_metadata: { display_name: "ローカル利用者" } }',
+            '<AuthContext.Provider value={{ user: LOCAL_USER, loading: false }} />'
         ].join('\n')
     }
     if (file === 'public/manual.html') {

@@ -28,17 +28,10 @@ test('saves app settings and verifies hashed PIN in SQLite', async () => {
             backup_key: undefined,
             last_app_version: '',
             ai_mode_enabled: false,
-            ai_consent_mode_enabled: false,
-            ai_save_audio_enabled: false,
-            ai_save_transcript_enabled: false,
             ai_ollama_url: 'http://127.0.0.1:11434',
             ai_ollama_model: '',
-            ai_whisper_health_url: '',
-            ai_whisper_transcribe_url: '',
-            ai_whisper_file_field: 'audio',
             ai_auto_start_enabled: false,
             ai_ollama_start_command: 'ollama serve',
-            ai_whisper_start_command: '',
             pin_enabled: false,
             lock_timeout_minutes: 15
         })
@@ -48,15 +41,10 @@ test('saves app settings and verifies hashed PIN in SQLite', async () => {
             pharmacy_fax: '03-1111-2222',
             google_drive_folder: '/tmp/google-drive',
             ai_mode_enabled: true,
-            ai_consent_mode_enabled: true,
             ai_ollama_url: ' http://127.0.0.1:11434/ ',
             ai_ollama_model: ' llama3.1:8b ',
-            ai_whisper_health_url: ' http://127.0.0.1:8178/health ',
-            ai_whisper_transcribe_url: ' http://127.0.0.1:8178/transcribe ',
-            ai_whisper_file_field: ' file ',
             ai_auto_start_enabled: true,
             ai_ollama_start_command: ' ollama serve ',
-            ai_whisper_start_command: ' whisper-server\n--port 8178 ',
             last_app_version: ' 0.2.0 ',
             lock_timeout_minutes: 20
         })
@@ -64,32 +52,19 @@ test('saves app settings and verifies hashed PIN in SQLite', async () => {
         assert.equal(saved.last_app_version, '0.2.0')
         assert.equal(saved.lock_timeout_minutes, 20)
         assert.equal(saved.ai_mode_enabled, true)
-        assert.equal(saved.ai_consent_mode_enabled, true)
         assert.equal(saved.ai_ollama_url, 'http://127.0.0.1:11434')
         assert.equal(saved.ai_ollama_model, 'llama3.1:8b')
-        assert.equal(saved.ai_whisper_health_url, 'http://127.0.0.1:8178/health')
-        assert.equal(saved.ai_whisper_transcribe_url, 'http://127.0.0.1:8178/transcribe')
-        assert.equal(saved.ai_whisper_file_field, 'file')
         assert.equal(saved.ai_auto_start_enabled, true)
         assert.equal(saved.ai_ollama_start_command, 'ollama serve')
-        assert.equal(saved.ai_whisper_start_command, 'whisper-server --port 8178')
 
         const disabledAi = saveAppSettings(initialized.db, {
-            ai_mode_enabled: false,
-            ai_consent_mode_enabled: true,
-            ai_save_audio_enabled: true,
-            ai_save_transcript_enabled: true
+            ai_mode_enabled: false
         })
         assert.equal(disabledAi.ai_mode_enabled, false)
-        assert.equal(disabledAi.ai_consent_mode_enabled, false)
-        assert.equal(disabledAi.ai_save_audio_enabled, false)
-        assert.equal(disabledAi.ai_save_transcript_enabled, false)
         assert.equal(disabledAi.ai_ollama_url, 'http://127.0.0.1:11434')
         assert.equal(disabledAi.ai_ollama_model, 'llama3.1:8b')
-        assert.equal(disabledAi.ai_whisper_transcribe_url, 'http://127.0.0.1:8178/transcribe')
         assert.equal(disabledAi.ai_auto_start_enabled, true)
         assert.equal(disabledAi.ai_ollama_start_command, 'ollama serve')
-        assert.equal(disabledAi.ai_whisper_start_command, 'whisper-server --port 8178')
 
         const pinSettings = setLocalPin(initialized.db, '1234')
         assert.equal(pinSettings.pin_enabled, true)

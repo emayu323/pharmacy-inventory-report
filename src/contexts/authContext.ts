@@ -1,9 +1,20 @@
 import { createContext, useContext } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
+
+export type LocalAuthUser = {
+    id: string
+    email: string
+    user_metadata: {
+        display_name?: string
+    }
+}
+
+export type LocalAuthSession = {
+    user: LocalAuthUser
+}
 
 export type AuthContextType = {
-    session: Session | null
-    user: User | null
+    session: LocalAuthSession | null
+    user: LocalAuthUser | null
     loading: boolean
     signOut: () => Promise<void>
 }
@@ -11,7 +22,7 @@ export type AuthContextType = {
 export const AuthContext = createContext<AuthContextType>({
     session: null,
     user: null,
-    loading: true,
+    loading: false,
     signOut: async () => { },
 })
 
