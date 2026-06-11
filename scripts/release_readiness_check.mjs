@@ -161,6 +161,16 @@ const NEXT_ACTION_DETAILS = {
             'gh workflow run windows-installer.yml'
         ]
     },
+    auto_update_publish_prerequisites: {
+        description: '自動更新を公開リリースへ出す前に、公開リポジトリ、公開用Token、コード署名Secret、公開フラグを揃えます。',
+        docs: 'docs/windows-installer-build.md',
+        commands: [
+            'npm run release:github-status',
+            'gh secret set RELEASES_GITHUB_TOKEN',
+            'gh secret set WINDOWS_CSC_LINK',
+            'gh secret set WINDOWS_CSC_KEY_PASSWORD'
+        ]
+    },
     vercel_production_env: {
         description: '本番デプロイ前に、導入コードとインストーラーURLの実値を検査します。',
         docs: 'docs/vercel-production-env.md',
@@ -207,7 +217,7 @@ export function createReleaseReadinessReport(options = {}) {
         ...(options.sourceStatus ? [checkSourcePublication(options.sourceStatus)] : []),
         checkMacElectronPackage(rootDir),
         checkWindowsInstallerArtifact(rootDir),
-        ...(options.githubReleaseStatus ? [checkGitHubReleaseStatus(options.githubReleaseStatus)] : []),
+        ...(options.githubReleaseStatus ? createGitHubReleaseStatusChecks(options.githubReleaseStatus) : []),
         checkVercelEnvironment(env, options.envFile, rootDir),
         ...(options.vercelCloudStatus ? [checkVercelCloudEnvironment(options.vercelCloudStatus)] : []),
         checkLocalAiIntegrationReceipt(env, options.aiReceiptPath, rootDir)
@@ -228,34 +238,73 @@ export function createReleaseReadinessReport(options = {}) {
     }
 }
 
-function checkGitHubReleaseStatus(status) {
+function createGitHubReleaseStatusChecks(status) {
+    return [
+        checkGitHubReleaseArtifactStatus(status),
+        checkAutoUpdatePublishPrerequisites(status)
+    ]
+}
+
+function checkGitHubReleaseArtifactStatus(status) {
     if (!status.ok) {
         return {
             id: 'github_release_status',
             label: 'GitHub Actions release artifact',
             status: 'fail',
-            message: getGitHubReleaseStatusMessage(status)
+            message: getGitHubArtifactStatusMessage(status)
         }
     }
+    const artifactStatus = status.artifact?.status
     return {
         id: 'github_release_status',
         label: 'GitHub Actions release artifact',
-        status: status.ready ? 'pass' : 'pending',
-        message: getGitHubReleaseStatusMessage(status)
+        status: artifactStatus === 'present' ? 'pass' : 'pending',
+        message: getGitHubArtifactStatusMessage(status)
     }
 }
 
-function getGitHubReleaseStatusMessage(status) {
+function checkAutoUpdatePublishPrerequisites(status) {
+    if (!status.ok) {
+        return {
+            id: 'auto_update_publish_prerequisites',
+            label: 'Signed auto-update publish prerequisites',
+            status: 'fail',
+            message: getGitHubPrerequisiteStatusMessage(status)
+        }
+    }
+    const ready = isGitHubReleasePrerequisiteReady(status.releaseRepository)
+        && isGitHubReleasePrerequisiteReady(status.releaseTokenSecret)
+        && isGitHubReleasePrerequisiteReady(status.codeSigningSecrets)
+        && isGitHubReleasePrerequisiteReady(status.autoUpdateVariables)
+    return {
+        id: 'auto_update_publish_prerequisites',
+        label: 'Signed auto-update publish prerequisites',
+        status: ready ? 'pass' : 'pending',
+        message: getGitHubPrerequisiteStatusMessage(status)
+    }
+}
+
+function getGitHubArtifactStatusMessage(status) {
     const messages = [
-        status.releaseRepository?.message,
-        status.releaseTokenSecret?.message,
-        status.codeSigningSecrets?.message,
-        status.autoUpdateVariables?.message,
         status.artifact?.message,
         status.latestRun?.message,
         status.workflow?.message
     ].filter(Boolean)
-    return messages.join('; ') || 'GitHub Actions release status was read'
+    return messages.join('; ') || 'GitHub Actions release artifact status was read'
+}
+
+function getGitHubPrerequisiteStatusMessage(status) {
+    const messages = [
+        status.releaseRepository?.message,
+        status.releaseTokenSecret?.message,
+        status.codeSigningSecrets?.message,
+        status.autoUpdateVariables?.message
+    ].filter(Boolean)
+    return messages.join('; ') || 'Signed auto-update publish prerequisites were read'
+}
+
+function isGitHubReleasePrerequisiteReady(status) {
+    return !status || status.status === 'present'
 }
 
 function checkVercelCloudEnvironment(status) {

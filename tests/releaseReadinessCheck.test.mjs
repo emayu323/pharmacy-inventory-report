@@ -396,18 +396,101 @@ test('release readiness check can include GitHub Actions artifact status as an o
         })
         const githubCheck = report.checks.find(check => check.id === 'github_release_status')
         const githubAction = report.nextActions.find(action => action.id === 'github_release_status')
+        const publishCheck = report.checks.find(check => check.id === 'auto_update_publish_prerequisites')
+        const publishAction = report.nextActions.find(action => action.id === 'auto_update_publish_prerequisites')
 
         assert.equal(report.ok, true)
         assert.equal(report.ready, false)
         assert.equal(githubCheck?.status, 'pending')
-        assert.match(githubCheck?.message || '', /pharmacy-report-releases/)
         assert.match(githubCheck?.message || '', /No workflow runs/)
-        assert.match(githubAction?.description || '', /pharmacy-report-releases/)
         assert.equal(githubAction?.docs, 'docs/windows-installer-build.md')
         assert.deepEqual(githubAction?.commands, [
             'npm run release:github-status',
             'gh workflow run windows-installer.yml'
         ])
+        assert.equal(publishCheck?.status, 'pending')
+        assert.match(publishCheck?.message || '', /pharmacy-report-releases/)
+        assert.equal(publishAction?.docs, 'docs/windows-installer-build.md')
+        assert.deepEqual(publishAction?.commands, [
+            'npm run release:github-status',
+            'gh secret set RELEASES_GITHUB_TOKEN',
+            'gh secret set WINDOWS_CSC_LINK',
+            'gh secret set WINDOWS_CSC_KEY_PASSWORD'
+        ])
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness separates present installer artifact from missing signed publish prerequisites', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath,
+            githubReleaseStatus: {
+                ok: true,
+                ready: false,
+                workflow: {
+                    file: 'windows-installer.yml',
+                    status: 'present',
+                    message: 'Workflow is available on GitHub'
+                },
+                releaseRepository: {
+                    nameWithOwner: 'emayu323/pharmacy-report-releases',
+                    expectedPrivate: false,
+                    status: 'present',
+                    message: 'Release repository emayu323/pharmacy-report-releases is accessible'
+                },
+                releaseTokenSecret: {
+                    names: ['RELEASES_GITHUB_TOKEN'],
+                    status: 'missing',
+                    message: 'release token secret missing: RELEASES_GITHUB_TOKEN'
+                },
+                codeSigningSecrets: {
+                    names: ['WINDOWS_CSC_LINK', 'WINDOWS_CSC_KEY_PASSWORD'],
+                    status: 'missing',
+                    message: 'code signing secrets missing: WINDOWS_CSC_LINK, WINDOWS_CSC_KEY_PASSWORD'
+                },
+                autoUpdateVariables: {
+                    names: ['AUTO_UPDATE_RELEASE_PUBLISH_ENABLED', 'LOCAL_CODE_SIGNING_ENABLED'],
+                    status: 'present',
+                    message: 'auto-update variables configured: AUTO_UPDATE_RELEASE_PUBLISH_ENABLED, LOCAL_CODE_SIGNING_ENABLED'
+                },
+                latestRun: {
+                    databaseId: 12345,
+                    status: 'completed',
+                    conclusion: 'success'
+                },
+                artifact: {
+                    name: 'pharmacy-report-windows-installer',
+                    status: 'present',
+                    message: 'Installer artifact is available'
+                }
+            }
+        })
+        const githubCheck = report.checks.find(check => check.id === 'github_release_status')
+        const publishCheck = report.checks.find(check => check.id === 'auto_update_publish_prerequisites')
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, false)
+        assert.equal(githubCheck?.status, 'pass')
+        assert.match(githubCheck?.message || '', /Installer artifact is available/)
+        assert.equal(publishCheck?.status, 'pending')
+        assert.match(publishCheck?.message || '', /RELEASES_GITHUB_TOKEN/)
+        assert.match(publishCheck?.message || '', /WINDOWS_CSC_LINK/)
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true })
     }

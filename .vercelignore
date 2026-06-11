@@ -1,0 +1,21 @@
+# Local build and release outputs
+release/
+output/
+dist/
+dist-ssr/
+
+# Dependencies and local state
+node_modules/
+.vercel/
+.playwright-cli/
+
+# Secrets and raw local data
+.env*
+!.env.example
+!.env.*.example
+*.local
+*.sqlite
+*.sqlite3
+*.db
+src/data/y_ALL*.csv
+src/data/y_ALL*.zip

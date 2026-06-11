@@ -8,6 +8,7 @@ const windowsPreUpdateScript = fs.readFileSync(new URL('../scripts/windows_pre_u
 const windowsInstallerWorkflow = fs.readFileSync(new URL('../.github/workflows/windows-installer.yml', import.meta.url), 'utf8')
 const windowsInstallerDocs = fs.readFileSync(new URL('../docs/windows-installer-build.md', import.meta.url), 'utf8')
 const gitignore = fs.readFileSync(new URL('../.gitignore', import.meta.url), 'utf8')
+const vercelignore = fs.readFileSync(new URL('../.vercelignore', import.meta.url), 'utf8')
 
 test('package metadata is ready for local app distribution', () => {
     assert.equal(pkg.name, 'pharmacy-report')
@@ -159,4 +160,19 @@ test('gitignore keeps local secrets and generated release artifacts out of sourc
     assert.match(gitignore, /^\.vercel$/m)
     assert.match(gitignore, /^src\/data\/y_ALL\*\.csv$/m)
     assert.match(gitignore, /^src\/data\/y_ALL\*\.zip$/m)
+})
+
+test('vercel deployment excludes local release artifacts and generated secrets', () => {
+    assert.match(vercelignore, /^release\/$/m)
+    assert.match(vercelignore, /^output\/$/m)
+    assert.match(vercelignore, /^dist\/$/m)
+    assert.match(vercelignore, /^node_modules\/$/m)
+    assert.match(vercelignore, /^\.vercel\/$/m)
+    assert.match(vercelignore, /^\.env\*$/m)
+    assert.match(vercelignore, /^!\.env\.example$/m)
+    assert.match(vercelignore, /^!\.env\.\*\.example$/m)
+    assert.match(vercelignore, /^\*\.sqlite$/m)
+    assert.match(vercelignore, /^\*\.db$/m)
+    assert.match(vercelignore, /^src\/data\/y_ALL\*\.csv$/m)
+    assert.match(vercelignore, /^src\/data\/y_ALL\*\.zip$/m)
 })
