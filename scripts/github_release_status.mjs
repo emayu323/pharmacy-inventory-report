@@ -144,14 +144,11 @@ export async function createGitHubReleaseStatus(options = {}) {
         }
     }
 
-    const runViewResult = await runGh(execFileImpl, [
-        'run',
-        'view',
-        String(latestRun.databaseId),
-        '--json',
-        'artifacts,url,status,conclusion'
+    const artifactListResult = await runGh(execFileImpl, [
+        'api',
+        `repos/:owner/:repo/actions/runs/${latestRun.databaseId}/artifacts`
     ], cwd)
-    if (!runViewResult.ok) {
+    if (!artifactListResult.ok) {
         return {
             ...baseReport,
             latestRun,
@@ -159,7 +156,7 @@ export async function createGitHubReleaseStatus(options = {}) {
             artifact: {
                 name: artifactName,
                 status: 'unknown',
-                message: runViewResult.message
+                message: artifactListResult.message
             },
             nextActions: uniqueActions([
                 `gh run view ${latestRun.databaseId}`,
@@ -169,8 +166,8 @@ export async function createGitHubReleaseStatus(options = {}) {
         }
     }
 
-    const runDetails = parseJson(runViewResult.stdout, {})
-    const artifact = findArtifact(runDetails?.artifacts, artifactName)
+    const artifactDetails = parseJson(artifactListResult.stdout, {})
+    const artifact = findArtifact(artifactDetails?.artifacts, artifactName)
     if (!artifact || artifact.expired) {
         return {
             ...baseReport,

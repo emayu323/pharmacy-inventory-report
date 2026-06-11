@@ -63,11 +63,8 @@ test('GitHub release status reports latest successful run artifact download comm
                     }
                 ])
             },
-            'run view 12345 --json artifacts,url,status,conclusion': {
+            'api repos/:owner/:repo/actions/runs/12345/artifacts': {
                 stdout: JSON.stringify({
-                    status: 'completed',
-                    conclusion: 'success',
-                    url: 'https://github.com/example/actions/runs/12345',
                     artifacts: [
                         {
                             name: 'pharmacy-report-windows-installer',
