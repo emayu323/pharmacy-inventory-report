@@ -34,6 +34,7 @@ rg -n "MediaRecorder|getUserMedia|Whisper|whisper|test:local-ai-audio|createDraf
 
 - 実装・文書には録音/Whisper導線が残らない。
 - `whisper` を含まないことを確認するテストだけは許容する。
+- `release:check` の `ai_text_only_workflow` が `pass` になり、録音API/Whisper経路の再混入を検出できる。
 
 Supabaseアプリモード削除:
 

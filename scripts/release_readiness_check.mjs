@@ -109,6 +109,10 @@ const NEXT_ACTION_DETAILS = {
         description: 'アプリ本体はローカルDB専用にし、患者データのSupabase経路を戻さないでください。',
         docs: 'docs/local-first-requirements.md'
     },
+    ai_text_only_workflow: {
+        description: 'AI入力は訪問メモのテキスト経路だけにし、アプリ内録音・Whisper連携を戻さないでください。',
+        docs: 'codex-implementation-brief-v3.md'
+    },
     operational_workflows: {
         description: '報告書の自動/手動保存と、手動/復元/更新前バックアップの導線を戻します。',
         docs: 'docs/local-first-implementation-plan.md'
@@ -193,6 +197,7 @@ export function createReleaseReadinessReport(options = {}) {
         checkRuntimeConfiguration(rootDir),
         checkEntryPortal(rootDir),
         checkNativeLocalStoragePriority(rootDir),
+        checkAiTextOnlyWorkflow(rootDir),
         checkOperationalWorkflows(rootDir),
         checkLatestReportSelection(rootDir),
         checkWindowsWorkflow(rootDir),
@@ -542,6 +547,55 @@ function checkNativeLocalStoragePriority(rootDir) {
         message: errors.length
             ? errors.join('; ')
             : 'App source is local-only and native SQLite wins when the desktop bridge is present'
+    }
+}
+
+function checkAiTextOnlyWorkflow(rootDir) {
+    const errors = []
+    const bannedPatterns = [
+        { label: 'MediaRecorder', pattern: /\bMediaRecorder\b/ },
+        { label: 'getUserMedia', pattern: /\bgetUserMedia\b/ },
+        { label: 'createAiDraftFromAudio', pattern: /\bcreateAiDraftFromAudio\b/ },
+        { label: 'transcribeAudio', pattern: /\btranscribeAudio\b/ },
+        { label: 'probeWhisper', pattern: /\bprobeWhisper\b/ },
+        { label: 'whisperHealthUrl', pattern: /\bwhisperHealthUrl\b/ },
+        { label: 'LOCAL_WHISPER', pattern: /\bLOCAL_WHISPER[A-Z0-9_]*\b/ },
+        { label: 'WHISPER', pattern: /\bWHISPER[A-Z0-9_]*\b/ },
+        { label: 'ai_save_transcript_enabled', pattern: /\bai_save_transcript_enabled\b/ },
+        { label: '患者会話録音', pattern: /患者会話録音/ },
+        { label: '録音操作', pattern: /録音(?:開始|停止|中)/ }
+    ]
+    const sourceDirs = [
+        path.join(rootDir, 'src'),
+        path.join(rootDir, 'electron')
+    ]
+
+    for (const sourceDir of sourceDirs) {
+        for (const filePath of findFiles(sourceDir, filePath => /\.(?:ts|tsx|js|mjs|cjs)$/.test(filePath))) {
+            const source = readTextFile(filePath)
+            for (const banned of bannedPatterns) {
+                if (banned.pattern.test(source)) {
+                    errors.push(`${path.relative(rootDir, filePath)} contains ${banned.label}`)
+                }
+            }
+        }
+    }
+
+    const pkg = readPackageJson(rootDir)
+    if (pkg?.scripts?.['test:local-ai-audio']) {
+        errors.push('package.json must not include test:local-ai-audio')
+    }
+    if (!pkg?.scripts?.['test:local-ai-text']) {
+        errors.push('package.json must include test:local-ai-text')
+    }
+
+    return {
+        id: 'ai_text_only_workflow',
+        label: 'AI text-only workflow',
+        status: errors.length ? 'fail' : 'pass',
+        message: errors.length
+            ? `AIは訪問メモのテキスト経路だけにしてください: ${errors.join('; ')}`
+            : 'AI workflow is text-only: visit memo input, Ollama draft, and no app recording or Whisper path'
     }
 }
 

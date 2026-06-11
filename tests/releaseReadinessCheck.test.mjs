@@ -254,7 +254,7 @@ test('release readiness text format summarizes release state and next actions fo
         assert.match(text, /リリース判定: 未完了/)
         assert.match(text, /ok: true/)
         assert.match(text, /ready: false/)
-        assert.match(text, /pass 9, warn 0, pending 3, fail 0/)
+        assert.match(text, /pass 10, warn 0, pending 3, fail 0/)
         assert.match(text, /次の作業/)
         assert.match(text, /Windows installer artifact/)
         assert.match(text, /docs\/windows-installer-build\.md/)
@@ -1001,6 +1001,42 @@ test('release readiness check rejects Supabase references in app source', () => 
         assert.equal(storageCheck?.status, 'fail')
         assert.match(storageCheck?.message || '', /Supabase/)
         assert.match(storageCheck?.message || '', /src\/reportRepository\.ts/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check rejects recording and Whisper app paths', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'src/pages/ReportEdit.tsx', [
+        "import { canAutoSaveReportDraft, createReportAutoSaveFingerprint } from '../reportAutoSave'",
+        "const saveStatusLabel = { dirty: '未保存あり', saving: '保存中', saved: '保存済み', error: '保存失敗' }[saveStatus]",
+        'setTimeout(() => runAutoSave(), 2000)',
+        'async function persistReport() { return saveReport() }',
+        'async function startRecording() {',
+        '  const stream = await navigator.mediaDevices.getUserMedia({ audio: true })',
+        '  return new MediaRecorder(stream)',
+        '}',
+        'export default function ReportEdit() { return <button>保存する</button> }'
+    ].join('\n'))
+    writeFixtureFile(tmpDir, 'electron/localAiEnvironment.mjs', [
+        'export async function probeWhisper() {',
+        "  return { status: 'ready', whisperHealthUrl: 'http://127.0.0.1:9000/health' }",
+        '}'
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const aiCheck = report.checks.find(item => item.id === 'ai_text_only_workflow')
+
+        assert.equal(report.ok, false)
+        assert.equal(aiCheck?.status, 'fail')
+        assert.match(aiCheck?.message || '', /MediaRecorder/)
+        assert.match(aiCheck?.message || '', /probeWhisper/)
+        assert.match(aiCheck?.message || '', /訪問メモ/)
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true })
     }
