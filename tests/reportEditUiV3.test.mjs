@@ -12,6 +12,13 @@ const ofl = fs.readFileSync(new URL('src/assets/fonts/biz-udp-gothic/OFL.txt', r
 const verifyDoc = fs.readFileSync(new URL('docs/verify-v3-report-ui.md', root), 'utf8')
 const auditReadme = fs.readFileSync(new URL('docs/product-design-audit/2026-06-11-v3-report-ui/README.md', root), 'utf8')
 
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const expectLabeledReportField = ({ label, id, name, tag = 'input' }) => {
+    assert.match(reportEdit, new RegExp(`<label className="label"[^>]*htmlFor="${id}"[^>]*>${escapeRegExp(label)}</label>`))
+    assert.match(reportEdit, new RegExp(`<${tag}[^>]*id="${id}"[^>]*${name ? `name="${name}"` : ''}`))
+}
+
 test('v3 UI brief is checked in as the active UI implementation brief', () => {
     assert.match(brief, /^# codex実装指示書 v3:/)
     assert.match(brief, /タスクE: 報告書作成画面のUI再設計/)
@@ -64,6 +71,39 @@ test('editable select exposes combobox and listbox state to assistive technology
     assert.match(reportEdit, /aria-controls=\{optionListId\}/)
     assert.match(reportEdit, /id=\{optionListId\}[\s\S]*role="listbox"/)
     assert.match(reportEdit, /role="presentation"[\s\S]*role="option"[\s\S]*aria-selected=\{value === opt\}/)
+})
+
+test('fixed report edit form fields have explicit label associations', () => {
+    [
+        ['患者氏名', 'patient_name'],
+        ['生年月日', 'patient_dob'],
+        ['性別', 'patient_gender', 'select'],
+        ['処方医', 'doctor_name'],
+        ['医療機関名', 'medical_institution_name'],
+        ['医療機関TEL', 'medical_institution_tel'],
+        ['医療機関FAX', 'medical_institution_fax'],
+        ['居宅介護支援事業所', 'home_care_office'],
+        ['事業所TEL', 'home_care_office_tel'],
+        ['事業所FAX', 'home_care_office_fax'],
+        ['ケアマネージャー', 'care_manager'],
+        ['報告元薬局名', 'pharmacy_name'],
+        ['報告元薬局住所', 'pharmacy_address'],
+        ['報告元薬局TEL', 'pharmacy_tel'],
+        ['報告元薬局FAX', 'pharmacy_fax'],
+        ['訪問日', 'visit_date'],
+        ['担当薬剤師', 'pharmacist_name'],
+        ['処方日', 'prescription_date'],
+        ['調剤日', 'dispensing_date'],
+        ['標準処方日数', 'default_prescription_days'],
+        ['主訴等', 'chief_complaint', 'textarea'],
+        ['服薬指導内容', 'medication_instruction', 'textarea'],
+        ['その他伝達事項', 'side_effects', 'textarea'],
+        ['次回訪問予定日', 'next_visit_date']
+    ].forEach(([label, name, tag]) => {
+        expectLabeledReportField({ label, id: `field-${name}`, name, tag })
+    })
+    expectLabeledReportField({ label: '訪問メモ', id: 'field-ai_visit_memo', tag: 'textarea' })
+    expectLabeledReportField({ label: '申し送り事項', id: 'field-patient_memo', tag: 'textarea' })
 })
 
 test('report edit screen uses template chips instead of dropdown template selectors', () => {

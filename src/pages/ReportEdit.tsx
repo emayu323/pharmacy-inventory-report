@@ -1033,12 +1033,12 @@ export default function ReportEdit() {
                                 </div>
                             )}
                             <div>
-                                <label className="label">患者氏名</label>
-                                <input type="text" name="patient_name" className="input" required value={formData.patient_name} onChange={handleChange} />
+                                <label className="label" htmlFor="field-patient_name">患者氏名</label>
+                                <input id="field-patient_name" type="text" name="patient_name" className="input" required value={formData.patient_name} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">生年月日</label>
-                                <input type="date" name="patient_dob" className="input" required value={formData.patient_dob} onChange={handleChange} />
+                                <label className="label" htmlFor="field-patient_dob">生年月日</label>
+                                <input id="field-patient_dob" type="date" name="patient_dob" className="input" required value={formData.patient_dob} onChange={handleChange} />
                                 {formData.patient_dob && (
                                     <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block' }}>
                                         {calculateAge(formData.patient_dob)}歳
@@ -1046,60 +1046,60 @@ export default function ReportEdit() {
                                 )}
                             </div>
                             <div>
-                                <label className="label">性別</label>
-                                <select name="patient_gender" className="input" value={formData.patient_gender} onChange={handleChange}>
+                                <label className="label" htmlFor="field-patient_gender">性別</label>
+                                <select id="field-patient_gender" name="patient_gender" className="input" value={formData.patient_gender} onChange={handleChange}>
                                     <option value="male">男性</option>
                                     <option value="female">女性</option>
                                     <option value="other">その他</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="label">処方医</label>
-                                <input type="text" name="doctor_name" className="input" value={formData.doctor_name} onChange={handleChange} />
+                                <label className="label" htmlFor="field-doctor_name">処方医</label>
+                                <input id="field-doctor_name" type="text" name="doctor_name" className="input" value={formData.doctor_name} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">医療機関名</label>
-                                <input type="text" name="medical_institution_name" className="input" value={formData.medical_institution_name || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-medical_institution_name">医療機関名</label>
+                                <input id="field-medical_institution_name" type="text" name="medical_institution_name" className="input" value={formData.medical_institution_name || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">医療機関TEL</label>
-                                <input type="text" name="medical_institution_tel" className="input" value={formData.medical_institution_tel || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-medical_institution_tel">医療機関TEL</label>
+                                <input id="field-medical_institution_tel" type="text" name="medical_institution_tel" className="input" value={formData.medical_institution_tel || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">医療機関FAX</label>
-                                <input type="text" name="medical_institution_fax" className="input" value={formData.medical_institution_fax || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-medical_institution_fax">医療機関FAX</label>
+                                <input id="field-medical_institution_fax" type="text" name="medical_institution_fax" className="input" value={formData.medical_institution_fax || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">居宅介護支援事業所</label>
-                                <input type="text" name="home_care_office" className="input" value={formData.home_care_office || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-home_care_office">居宅介護支援事業所</label>
+                                <input id="field-home_care_office" type="text" name="home_care_office" className="input" value={formData.home_care_office || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">事業所TEL</label>
-                                <input type="text" name="home_care_office_tel" className="input" value={formData.home_care_office_tel || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-home_care_office_tel">事業所TEL</label>
+                                <input id="field-home_care_office_tel" type="text" name="home_care_office_tel" className="input" value={formData.home_care_office_tel || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">事業所FAX</label>
-                                <input type="text" name="home_care_office_fax" className="input" value={formData.home_care_office_fax || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-home_care_office_fax">事業所FAX</label>
+                                <input id="field-home_care_office_fax" type="text" name="home_care_office_fax" className="input" value={formData.home_care_office_fax || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">ケアマネージャー</label>
-                                <input type="text" name="care_manager" className="input" value={formData.care_manager || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-care_manager">ケアマネージャー</label>
+                                <input id="field-care_manager" type="text" name="care_manager" className="input" value={formData.care_manager || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">報告元薬局名</label>
-                                <input type="text" name="pharmacy_name" className="input" value={formData.pharmacy_name || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-pharmacy_name">報告元薬局名</label>
+                                <input id="field-pharmacy_name" type="text" name="pharmacy_name" className="input" value={formData.pharmacy_name || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">報告元薬局住所</label>
-                                <input type="text" name="pharmacy_address" className="input" value={formData.pharmacy_address || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-pharmacy_address">報告元薬局住所</label>
+                                <input id="field-pharmacy_address" type="text" name="pharmacy_address" className="input" value={formData.pharmacy_address || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">報告元薬局TEL</label>
-                                <input type="text" name="pharmacy_tel" className="input" value={formData.pharmacy_tel || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-pharmacy_tel">報告元薬局TEL</label>
+                                <input id="field-pharmacy_tel" type="text" name="pharmacy_tel" className="input" value={formData.pharmacy_tel || ''} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">報告元薬局FAX</label>
-                                <input type="text" name="pharmacy_fax" className="input" value={formData.pharmacy_fax || ''} onChange={handleChange} />
+                                <label className="label" htmlFor="field-pharmacy_fax">報告元薬局FAX</label>
+                                <input id="field-pharmacy_fax" type="text" name="pharmacy_fax" className="input" value={formData.pharmacy_fax || ''} onChange={handleChange} />
                             </div>
                         </div>
                     )}
@@ -1114,21 +1114,21 @@ export default function ReportEdit() {
                         </summary>
                         <div className="responsive-grid compact-section-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                             <div>
-                                <label className="label">訪問日</label>
-                                <input type="date" name="visit_date" className="input" required value={formData.visit_date} onChange={handleChange} />
+                                <label className="label" htmlFor="field-visit_date">訪問日</label>
+                                <input id="field-visit_date" type="date" name="visit_date" className="input" required value={formData.visit_date} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">担当薬剤師</label>
-                                <input type="text" name="pharmacist_name" className="input" required value={formData.pharmacist_name} onChange={handleChange} />
+                                <label className="label" htmlFor="field-pharmacist_name">担当薬剤師</label>
+                                <input id="field-pharmacist_name" type="text" name="pharmacist_name" className="input" required value={formData.pharmacist_name} onChange={handleChange} />
                             </div>
 
                             <div>
-                                <label className="label">処方日</label>
-                                <input type="date" name="prescription_date" className="input" value={formData.prescription_date} onChange={handleChange} />
+                                <label className="label" htmlFor="field-prescription_date">処方日</label>
+                                <input id="field-prescription_date" type="date" name="prescription_date" className="input" value={formData.prescription_date} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className="label">調剤日</label>
-                                <input type="date" name="dispensing_date" className="input" value={formData.dispensing_date} onChange={handleChange} />
+                                <label className="label" htmlFor="field-dispensing_date">調剤日</label>
+                                <input id="field-dispensing_date" type="date" name="dispensing_date" className="input" value={formData.dispensing_date} onChange={handleChange} />
                             </div>
                         </div>
                     </details>
@@ -1209,7 +1209,7 @@ export default function ReportEdit() {
                 {/* 薬剤管理状況 */}
                 <div className="card prescription-summary-card" style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
                     <div className="prescription-days-row" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                        <label className="label" style={{ marginBottom: 0 }}>標準処方日数</label>
+                        <label className="label" htmlFor="field-default_prescription_days" style={{ marginBottom: 0 }}>標準処方日数</label>
                         {[14, 21, 28].map(days => (
                             <button
                                 key={days}
@@ -1222,6 +1222,7 @@ export default function ReportEdit() {
                             </button>
                         ))}
                         <input
+                            id="field-default_prescription_days"
                             type="number"
                             name="default_prescription_days"
                             className="input"
@@ -1301,8 +1302,9 @@ export default function ReportEdit() {
                             </div>
 
                             <div>
-                                <label className="label">訪問メモ</label>
+                                <label className="label" htmlFor="field-ai_visit_memo">訪問メモ</label>
                                 <textarea
+                                    id="field-ai_visit_memo"
                                     className="input"
                                     rows={3}
                                     value={aiVisitMemo}
@@ -1387,18 +1389,18 @@ export default function ReportEdit() {
                         </div>
 
                         <div>
-                            <label className="label">主訴等</label>
-                            <textarea name="chief_complaint" className="input" rows={2} value={formData.chief_complaint || ''} onChange={handleChange}></textarea>
+                            <label className="label" htmlFor="field-chief_complaint">主訴等</label>
+                            <textarea id="field-chief_complaint" name="chief_complaint" className="input" rows={2} value={formData.chief_complaint || ''} onChange={handleChange}></textarea>
                             {renderTemplateControls('chief_complaint')}
                         </div>
                         <div>
-                            <label className="label">服薬指導内容</label>
-                            <textarea name="medication_instruction" className="input" rows={4} value={formData.medication_instruction} onChange={handleChange}></textarea>
+                            <label className="label" htmlFor="field-medication_instruction">服薬指導内容</label>
+                            <textarea id="field-medication_instruction" name="medication_instruction" className="input" rows={4} value={formData.medication_instruction} onChange={handleChange}></textarea>
                             {renderTemplateControls('medication_instruction')}
                         </div>
                         <div>
-                            <label className="label">その他伝達事項</label>
-                            <textarea name="side_effects" className="input" rows={2} value={formData.side_effects} onChange={handleChange}></textarea>
+                            <label className="label" htmlFor="field-side_effects">その他伝達事項</label>
+                            <textarea id="field-side_effects" name="side_effects" className="input" rows={2} value={formData.side_effects} onChange={handleChange}></textarea>
                             {renderTemplateControls('side_effects')}
                         </div>
                     </div>
@@ -1411,13 +1413,14 @@ export default function ReportEdit() {
                     </h3>
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         <div>
-                            <label className="label">次回訪問予定日</label>
-                            <input type="date" name="next_visit_date" className="input" value={formData.next_visit_date || ''} onChange={handleChange} />
+                            <label className="label" htmlFor="field-next_visit_date">次回訪問予定日</label>
+                            <input id="field-next_visit_date" type="date" name="next_visit_date" className="input" value={formData.next_visit_date || ''} onChange={handleChange} />
                         </div>
 
                         <div>
-                            <label className="label">申し送り事項</label>
+                            <label className="label" htmlFor="field-patient_memo">申し送り事項</label>
                             <textarea
+                                id="field-patient_memo"
                                 className="input"
                                 rows={3}
                                 value={patientMemo}
