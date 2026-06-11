@@ -358,9 +358,9 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - `docs/vercel-production-env.md` に、本番環境変数、Supabase台数管理用の任意環境変数、設定/確認コマンドをまとめる。
 - `scripts/verify_vercel_production_env.mjs` と `npm run verify:vercel-env` を追加し、`INSTALL_CODE_REGISTRY`、`WINDOWS_INSTALLER_URL`、任意のSupabase台数管理envを本番投入前に検査できるようにする。検査結果にはService Role Keyを出さない。
 - `scripts/create_install_code_registry.mjs` と `npm run create:install-codes` を追加し、導入コード管理表と検査用 `.env.production.local` を `output/` に生成できるようにする。生成した導入コード実値はgit管理外で扱う。
-- `scripts/release_readiness_check.mjs` と `npm run release:check` を追加し、実装ファイル、運用引き継ぎ文書、npm script、Windows workflow、mac同梱物、Windowsインストーラー、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、GitHub Actions上の配布artifact、Vercel本番env、現地AI結合証跡をまとめて確認できるようにする。通常モードでは外部環境待ちを `pending` として扱い、`--strict` では `pending` もリリース不可として扱う。
+- `scripts/release_readiness_check.mjs` と `npm run release:check` を追加し、実装ファイル、運用引き継ぎ文書、npm script、Windows workflow、mac同梱物、Windowsインストーラー、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、GitHub Actions上の配布artifact、Vercel本番env、現地AI結合証跡をまとめて確認できるようにする。通常モードでは外部環境待ちを `pending` として扱い、`--strict` では `pending` もリリース不可として扱う。
 - `release:check -- --source-status` では、ローカルGitの未commit/未push状態を追加の `Source publication` ゲートとして扱い、GitHub Actionsへworkflowが届いていない原因を切り分けられるようにする。
-- `npm run release:check:full` を追加し、ローカルGit状態、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、GitHub Actions上の配布artifact、Vercel本番env名、`output/local-ai-integration-result.json` を含む人間向けリリース判定を1コマンドで表示できるようにする。
+- `npm run release:check:full` を追加し、ローカルGit状態、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、コード署名用Secret名、自動更新公開用Variable名、GitHub Actions上の配布artifact、Vercel本番env名、`output/local-ai-integration-result.json` を含む人間向けリリース判定を1コマンドで表示できるようにする。
 - `release:check` では、報告書の自動保存/手動保存、保存状態表示、手動バックアップ、復元、更新前バックアップの導線も静的に確認する。
 - `scripts/release_handoff.mjs` と `npm run release:handoff` を追加し、外部担当者へ渡す残作業サマリを秘密情報なしのMarkdownとして `output/release-handoff.md` に生成できるようにする。
 - `scripts/source_release_status.mjs` と `npm run release:source-status` を追加し、ローカルGitの未commit/未push状態を読み取り専用で確認できるようにする。

@@ -249,6 +249,8 @@ function getGitHubReleaseStatusMessage(status) {
     const messages = [
         status.releaseRepository?.message,
         status.releaseTokenSecret?.message,
+        status.codeSigningSecrets?.message,
+        status.autoUpdateVariables?.message,
         status.artifact?.message,
         status.latestRun?.message,
         status.workflow?.message
