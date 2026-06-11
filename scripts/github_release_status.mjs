@@ -40,6 +40,7 @@ export async function createGitHubReleaseStatus(options = {}) {
             autoUpdateVariables: null,
             latestRun: null,
             artifact: null,
+            sourceRevision: null,
             nextActions: missing
                 ? [
                     `Commit and push .github/workflows/${workflowFile} to the default branch`,
@@ -66,6 +67,7 @@ export async function createGitHubReleaseStatus(options = {}) {
         autoUpdateVariables: null,
         latestRun: null,
         artifact: null,
+        sourceRevision: null,
         nextActions: []
     }
 
@@ -90,7 +92,7 @@ export async function createGitHubReleaseStatus(options = {}) {
         '--limit',
         '1',
         '--json',
-        'databaseId,status,conclusion,headBranch,displayTitle,createdAt,url'
+        'databaseId,status,conclusion,headBranch,displayTitle,createdAt,url,headSha'
     ], cwd)
     if (!runListResult.ok) {
         return {
@@ -187,9 +189,13 @@ export async function createGitHubReleaseStatus(options = {}) {
         }
     }
 
+    const sourceRevision = await readSourceRevisionStatus(execFileImpl, cwd, latestRun, options.sourceHeadSha)
+    const sourceRevisionReady = sourceRevision.status === 'current'
+
     return {
         ...baseReport,
-        ready: isReleaseRepositoryReady(releaseRepositoryStatus)
+        ready: sourceRevisionReady
+            && isReleaseRepositoryReady(releaseRepositoryStatus)
             && isNamedItemStatusReady(releaseTokenSecretStatus)
             && isNamedItemStatusReady(codeSigningSecretsStatus)
             && isNamedItemStatusReady(autoUpdateVariablesStatus),
@@ -200,10 +206,10 @@ export async function createGitHubReleaseStatus(options = {}) {
             expired: Boolean(artifact.expired),
             message: 'Installer artifact is available'
         },
+        sourceRevision,
         nextActions: uniqueActions([
             ...createReleasePrerequisiteNextActions(releaseRepositoryStatus, releaseTokenSecretStatus, codeSigningSecretsStatus, autoUpdateVariablesStatus),
-            `gh run download ${latestRun.databaseId} -n ${artifactName} -D release`,
-            'npm run release:check -- --format text'
+            ...createArtifactNextActions(sourceRevision, workflowFile, latestRun, artifactName)
         ])
     }
 }
@@ -220,7 +226,8 @@ export function formatGitHubReleaseStatusText(report) {
         `code signing secrets: ${formatNamedItemStatus(report.codeSigningSecrets, DEFAULT_CODE_SIGNING_SECRETS)}`,
         `auto-update variables: ${formatNamedItemStatus(report.autoUpdateVariables, DEFAULT_AUTO_UPDATE_VARIABLES)}`,
         `latest run: ${formatRun(report.latestRun)}`,
-        `artifact: ${report.artifact?.status || 'unknown'} (${report.artifact?.name || DEFAULT_ARTIFACT_NAME})`
+        `artifact: ${report.artifact?.status || 'unknown'} (${report.artifact?.name || DEFAULT_ARTIFACT_NAME})`,
+        `source revision: ${formatSourceRevision(report.sourceRevision)}`
     ]
 
     if (report.nextActions?.length) {
@@ -339,6 +346,70 @@ function isNamedItemStatusReady(status) {
     return !status || status.status === 'present'
 }
 
+async function readSourceRevisionStatus(execFileImpl, cwd, latestRun, sourceHeadSha) {
+    const runHeadSha = normalizeSha(latestRun?.headSha)
+    if (!runHeadSha) {
+        return {
+            status: 'unknown',
+            runHeadSha: null,
+            expectedHeadSha: normalizeSha(sourceHeadSha),
+            message: 'Latest workflow run did not report a source revision'
+        }
+    }
+
+    const expectedHeadSha = sourceHeadSha
+        ? normalizeSha(sourceHeadSha)
+        : await readGitHeadSha(execFileImpl, cwd)
+
+    if (!expectedHeadSha) {
+        return {
+            status: 'unknown',
+            runHeadSha,
+            expectedHeadSha: null,
+            message: `Current source revision could not be read for workflow run ${shortSha(runHeadSha)}`
+        }
+    }
+
+    const current = runHeadSha === expectedHeadSha
+    return {
+        status: current ? 'current' : 'stale',
+        runHeadSha,
+        expectedHeadSha,
+        message: current
+            ? `Installer artifact was built from current source ${shortSha(expectedHeadSha)}`
+            : `Installer artifact is stale: workflow run ${shortSha(runHeadSha)} != current source ${shortSha(expectedHeadSha)}`
+    }
+}
+
+async function readGitHeadSha(execFileImpl, cwd) {
+    try {
+        const result = await execFileImpl('git', ['rev-parse', 'HEAD'], { cwd })
+        return normalizeSha(result.stdout)
+    } catch {
+        return ''
+    }
+}
+
+function createArtifactNextActions(sourceRevision, workflowFile, latestRun, artifactName) {
+    if (sourceRevision?.status === 'current') {
+        return [
+            `gh run download ${latestRun.databaseId} -n ${artifactName} -D release`,
+            'npm run release:check -- --format text'
+        ]
+    }
+    if (sourceRevision?.status === 'stale') {
+        return [
+            `gh workflow run ${workflowFile}`,
+            'Run npm run release:github-status again after the workflow completes'
+        ]
+    }
+    return [
+        'Run npm run release:source-status',
+        `gh workflow run ${workflowFile}`,
+        'Run npm run release:github-status again after the workflow completes'
+    ]
+}
+
 function createReleasePrerequisiteNextActions(repositoryStatus, tokenSecretStatus, codeSigningSecretsStatus, autoUpdateVariablesStatus) {
     return uniqueActions([
         ...createReleaseRepositoryNextActions(repositoryStatus),
@@ -437,6 +508,7 @@ function normalizeRun(run) {
         status: run.status || 'unknown',
         conclusion: run.conclusion || '',
         headBranch: run.headBranch || '',
+        headSha: normalizeSha(run.headSha),
         displayTitle: run.displayTitle || '',
         createdAt: run.createdAt || '',
         url: run.url || ''
@@ -451,7 +523,8 @@ function findArtifact(artifacts, artifactName) {
 function formatRun(run) {
     if (!run) return 'none'
     const status = [run.status, run.conclusion].filter(Boolean).join('/')
-    return `${run.databaseId || 'unknown'} ${status || 'unknown'}${run.url ? ` ${run.url}` : ''}`
+    const revision = run.headSha ? ` ${shortSha(run.headSha)}` : ''
+    return `${run.databaseId || 'unknown'} ${status || 'unknown'}${revision}${run.url ? ` ${run.url}` : ''}`
 }
 
 function formatReleaseRepository(repository) {
@@ -468,6 +541,22 @@ function formatReleaseTokenSecret(secret) {
 function formatNamedItemStatus(status, defaultNames) {
     if (!status) return 'not configured'
     return `${status.status || 'unknown'} (${(status.names?.length ? status.names : defaultNames).join(', ')})`
+}
+
+function formatSourceRevision(status) {
+    if (!status) return 'not checked'
+    const run = status.runHeadSha ? `run ${shortSha(status.runHeadSha)}` : 'run unknown'
+    const expected = status.expectedHeadSha ? `source ${shortSha(status.expectedHeadSha)}` : 'source unknown'
+    return `${status.status || 'unknown'} (${run}, ${expected})`
+}
+
+function normalizeSha(value) {
+    const text = String(value || '').trim()
+    return /^[a-f0-9]{40}$/i.test(text) ? text.toLowerCase() : ''
+}
+
+function shortSha(value) {
+    return normalizeSha(value).slice(0, 7) || 'unknown'
 }
 
 function parseArgs(argv) {

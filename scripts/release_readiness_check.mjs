@@ -269,10 +269,12 @@ function checkGitHubReleaseArtifactStatus(status) {
         }
     }
     const artifactStatus = status.artifact?.status
+    const sourceRevisionStatus = status.sourceRevision?.status
+    const sourceRevisionReady = !sourceRevisionStatus || sourceRevisionStatus === 'current'
     return {
         id: 'github_release_status',
         label: 'GitHub Actions release artifact',
-        status: artifactStatus === 'present' ? 'pass' : 'pending',
+        status: artifactStatus === 'present' && sourceRevisionReady ? 'pass' : 'pending',
         message: getGitHubArtifactStatusMessage(status)
     }
 }
@@ -301,6 +303,7 @@ function checkAutoUpdatePublishPrerequisites(status) {
 function getGitHubArtifactStatusMessage(status) {
     const messages = [
         status.artifact?.message,
+        status.sourceRevision?.message,
         status.latestRun?.message,
         status.workflow?.message
     ].filter(Boolean)

@@ -553,6 +553,89 @@ test('release readiness separates present installer artifact from missing signed
     }
 })
 
+test('release readiness treats present installer artifact with stale source revision as pending', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath,
+            githubReleaseStatus: {
+                ok: true,
+                ready: false,
+                workflow: {
+                    file: 'windows-installer.yml',
+                    status: 'present',
+                    message: 'Workflow is available on GitHub'
+                },
+                releaseRepository: {
+                    nameWithOwner: 'emayu323/pharmacy-report-releases',
+                    expectedPrivate: false,
+                    status: 'present',
+                    message: 'Release repository emayu323/pharmacy-report-releases is accessible'
+                },
+                releaseTokenSecret: {
+                    names: ['RELEASES_GITHUB_TOKEN'],
+                    status: 'present',
+                    message: 'release token secret configured: RELEASES_GITHUB_TOKEN'
+                },
+                codeSigningSecrets: {
+                    names: ['WINDOWS_CSC_LINK', 'WINDOWS_CSC_KEY_PASSWORD'],
+                    status: 'present',
+                    message: 'code signing secrets configured: WINDOWS_CSC_LINK, WINDOWS_CSC_KEY_PASSWORD'
+                },
+                autoUpdateVariables: {
+                    names: ['AUTO_UPDATE_RELEASE_PUBLISH_ENABLED', 'LOCAL_CODE_SIGNING_ENABLED'],
+                    status: 'present',
+                    message: 'auto-update variables configured: AUTO_UPDATE_RELEASE_PUBLISH_ENABLED, LOCAL_CODE_SIGNING_ENABLED'
+                },
+                latestRun: {
+                    databaseId: 12345,
+                    status: 'completed',
+                    conclusion: 'success',
+                    headSha: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+                },
+                artifact: {
+                    name: 'pharmacy-report-windows-installer',
+                    status: 'present',
+                    message: 'Installer artifact is available'
+                },
+                sourceRevision: {
+                    status: 'stale',
+                    runHeadSha: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+                    expectedHeadSha: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                    message: 'Installer artifact is stale: workflow run bbbbbbb != current source aaaaaaa'
+                }
+            }
+        })
+        const githubCheck = report.checks.find(check => check.id === 'github_release_status')
+        const githubAction = report.nextActions.find(action => action.id === 'github_release_status')
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, false)
+        assert.equal(githubCheck?.status, 'pending')
+        assert.match(githubCheck?.message || '', /stale/)
+        assert.equal(githubAction?.docs, 'docs/windows-installer-build.md')
+        assert.deepEqual(githubAction?.commands, [
+            'npm run release:github-status',
+            'gh workflow run windows-installer.yml'
+        ])
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
 test('release readiness check resolves relative AI receipt path from root directory', () => {
     const tmpDir = createFixture({
         macPackage: true,

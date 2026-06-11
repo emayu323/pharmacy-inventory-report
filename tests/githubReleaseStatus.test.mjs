@@ -26,7 +26,9 @@ test('GitHub release status reports missing workflow on default branch as pendin
 })
 
 test('GitHub release status reports latest successful run artifact download command', async () => {
+    const currentHeadSha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     const report = await createGitHubReleaseStatus({
+        sourceHeadSha: currentHeadSha,
         execFileImpl: fakeGh({
             'workflow view windows-installer.yml': {
                 stdout: 'Windows Installer'
@@ -50,13 +52,14 @@ test('GitHub release status reports latest successful run artifact download comm
                     { name: 'LOCAL_CODE_SIGNING_ENABLED' }
                 ])
             },
-            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url': {
+            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url,headSha': {
                 stdout: JSON.stringify([
                     {
                         databaseId: 12345,
                         status: 'completed',
                         conclusion: 'success',
                         headBranch: 'main',
+                        headSha: currentHeadSha,
                         displayTitle: 'Build Windows installer',
                         createdAt: '2026-06-11T09:00:00Z',
                         url: 'https://github.com/example/actions/runs/12345'
@@ -86,9 +89,78 @@ test('GitHub release status reports latest successful run artifact download comm
     assert.equal(report.autoUpdateVariables?.status, 'present')
     assert.equal(report.latestRun?.databaseId, 12345)
     assert.equal(report.artifact?.status, 'present')
+    assert.equal(report.sourceRevision?.status, 'current')
     assert.deepEqual(report.nextActions, [
         'gh run download 12345 -n pharmacy-report-windows-installer -D release',
         'npm run release:check -- --format text'
+    ])
+})
+
+test('GitHub release status reports stale installer artifact when run SHA differs from current source', async () => {
+    const currentHeadSha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    const staleRunHeadSha = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+    const report = await createGitHubReleaseStatus({
+        sourceHeadSha: currentHeadSha,
+        execFileImpl: fakeGh({
+            'workflow view windows-installer.yml': {
+                stdout: 'Windows Installer'
+            },
+            'repo view emayu323/pharmacy-report-releases --json nameWithOwner,isPrivate': {
+                stdout: JSON.stringify({
+                    nameWithOwner: 'emayu323/pharmacy-report-releases',
+                    isPrivate: false
+                })
+            },
+            'secret list --json name': {
+                stdout: JSON.stringify([
+                    { name: 'RELEASES_GITHUB_TOKEN' },
+                    { name: 'WINDOWS_CSC_LINK' },
+                    { name: 'WINDOWS_CSC_KEY_PASSWORD' }
+                ])
+            },
+            'variable list --json name': {
+                stdout: JSON.stringify([
+                    { name: 'AUTO_UPDATE_RELEASE_PUBLISH_ENABLED' },
+                    { name: 'LOCAL_CODE_SIGNING_ENABLED' }
+                ])
+            },
+            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url,headSha': {
+                stdout: JSON.stringify([
+                    {
+                        databaseId: 12345,
+                        status: 'completed',
+                        conclusion: 'success',
+                        headBranch: 'main',
+                        headSha: staleRunHeadSha,
+                        displayTitle: 'Build Windows installer',
+                        createdAt: '2026-06-11T09:00:00Z',
+                        url: 'https://github.com/example/actions/runs/12345'
+                    }
+                ])
+            },
+            'api repos/:owner/:repo/actions/runs/12345/artifacts': {
+                stdout: JSON.stringify({
+                    artifacts: [
+                        {
+                            name: 'pharmacy-report-windows-installer',
+                            expired: false
+                        }
+                    ]
+                })
+            }
+        })
+    })
+    const text = formatGitHubReleaseStatusText(report)
+
+    assert.equal(report.ok, true)
+    assert.equal(report.ready, false)
+    assert.equal(report.artifact?.status, 'present')
+    assert.equal(report.sourceRevision?.status, 'stale')
+    assert.match(report.sourceRevision?.message || '', /stale/)
+    assert.match(text, /source revision: stale/)
+    assert.deepEqual(report.nextActions, [
+        'gh workflow run windows-installer.yml',
+        'Run npm run release:github-status again after the workflow completes'
     ])
 })
 
@@ -117,7 +189,7 @@ test('GitHub release status text is human readable without raw JSON', async () =
                     { name: 'LOCAL_CODE_SIGNING_ENABLED' }
                 ])
             },
-            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url': {
+            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url,headSha': {
                 stdout: '[]'
             }
         })
@@ -131,6 +203,7 @@ test('GitHub release status text is human readable without raw JSON', async () =
     assert.match(text, /code signing secrets: present \(WINDOWS_CSC_LINK, WINDOWS_CSC_KEY_PASSWORD\)/)
     assert.match(text, /auto-update variables: present \(AUTO_UPDATE_RELEASE_PUBLISH_ENABLED, LOCAL_CODE_SIGNING_ENABLED\)/)
     assert.match(text, /latest run: none/)
+    assert.match(text, /source revision: not checked/)
     assert.match(text, /gh workflow run windows-installer\.yml/)
     assert.doesNotMatch(text, /\{\s*"workflow"/)
 })
@@ -151,7 +224,7 @@ test('GitHub release status reports missing public release repository as pending
             'variable list --json name': {
                 stdout: JSON.stringify([])
             },
-            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url': {
+            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url,headSha': {
                 stdout: '[]'
             }
         })
@@ -193,7 +266,7 @@ test('GitHub release status reports missing release token secret as pending', as
                     { name: 'AUTO_UPDATE_RELEASE_PUBLISH_ENABLED' }
                 ])
             },
-            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url': {
+            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url,headSha': {
                 stdout: '[]'
             }
         })
@@ -234,7 +307,7 @@ test('GitHub release status reports missing code signing secrets and auto update
             'variable list --json name': {
                 stdout: JSON.stringify([])
             },
-            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url': {
+            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url,headSha': {
                 stdout: '[]'
             }
         })
