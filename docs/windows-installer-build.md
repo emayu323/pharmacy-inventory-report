@@ -240,7 +240,7 @@ CIで実行する内容:
 3. `npm run test:local-app` を実行する。
 4. `npm run dist:win` でNSISインストーラーを作成する。
 5. タグpushかつ自動更新公開フラグとコード署名フラグが有効な場合だけ、`npm run dist:win:publish` で公開リリース用リポジトリへ `latest.yml` とインストーラーを公開する。
-6. `windows_pre_update_backup.ps1` で更新前バックアップCLIをWindows上で実行確認する。
+6. `node --test tests/preUpdateBackupCommand.test.mjs` で更新前バックアップCLIのWindows上スモークを実行する。
 7. `npm run release:check -- --format text` を実行し、`release/release-readiness.txt` を作成する。
 8. `release/*.exe`、`release/*.blockmap`、`release/release-readiness.txt` をartifactとして保存する。
 

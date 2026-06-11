@@ -46,25 +46,7 @@ jobs:
         run: npm run dist:win:publish
 
       - name: Verify pre-update backup CLI
-        shell: pwsh
-        run: |
-          $appPath = Join-Path $PWD "release\win-unpacked\在宅報告アプリ.exe"
-          $dbPath = Join-Path $env:RUNNER_TEMP "pre-update-smoke.sqlite"
-          $backupDir = Join-Path $env:RUNNER_TEMP "pre-update-backups"
-          $output = .\scripts\windows_pre_update_backup.ps1 `
-            -AppPath $appPath `
-            -DbPath $dbPath `
-            -BackupDir $backupDir `
-            -FromVersion "0.1.0-ci" `
-            -ToVersion "0.1.1-ci" `
-            -KdfIterations 1000
-          $result = $output | ConvertFrom-Json
-          if (-not $result.ok) {
-            throw "Pre-update backup did not return ok=true"
-          }
-          if (-not (Test-Path -LiteralPath $result.filePath)) {
-            throw "Pre-update backup file was not created: $($result.filePath)"
-          }
+        run: node --test tests/preUpdateBackupCommand.test.mjs
 
       - name: Write release readiness receipt
         shell: pwsh

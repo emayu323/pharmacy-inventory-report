@@ -752,7 +752,7 @@ function checkWindowsWorkflow(rootDir) {
         'npm run dist:win:publish',
         'AUTO_UPDATE_RELEASE_PUBLISH_ENABLED',
         'LOCAL_CODE_SIGNING_ENABLED',
-        'windows_pre_update_backup.ps1',
+        'tests/preUpdateBackupCommand.test.mjs',
         'npm run release:check -- --format text',
         'release-readiness.txt',
         'actions/upload-artifact@v4'

@@ -1082,7 +1082,7 @@ test('release readiness check requires Windows workflow to save release check re
         'runs-on: windows-latest',
         'node-version: 24',
         'npm run dist:win',
-        'windows_pre_update_backup.ps1',
+        'tests/preUpdateBackupCommand.test.mjs',
         'actions/upload-artifact@v4'
     ].join('\n'))
 
@@ -1295,7 +1295,7 @@ npm run dist:win
 npm run dist:win:publish
 AUTO_UPDATE_RELEASE_PUBLISH_ENABLED
 LOCAL_CODE_SIGNING_ENABLED
-windows_pre_update_backup.ps1
+tests/preUpdateBackupCommand.test.mjs
 npm run release:check -- --format text
 release-readiness.txt
 actions/upload-artifact@v4
