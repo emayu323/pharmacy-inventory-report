@@ -240,6 +240,7 @@ function checkGitHubReleaseStatus(status) {
 function getGitHubReleaseStatusMessage(status) {
     const messages = [
         status.releaseRepository?.message,
+        status.releaseTokenSecret?.message,
         status.artifact?.message,
         status.latestRun?.message,
         status.workflow?.message

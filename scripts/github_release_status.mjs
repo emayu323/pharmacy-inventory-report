@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url'
 const execFileAsync = promisify(execFile)
 const DEFAULT_WORKFLOW_FILE = 'windows-installer.yml'
 const DEFAULT_ARTIFACT_NAME = 'pharmacy-report-windows-installer'
+const DEFAULT_RELEASE_TOKEN_SECRET = 'RELEASES_GITHUB_TOKEN'
 
 export async function createGitHubReleaseStatus(options = {}) {
     const workflowFile = options.workflowFile || DEFAULT_WORKFLOW_FILE
@@ -14,6 +15,7 @@ export async function createGitHubReleaseStatus(options = {}) {
     const execFileImpl = options.execFileImpl || execFileAsync
     const cwd = options.cwd || process.cwd()
     const releaseRepository = options.releaseRepository || readReleaseRepositoryConfig(cwd)
+    const releaseTokenSecretName = options.releaseTokenSecretName || DEFAULT_RELEASE_TOKEN_SECRET
 
     const workflowResult = await runGh(execFileImpl, ['workflow', 'view', workflowFile], cwd)
     if (!workflowResult.ok) {
@@ -29,6 +31,7 @@ export async function createGitHubReleaseStatus(options = {}) {
                     : workflowResult.message
             },
             releaseRepository: null,
+            releaseTokenSecret: null,
             latestRun: null,
             artifact: null,
             nextActions: missing
@@ -52,6 +55,7 @@ export async function createGitHubReleaseStatus(options = {}) {
             message: 'Workflow is available on GitHub'
         },
         releaseRepository: null,
+        releaseTokenSecret: null,
         latestRun: null,
         artifact: null,
         nextActions: []
@@ -60,7 +64,11 @@ export async function createGitHubReleaseStatus(options = {}) {
     const releaseRepositoryStatus = releaseRepository
         ? await readReleaseRepositoryStatus(execFileImpl, releaseRepository, cwd)
         : null
+    const releaseTokenSecretStatus = releaseRepository
+        ? await readReleaseTokenSecretStatus(execFileImpl, releaseTokenSecretName, cwd)
+        : null
     baseReport.releaseRepository = releaseRepositoryStatus
+    baseReport.releaseTokenSecret = releaseTokenSecretStatus
 
     const runListResult = await runGh(execFileImpl, [
         'run',
@@ -82,6 +90,7 @@ export async function createGitHubReleaseStatus(options = {}) {
             },
             nextActions: [
                 'Check gh authentication and repository access',
+                ...createReleasePrerequisiteNextActions(releaseRepositoryStatus, releaseTokenSecretStatus),
                 'Run npm run release:github-status again'
             ]
         }
@@ -98,11 +107,11 @@ export async function createGitHubReleaseStatus(options = {}) {
                 status: 'none',
                 message: 'No workflow runs were found'
             },
-            nextActions: [
-                ...createReleaseRepositoryNextActions(releaseRepositoryStatus),
+            nextActions: uniqueActions([
+                ...createReleasePrerequisiteNextActions(releaseRepositoryStatus, releaseTokenSecretStatus),
                 `gh workflow run ${workflowFile}`,
                 'Run npm run release:github-status again after the workflow completes'
-            ]
+            ])
         }
     }
 
@@ -115,10 +124,11 @@ export async function createGitHubReleaseStatus(options = {}) {
                 status: 'unavailable',
                 message: 'Latest workflow run did not complete successfully'
             },
-            nextActions: [
+            nextActions: uniqueActions([
                 `Open ${latestRun.url || 'the latest workflow run'} and fix the failure`,
+                ...createReleasePrerequisiteNextActions(releaseRepositoryStatus, releaseTokenSecretStatus),
                 `gh workflow run ${workflowFile}`
-            ]
+            ])
         }
     }
 
@@ -139,10 +149,11 @@ export async function createGitHubReleaseStatus(options = {}) {
                 status: 'unknown',
                 message: runViewResult.message
             },
-            nextActions: [
+            nextActions: uniqueActions([
                 `gh run view ${latestRun.databaseId}`,
+                ...createReleasePrerequisiteNextActions(releaseRepositoryStatus, releaseTokenSecretStatus),
                 'Run npm run release:github-status again'
-            ]
+            ])
         }
     }
 
@@ -159,16 +170,18 @@ export async function createGitHubReleaseStatus(options = {}) {
                     ? 'Installer artifact has expired'
                     : 'Installer artifact was not found on the latest successful run'
             },
-            nextActions: [
+            nextActions: uniqueActions([
+                ...createReleasePrerequisiteNextActions(releaseRepositoryStatus, releaseTokenSecretStatus),
                 `gh workflow run ${workflowFile}`,
                 'Run npm run release:github-status again after the workflow completes'
-            ]
+            ])
         }
     }
 
     return {
         ...baseReport,
-        ready: isReleaseRepositoryReady(releaseRepositoryStatus),
+        ready: isReleaseRepositoryReady(releaseRepositoryStatus)
+            && isReleaseTokenSecretReady(releaseTokenSecretStatus),
         latestRun,
         artifact: {
             name: artifactName,
@@ -176,11 +189,11 @@ export async function createGitHubReleaseStatus(options = {}) {
             expired: Boolean(artifact.expired),
             message: 'Installer artifact is available'
         },
-        nextActions: [
-            ...createReleaseRepositoryNextActions(releaseRepositoryStatus),
+        nextActions: uniqueActions([
+            ...createReleasePrerequisiteNextActions(releaseRepositoryStatus, releaseTokenSecretStatus),
             `gh run download ${latestRun.databaseId} -n ${artifactName} -D release`,
             'npm run release:check -- --format text'
-        ]
+        ])
     }
 }
 
@@ -192,6 +205,7 @@ export function formatGitHubReleaseStatusText(report) {
         `ready: ${report.ready}`,
         `workflow: ${report.workflow?.status || 'unknown'} (${report.workflow?.file || DEFAULT_WORKFLOW_FILE})`,
         `release repo: ${formatReleaseRepository(report.releaseRepository)}`,
+        `release token secret: ${formatReleaseTokenSecret(report.releaseTokenSecret)}`,
         `latest run: ${formatRun(report.latestRun)}`,
         `artifact: ${report.artifact?.status || 'unknown'} (${report.artifact?.name || DEFAULT_ARTIFACT_NAME})`
     ]
@@ -258,8 +272,44 @@ async function readReleaseRepositoryStatus(execFileImpl, releaseRepository, cwd)
     }
 }
 
+async function readReleaseTokenSecretStatus(execFileImpl, secretName, cwd) {
+    const result = await runGh(execFileImpl, [
+        'secret',
+        'list',
+        '--json',
+        'name'
+    ], cwd)
+    if (!result.ok) {
+        return {
+            name: secretName,
+            status: 'error',
+            message: result.message
+        }
+    }
+    const secrets = parseJson(result.stdout, [])
+    const present = Array.isArray(secrets) && secrets.some(secret => secret?.name === secretName)
+    return {
+        name: secretName,
+        status: present ? 'present' : 'missing',
+        message: present
+            ? `${secretName} secret is configured`
+            : `${secretName} secret is not configured`
+    }
+}
+
 function isReleaseRepositoryReady(status) {
     return !status || status.status === 'present'
+}
+
+function isReleaseTokenSecretReady(status) {
+    return !status || status.status === 'present'
+}
+
+function createReleasePrerequisiteNextActions(repositoryStatus, secretStatus) {
+    return uniqueActions([
+        ...createReleaseRepositoryNextActions(repositoryStatus),
+        ...createReleaseTokenSecretNextActions(repositoryStatus, secretStatus)
+    ])
 }
 
 function createReleaseRepositoryNextActions(status) {
@@ -280,6 +330,24 @@ function createReleaseRepositoryNextActions(status) {
         `Check GitHub repository access for ${status.nameWithOwner}`,
         'Run npm run release:github-status again'
     ]
+}
+
+function createReleaseTokenSecretNextActions(repositoryStatus, secretStatus) {
+    if (!secretStatus || secretStatus.status === 'present') return []
+    if (secretStatus.status === 'missing') {
+        const target = repositoryStatus?.nameWithOwner || 'the public release repository'
+        return [
+            `Configure ${secretStatus.name} with write access to ${target}`
+        ]
+    }
+    return [
+        `Check GitHub Actions secret access for ${secretStatus.name}`,
+        'Run npm run release:github-status again'
+    ]
+}
+
+function uniqueActions(actions) {
+    return [...new Set(actions)]
 }
 
 async function runGh(execFileImpl, args, cwd) {
@@ -341,6 +409,11 @@ function formatReleaseRepository(repository) {
     if (!repository) return 'not configured'
     const visibility = repository.private ? 'private' : 'public'
     return `${repository.status || 'unknown'} (${repository.nameWithOwner || 'unknown'} ${visibility})`
+}
+
+function formatReleaseTokenSecret(secret) {
+    if (!secret) return 'not configured'
+    return `${secret.status || 'unknown'} (${secret.name || DEFAULT_RELEASE_TOKEN_SECRET})`
 }
 
 function parseArgs(argv) {

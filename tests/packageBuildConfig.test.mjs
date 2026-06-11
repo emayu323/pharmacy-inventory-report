@@ -118,6 +118,7 @@ test('Windows installer workflow builds and verifies distributable artifact', ()
 test('Windows installer docs show handoff with GitHub status for external operators', () => {
     assert.match(windowsInstallerDocs, /npm run release:github-status/)
     assert.match(windowsInstallerDocs, /公開リリース用リポジトリ/)
+    assert.match(windowsInstallerDocs, /RELEASES_GITHUB_TOKEN/)
     assert.match(windowsInstallerDocs, /npm run dist:win:mac/)
     assert.equal(
         pkg.scripts['release:check:full'],

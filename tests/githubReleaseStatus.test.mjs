@@ -37,6 +37,11 @@ test('GitHub release status reports latest successful run artifact download comm
                     isPrivate: false
                 })
             },
+            'secret list --json name': {
+                stdout: JSON.stringify([
+                    { name: 'RELEASES_GITHUB_TOKEN' }
+                ])
+            },
             'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url': {
                 stdout: JSON.stringify([
                     {
@@ -71,6 +76,7 @@ test('GitHub release status reports latest successful run artifact download comm
     assert.equal(report.workflow.status, 'present')
     assert.equal(report.releaseRepository?.status, 'present')
     assert.equal(report.releaseRepository?.private, false)
+    assert.equal(report.releaseTokenSecret?.status, 'present')
     assert.equal(report.latestRun?.databaseId, 12345)
     assert.equal(report.artifact?.status, 'present')
     assert.deepEqual(report.nextActions, [
@@ -91,6 +97,11 @@ test('GitHub release status text is human readable without raw JSON', async () =
                     isPrivate: false
                 })
             },
+            'secret list --json name': {
+                stdout: JSON.stringify([
+                    { name: 'RELEASES_GITHUB_TOKEN' }
+                ])
+            },
             'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url': {
                 stdout: '[]'
             }
@@ -101,6 +112,7 @@ test('GitHub release status text is human readable without raw JSON', async () =
     assert.match(text, /GitHub Actions判定: 未完了/)
     assert.match(text, /workflow: present/)
     assert.match(text, /release repo: present \(emayu323\/pharmacy-report-releases public\)/)
+    assert.match(text, /release token secret: present \(RELEASES_GITHUB_TOKEN\)/)
     assert.match(text, /latest run: none/)
     assert.match(text, /gh workflow run windows-installer\.yml/)
     assert.doesNotMatch(text, /\{\s*"workflow"/)
@@ -116,6 +128,9 @@ test('GitHub release status reports missing public release repository as pending
                 code: 1,
                 stderr: 'could not resolve to a Repository with the name emayu323/pharmacy-report-releases'
             },
+            'secret list --json name': {
+                stdout: JSON.stringify([])
+            },
             'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url': {
                 stdout: '[]'
             }
@@ -128,6 +143,40 @@ test('GitHub release status reports missing public release repository as pending
     assert.match(report.releaseRepository?.message || '', /public release repository/i)
     assert.deepEqual(report.nextActions, [
         'Create public GitHub repository emayu323/pharmacy-report-releases',
+        'Configure RELEASES_GITHUB_TOKEN with write access to emayu323/pharmacy-report-releases',
+        'gh workflow run windows-installer.yml',
+        'Run npm run release:github-status again after the workflow completes'
+    ])
+})
+
+test('GitHub release status reports missing release token secret as pending', async () => {
+    const report = await createGitHubReleaseStatus({
+        execFileImpl: fakeGh({
+            'workflow view windows-installer.yml': {
+                stdout: 'Windows Installer'
+            },
+            'repo view emayu323/pharmacy-report-releases --json nameWithOwner,isPrivate': {
+                stdout: JSON.stringify({
+                    nameWithOwner: 'emayu323/pharmacy-report-releases',
+                    isPrivate: false
+                })
+            },
+            'secret list --json name': {
+                stdout: JSON.stringify([
+                    { name: 'WINDOWS_CSC_LINK' }
+                ])
+            },
+            'run list --workflow windows-installer.yml --limit 1 --json databaseId,status,conclusion,headBranch,displayTitle,createdAt,url': {
+                stdout: '[]'
+            }
+        })
+    })
+
+    assert.equal(report.ok, true)
+    assert.equal(report.ready, false)
+    assert.equal(report.releaseTokenSecret?.status, 'missing')
+    assert.match(report.releaseTokenSecret?.message || '', /RELEASES_GITHUB_TOKEN/)
+    assert.deepEqual(report.nextActions, [
         'Configure RELEASES_GITHUB_TOKEN with write access to emayu323/pharmacy-report-releases',
         'gh workflow run windows-installer.yml',
         'Run npm run release:github-status again after the workflow completes'

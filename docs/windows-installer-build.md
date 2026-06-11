@@ -108,7 +108,7 @@ npm run release:check -- --format text
 npm run release:check:full
 ```
 
-`release:check:full` はGitHub Actions状態とVercel本番env名も読み取り専用で確認し、公開リリース用リポジトリ、最新workflow run/artifactの有無、必要な `INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足、旧 `VITE_SUPABASE_*` の残存を表示します。
+`release:check:full` はGitHub Actions状態とVercel本番env名も読み取り専用で確認し、公開リリース用リポジトリ、`RELEASES_GITHUB_TOKEN` Secret名、最新workflow run/artifactの有無、必要な `INSTALL_CODE_REGISTRY` / `WINDOWS_INSTALLER_URL` の不足、旧 `VITE_SUPABASE_*` の残存を表示します。
 
 証跡パスを変える場合:
 
@@ -214,7 +214,7 @@ release/pharmacy-report-setup-0.1.0-x64.exe.blockmap
 
 `.github/workflows/windows-installer.yml` でWindowsインストーラーを作成できます。
 
-まず、GitHub上に公開リリース用リポジトリがあるか、workflowが公開されているか、最新runにインストーラーartifactがあるかを読み取り確認します。
+まず、GitHub上に公開リリース用リポジトリがあるか、`RELEASES_GITHUB_TOKEN` Secret名が設定されているか、workflowが公開されているか、最新runにインストーラーartifactがあるかを読み取り確認します。Secretは名前だけを確認し、値は表示しません。
 
 ```bash
 npm run release:github-status
