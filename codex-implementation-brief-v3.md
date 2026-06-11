@@ -110,5 +110,5 @@
 1. Ollamaの既定モデル名（`LOCAL_OLLAMA_MODEL` の既定値。オーナーがGemma系/Qwen系を比較中）
 2. 訪問メモのスマホ→PC受け渡し（初期版は運用対応の想定。アプリ側対応は保留で良いか）
 3. コード署名の取得状況（Azure Trusted Signing想定。Secrets設定はオーナー作業）
-4. リリース公開用リポジトリの名称
+4. リリース公開用リポジトリは `emayu323/pharmacy-report-releases` で確定済み
 5. EntryPortal/ブリッジを将来削除するか、凍結のまま残すか

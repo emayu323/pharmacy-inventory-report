@@ -160,7 +160,9 @@ test('Windows installer docs show handoff with GitHub status for external operat
 })
 
 test('implementation plan release status only leaves signing prerequisites as pending', () => {
-    assert.match(implementationPlan, /GitHub Actions.*c46ff41.*source revision: current/s)
+    assert.match(implementationPlan, /GitHub Actions.*release:github-status.*source revision: current/s)
+    assert.match(implementationPlan, /source_revision.*release:check:full.*現在ソースとの一致/s)
+    assert.match(implementationPlan, /導入先Windows PCごとのローカルAI結合テスト再実行/)
     assert.match(implementationPlan, /Vercel本番env.*設定済み/s)
     assert.match(implementationPlan, /未実装・外部待ち:/)
     assert.match(implementationPlan, /RELEASES_GITHUB_TOKEN/)

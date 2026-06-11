@@ -375,9 +375,10 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 
 現在の確認済み状態:
 
-- GitHub ActionsのWindowsインストーラーworkflowは `c46ff41` で実行済み。run `27335850222` は成功し、`pharmacy-report-windows-installer` artifact は `source revision: current` として最新ソース由来であることを確認済み。
+- GitHub ActionsのWindowsインストーラーworkflowは実行済みで、`pharmacy-report-windows-installer` artifact は `release:github-status` で `source revision: current` として最新ソース由来であることを確認する。
 - リリース成果物専用の公開GitHubリポジトリ `emayu323/pharmacy-report-releases` は作成済み。
 - Vercel本番envは `INSTALL_CODE_REGISTRY` と `WINDOWS_INSTALLER_URL` が設定済みで、`release:vercel-status` と `release:vercel-smoke` は通過済み。
+- ローカルAI結合証跡は `npm run test:local-ai-text -- --ollama-model gemma3:4b --timeout-ms 30000` で作成済み。証跡には `source_revision` を保存し、`release:check:full` が現在ソースとの一致を確認する。
 - `release:check:full` は `pass 17, pending 1, fail 0` で、未完了は署名付き自動更新公開の外部Prerequisiteだけ。
 
 未実装・外部待ち:
@@ -385,6 +386,7 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - `RELEASES_GITHUB_TOKEN` Secretの設定。
 - `WINDOWS_CSC_LINK` と `WINDOWS_CSC_KEY_PASSWORD` Secretの設定。
 - コード署名有効化後のWindows実機での自動更新スモーク。
+- 導入先Windows PCごとのローカルAI結合テスト再実行。
 
 ## 11. フェーズ9: AIモード
 
@@ -436,13 +438,13 @@ Electronを正式採用する。既存React資産を流用し、Windowsインス
 - Ollamaモデル未ダウンロード時は `ollama pull <モデル名>` を提示し、Ollama起動コマンドもコピーできる。実際のモデル取得は薬局Wi-Fi環境で利用者が実行する。
 - `npm run test:local-ai-text -- --ollama-model <モデル名>` で、実運用Ollamaとのtext-only結合テストを実行できる。
 - 結合テストではOllama状態確認、指定モデル確認、Ollama `/api/chat` の2項目JSON抽出を確認する。
-- `test:local-ai-text` は、現地PCでの結合テスト結果を `output/local-ai-integration-result.json` に保存する。証跡には接続状態と成否だけを保存し、訪問メモ本文とAI下書き本文は保存しない。
+- `test:local-ai-text` は、現地PCでの結合テスト結果を `output/local-ai-integration-result.json` に保存する。証跡には接続状態、成否、アプリバージョン、Gitソースリビジョンだけを保存し、訪問メモ本文とAI下書き本文は保存しない。
 - 結合テスト手順は `docs/local-ai-integration-check.md` に記載する。
-- `npm run release:check -- --ai-receipt <証跡JSON>` で、現地PCのAI結合テスト完了をリリース前チェックに含められるようにする。証跡JSONに訪問メモ本文、AI下書き本文が含まれる場合は失敗として扱う。
+- `npm run release:check -- --ai-receipt <証跡JSON>` で、現地PCのAI結合テスト完了をリリース前チェックに含められるようにする。証跡JSONに訪問メモ本文、AI下書き本文が含まれる場合、または `source_revision` が現在ソースと一致しない場合は失敗として扱う。
 
-未実装:
+確認済み・導入先ごとに再確認:
 
-- 実運用サーバーを起動した現地PCでの結合テスト実行。
+- mac開発環境では、Ollama `gemma3:4b` を使った `npm run test:local-ai-text -- --ollama-model gemma3:4b --timeout-ms 30000` が成功済み。導入先Windows PCでは、モデル導入後に同じコマンドでPCごとの証跡を取り直す。
 
 ## 12. 検証方針
 
