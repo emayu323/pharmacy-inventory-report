@@ -1,0 +1,1287 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import test from 'node:test'
+import { createReleaseReadinessReport, formatReleaseReadinessReportText } from '../scripts/release_readiness_check.mjs'
+
+const REQUIRED_FILES = [
+    '.github/workflows/windows-installer.yml',
+    'docs/local-first-requirements.md',
+    'docs/local-first-implementation-plan.md',
+    'docs/backup-key-operations.md',
+    'docs/install-code-registry.example.json',
+    'docs/install-code-usage-store.md',
+    'docs/windows-installer-build.md',
+    'docs/vercel-production-env.md',
+    'docs/local-ai-integration-check.md',
+    'electron/main.mjs',
+    'electron/localSecurityStatus.mjs',
+    'electron/preUpdateBackupCommand.mjs',
+    'electron/windowsAutoLaunch.mjs',
+    'public/manual.html',
+    'scripts/windows_pre_update_backup.ps1',
+    'scripts/verify_electron_package.mjs',
+    'scripts/verify_vercel_production_env.mjs',
+    'scripts/create_install_code_registry.mjs',
+    'scripts/local_ai_integration_check.mjs',
+    'scripts/mac_demo_readiness.mjs',
+    'scripts/mac_demo_smoke.mjs',
+    'scripts/github_release_status.mjs',
+    'scripts/source_release_status.mjs',
+    'scripts/source_publication_checklist.mjs',
+    'scripts/release_handoff.mjs',
+    'src/data/drug-master.generated.json',
+    'src/authMode.ts',
+    'src/main.tsx',
+    'src/pages/EntryPortal.tsx',
+    'src/pages/ReportEdit.tsx',
+    'src/pages/Settings.tsx',
+    'src/localAppConnection.ts',
+    'src/patientRepository.ts',
+    'src/reportRepository.ts',
+    'src/reportSelection.ts',
+    'src/institutionRepository.ts',
+    'src/contexts/AuthProvider.tsx',
+    '.node-version',
+    'vercel.ts'
+]
+
+const REQUIRED_SCRIPTS = [
+    'test:local-app',
+    'lint',
+    'build',
+    'build:electron',
+    'dist:win',
+    'verify:electron-package',
+    'verify:vercel-env',
+    'release:check',
+    'release:check:full',
+    'release:handoff',
+    'release:handoff:full',
+    'release:github-status',
+    'release:source-status',
+    'release:source-checklist',
+    'create:install-codes',
+    'demo:mac-readiness',
+    'demo:mac-smoke',
+    'test:local-ai-integration',
+    'test:local-ai-text',
+    'test:local-ai-audio'
+]
+
+test('release readiness check reports external pending items without failing normal mode', () => {
+    const tmpDir = createFixture()
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, false)
+        assert.equal(report.summary.fail, 0)
+        assert.equal(report.checks.find(check => check.id === 'required_files')?.status, 'pass')
+        assert.equal(report.checks.find(check => check.id === 'package_scripts')?.status, 'pass')
+        assert.equal(report.checks.find(check => check.id === 'windows_installer_workflow')?.status, 'pass')
+        assert.equal(report.checks.find(check => check.id === 'mac_electron_package')?.status, 'pending')
+        assert.equal(report.checks.find(check => check.id === 'windows_installer_artifact')?.status, 'pending')
+        assert.equal(report.checks.find(check => check.id === 'vercel_production_env')?.status, 'pending')
+        assert.equal(report.checks.find(check => check.id === 'local_ai_integration')?.status, 'pending')
+
+        const strictReport = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            strict: true
+        })
+        assert.equal(strictReport.ok, false)
+        assert.equal(strictReport.ready, false)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check includes concrete next actions for external pending items', () => {
+    const tmpDir = createFixture({
+        macPackage: true
+    })
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, false)
+        assert.deepEqual(report.nextActions.map(action => action.id), [
+            'windows_installer_artifact',
+            'vercel_production_env',
+            'local_ai_integration'
+        ])
+
+        const windowsAction = report.nextActions.find(action => action.id === 'windows_installer_artifact')
+        assert.equal(windowsAction?.docs, 'docs/windows-installer-build.md')
+        assert.equal(windowsAction?.status, 'pending')
+        assert.deepEqual(windowsAction?.commands, [
+            'npm run release:github-status',
+            'npm run dist:win'
+        ])
+        assert.match(windowsAction?.description || '', /GitHub Actions/)
+
+        const vercelAction = report.nextActions.find(action => action.id === 'vercel_production_env')
+        assert.equal(vercelAction?.docs, 'docs/vercel-production-env.md')
+        assert.deepEqual(vercelAction?.commands, [
+            'npm run verify:vercel-env -- --env-file .env.production.local',
+            'npm run release:check -- --env-file .env.production.local'
+        ])
+
+        const aiAction = report.nextActions.find(action => action.id === 'local_ai_integration')
+        assert.equal(aiAction?.docs, 'docs/local-ai-integration-check.md')
+        assert.deepEqual(aiAction?.commands, [
+            'npm run test:local-ai-text -- --ollama-model <model>',
+            'npm run test:local-ai-audio -- --ollama-model <model> --whisper-health-url http://127.0.0.1:8178/health --whisper-transcribe-url http://127.0.0.1:8178/transcribe --audio-path <sample.webm>',
+            'npm run release:check -- --ai-receipt output/local-ai-integration-result.json'
+        ])
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check can include local source publication state as an optional pending gate', () => {
+    const tmpDir = createFixture({
+        macPackage: true
+    })
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            sourceStatus: sourceStatusFixture({
+                ready: false,
+                clean: false,
+                publishState: 'local_changes',
+                changedCount: 3,
+                untrackedCount: 2,
+                trackedSensitiveCount: 1,
+                message: '3 local file(s) differ from Git, including 2 untracked file(s)'
+            })
+        })
+        const sourceCheck = report.checks.find(check => check.id === 'source_publication')
+        const sourceAction = report.nextActions.find(action => action.id === 'source_publication')
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, false)
+        assert.equal(sourceCheck?.status, 'pending')
+        assert.match(sourceCheck?.message || '', /local_changes/)
+        assert.match(sourceCheck?.message || '', /3 changed/)
+        assert.match(sourceCheck?.message || '', /1 tracked sensitive/)
+        assert.match(sourceAction?.description || '', /3 changed file/)
+        assert.equal(sourceAction?.docs, 'docs/windows-installer-build.md')
+        assert.deepEqual(sourceAction?.commands, [
+            'npm run release:source-checklist',
+            'npm run release:source-status',
+            'npm run release:github-status'
+        ])
+
+        const strictReport = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            strict: true,
+            sourceStatus: sourceStatusFixture({
+                ready: false,
+                clean: false,
+                publishState: 'local_changes'
+            })
+        })
+        assert.equal(strictReport.ok, false)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check passes source publication when local source is synchronized', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath,
+            strict: true,
+            sourceStatus: sourceStatusFixture({
+                ready: true,
+                clean: true,
+                publishState: 'synced',
+                message: 'Local source is clean and synchronized with upstream'
+            })
+        })
+        const sourceCheck = report.checks.find(check => check.id === 'source_publication')
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, true)
+        assert.equal(sourceCheck?.status, 'pass')
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness text format summarizes release state and next actions for humans', () => {
+    const tmpDir = createFixture({
+        macPackage: true
+    })
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const text = formatReleaseReadinessReportText(report)
+
+        assert.match(text, /リリース判定: 未完了/)
+        assert.match(text, /ok: true/)
+        assert.match(text, /ready: false/)
+        assert.match(text, /pass 9, warn 0, pending 3, fail 0/)
+        assert.match(text, /次の作業/)
+        assert.match(text, /Windows installer artifact/)
+        assert.match(text, /docs\/windows-installer-build\.md/)
+        assert.match(text, /npm run dist:win/)
+        assert.match(text, /Vercel production environment/)
+        assert.match(text, /docs\/vercel-production-env\.md/)
+        assert.match(text, /Local AI integration receipt/)
+        assert.match(text, /docs\/local-ai-integration-check\.md/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check becomes ready when artifacts env and AI receipt are present', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath,
+            strict: true
+        })
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, true)
+        assert.equal(report.summary.pass, report.summary.total)
+        assert.equal(report.checks.find(check => check.id === 'vercel_production_env')?.status, 'pass')
+        assert.equal(report.checks.find(check => check.id === 'local_ai_integration')?.status, 'pass')
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check resolves relative AI receipt path from root directory', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptRelativePath = 'output/local-ai-integration-result.json'
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    writeFixtureFile(tmpDir, receiptRelativePath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptRelativePath,
+            strict: true
+        })
+        const aiCheck = report.checks.find(check => check.id === 'local_ai_integration')
+
+        assert.equal(report.ok, true)
+        assert.equal(aiCheck?.status, 'pass')
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check fails when Vercel installer URL does not match artifact file', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.2.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath
+        })
+        const vercelCheck = report.checks.find(check => check.id === 'vercel_production_env')
+
+        assert.equal(report.ok, false)
+        assert.equal(vercelCheck?.status, 'fail')
+        assert.match(vercelCheck?.message || '', /WINDOWS_INSTALLER_URL/)
+        assert.match(vercelCheck?.message || '', /pharmacy-report-setup-0\.1\.0-x64\.exe/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check fails when registry installer URL does not match artifact file', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2,"installerUrl":"https://example.com/pharmacy-report-setup-0.2.0-x64.exe"}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath
+        })
+        const vercelCheck = report.checks.find(check => check.id === 'vercel_production_env')
+
+        assert.equal(report.ok, false)
+        assert.equal(vercelCheck?.status, 'fail')
+        assert.match(vercelCheck?.message || '', /INSTALL_CODE_REGISTRY\.codes\[0\]\.installerUrl/)
+        assert.match(vercelCheck?.message || '', /pharmacy-report-setup-0\.1\.0-x64\.exe/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check ignores disabled registry installer URLs when matching artifact file', () => {
+    const tmpDir = createFixture({
+        macPackage: true,
+        windowsInstaller: true
+    })
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    writeFixtureFile(tmpDir, '.env.production.local', [
+        'INSTALL_CODE_REGISTRY=\'{"codes":[{"code":"READY-1234","maxDevices":2},{"code":"OLD-1234","maxDevices":1,"installerUrl":"https://example.com/pharmacy-report-setup-0.2.0-x64.exe","disabled":true}]}\'',
+        'WINDOWS_INSTALLER_URL=https://example.com/pharmacy-report-setup-0.1.0-x64.exe'
+    ].join('\n'))
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture()))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            envFile: '.env.production.local',
+            aiReceiptPath: receiptPath,
+            strict: true
+        })
+        const vercelCheck = report.checks.find(check => check.id === 'vercel_production_env')
+
+        assert.equal(report.ok, true)
+        assert.equal(vercelCheck?.status, 'pass')
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check fails invalid env or AI receipt without leaking secrets', () => {
+    const tmpDir = createFixture()
+    const receiptPath = path.join(tmpDir, 'ai-receipt.json')
+    const secretValue = 'super-secret-service-role-key'
+    fs.writeFileSync(receiptPath, JSON.stringify({
+        ok: false,
+        skipped: true
+    }))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {
+                INSTALL_CODE_REGISTRY: '{"codes":[]}',
+                WINDOWS_INSTALLER_URL: 'http://example.com/setup.exe',
+                INSTALL_CODE_USAGE_SUPABASE_SERVICE_ROLE_KEY: secretValue
+            },
+            aiReceiptPath: receiptPath
+        })
+
+        assert.equal(report.ok, false)
+        assert.equal(report.checks.find(check => check.id === 'vercel_production_env')?.status, 'fail')
+        assert.equal(report.checks.find(check => check.id === 'local_ai_integration')?.status, 'fail')
+        assert.equal(JSON.stringify(report).includes(secretValue), false)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check rejects AI receipts containing transcript draft or audio details', () => {
+    const tmpDir = createFixture()
+    const receiptPath = path.join(tmpDir, 'unsafe-ai-receipt.json')
+    const transcriptText = '患者会話の文字起こし本文'
+    fs.writeFileSync(receiptPath, JSON.stringify({
+        created_at: '2026-06-11T09:00:00.000Z',
+        ok: true,
+        skipped: false,
+        transcript: transcriptText,
+        draft: {
+            source: 'local_llm',
+            chief_complaint: '朝薬服用後の眠気あり'
+        },
+        audioPath: '/tmp/patient-audio.webm'
+    }))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            aiReceiptPath: receiptPath
+        })
+
+        const check = report.checks.find(item => item.id === 'local_ai_integration')
+        assert.equal(report.ok, false)
+        assert.equal(check?.status, 'fail')
+        assert.match(check?.message || '', /privacy/i)
+        assert.equal(JSON.stringify(report).includes(transcriptText), false)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check rejects AI receipts from another app version', () => {
+    const tmpDir = createFixture()
+    const receiptPath = path.join(tmpDir, 'old-ai-receipt.json')
+    fs.writeFileSync(receiptPath, JSON.stringify({
+        created_at: '2026-06-11T09:00:00.000Z',
+        app_version: '0.0.9',
+        ok: true,
+        skipped: false
+    }))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            aiReceiptPath: receiptPath
+        })
+        const check = report.checks.find(item => item.id === 'local_ai_integration')
+
+        assert.equal(report.ok, false)
+        assert.equal(check?.status, 'fail')
+        assert.match(check?.message || '', /app version/i)
+        assert.match(check?.message || '', /0\.1\.0/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check rejects incomplete AI receipts even when ok is true', () => {
+    const tmpDir = createFixture()
+    const receiptPath = path.join(tmpDir, 'incomplete-ai-receipt.json')
+    fs.writeFileSync(receiptPath, JSON.stringify({
+        created_at: '2026-06-11T09:00:00.000Z',
+        app_version: '0.1.0',
+        ok: true,
+        skipped: false,
+        ready: false,
+        draft: {
+            source: 'rule_based',
+            chiefComplaintPresent: true,
+            medicationInstructionPresent: false
+        }
+    }))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            aiReceiptPath: receiptPath
+        })
+        const check = report.checks.find(item => item.id === 'local_ai_integration')
+
+        assert.equal(report.ok, false)
+        assert.equal(check?.status, 'fail')
+        assert.match(check?.message || '', /AI integration receipt is incomplete/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check treats text-only local AI receipt as pending instead of failed', () => {
+    const tmpDir = createFixture()
+    const receiptPath = path.join(tmpDir, 'text-only-ai-receipt.json')
+    fs.writeFileSync(receiptPath, JSON.stringify(aiReceiptFixture({
+        ready: false,
+        whisper: {
+            status: 'not_configured',
+            url: ''
+        }
+    })))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {},
+            aiReceiptPath: receiptPath
+        })
+        const check = report.checks.find(item => item.id === 'local_ai_integration')
+
+        assert.equal(report.ok, true)
+        assert.equal(report.ready, false)
+        assert.equal(check?.status, 'pending')
+        assert.match(check?.message || '', /text-only/i)
+        assert.match(check?.message || '', /Whisper/i)
+        assert.match(report.nextActions.find(item => item.id === 'local_ai_integration')?.description || '', /text-only/i)
+        assert.match(report.nextActions.find(item => item.id === 'local_ai_integration')?.description || '', /Whisper/i)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires operational handoff docs', () => {
+    const tmpDir = createFixture()
+    const operationalDocs = [
+        'docs/local-first-requirements.md',
+        'docs/backup-key-operations.md',
+        'docs/install-code-registry.example.json',
+        'docs/install-code-usage-store.md'
+    ]
+    for (const file of operationalDocs) {
+        fs.rmSync(path.join(tmpDir, file), { force: true })
+    }
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const requiredFiles = report.checks.find(item => item.id === 'required_files')
+
+        assert.equal(requiredFiles?.status, 'fail')
+        for (const file of operationalDocs) {
+            assert.equal((requiredFiles?.message || '').includes(file), true)
+        }
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires Node 24 and Vercel TS runtime configuration', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'package.json', JSON.stringify({
+        engines: {
+            node: '>=22 <23'
+        },
+        devDependencies: {},
+        scripts: packageScriptsFixture()
+    }))
+    writeFixtureFile(tmpDir, 'vercel.ts', [
+        'export const config = {',
+        '  framework: "vite",',
+        '  rewrites: []',
+        '}'
+    ].join('\n'))
+    writeFixtureFile(tmpDir, '.node-version', '22\n')
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const runtimeCheck = report.checks.find(item => item.id === 'runtime_configuration')
+
+        assert.equal(report.ok, false)
+        assert.equal(runtimeCheck?.status, 'fail')
+        assert.match(runtimeCheck?.message || '', /Node 24/)
+        assert.match(runtimeCheck?.message || '', /@vercel\/config/)
+        assert.match(runtimeCheck?.message || '', /API rewrite/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires a checked-in Node version pin', () => {
+    const tmpDir = createFixture()
+    fs.rmSync(path.join(tmpDir, '.node-version'), { force: true })
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const requiredFiles = report.checks.find(item => item.id === 'required_files')
+
+        assert.equal(requiredFiles?.status, 'fail')
+        assert.match(requiredFiles?.message || '', /\.node-version/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires GitHub release status helper', () => {
+    const tmpDir = createFixture()
+    fs.rmSync(path.join(tmpDir, 'scripts/github_release_status.mjs'), { force: true })
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const requiredFiles = report.checks.find(item => item.id === 'required_files')
+
+        assert.equal(requiredFiles?.status, 'fail')
+        assert.match(requiredFiles?.message || '', /scripts\/github_release_status\.mjs/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires local source status helper', () => {
+    const tmpDir = createFixture()
+    fs.rmSync(path.join(tmpDir, 'scripts/source_release_status.mjs'), { force: true })
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const requiredFiles = report.checks.find(item => item.id === 'required_files')
+
+        assert.equal(requiredFiles?.status, 'fail')
+        assert.match(requiredFiles?.message || '', /scripts\/source_release_status\.mjs/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires pre-update backup command in local app test gate', () => {
+    const tmpDir = createFixture()
+    const scripts = Object.fromEntries(REQUIRED_SCRIPTS.map(script => [script, `echo ${script}`]))
+    scripts['test:local-app'] = 'node --test tests/localSqliteBackupRepository.test.mjs tests/packageBuildConfig.test.mjs'
+    writeFixtureFile(tmpDir, 'package.json', JSON.stringify({
+        version: '0.1.0',
+        engines: {
+            node: '>=24 <25'
+        },
+        devDependencies: {
+            '@vercel/config': '^0.5.2'
+        },
+        scripts
+    }))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const packageCheck = report.checks.find(item => item.id === 'package_scripts')
+
+        assert.equal(report.ok, false)
+        assert.equal(packageCheck?.status, 'fail')
+        assert.match(packageCheck?.message || '', /preUpdateBackupCommand\.test\.mjs/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires the Vercel entry portal flow', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'src/main.tsx', [
+        "import EntryPortal from './pages/EntryPortal'",
+        '<Route path="/home" element={<EntryPortal />} />'
+    ].join('\n'))
+    writeFixtureFile(tmpDir, 'src/pages/EntryPortal.tsx', [
+        'export default function EntryPortal() {',
+        '  return <div>入口だけ</div>',
+        '}'
+    ].join('\n'))
+    writeFixtureFile(tmpDir, 'src/localAppConnection.ts', [
+        "export const LOCAL_APP_URI = 'wrong://open'"
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const entryCheck = report.checks.find(item => item.id === 'entry_portal')
+
+        assert.equal(report.ok, false)
+        assert.equal(entryCheck?.status, 'fail')
+        assert.match(entryCheck?.message || '', /\/entry/)
+        assert.match(entryCheck?.message || '', /manual\.html/)
+        assert.match(entryCheck?.message || '', /pharmacy-report:\/\/open/)
+        assert.match(entryCheck?.message || '', /導入コード/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check keeps the entry portal outside app authentication', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'src/main.tsx', [
+        "import EntryPortal from './pages/EntryPortal'",
+        '<BrowserRouter>',
+        '  <AuthProvider>',
+        '    <Routes>',
+        '      <Route path="/entry" element={<EntryPortal />} />',
+        '    </Routes>',
+        '  </AuthProvider>',
+        '</BrowserRouter>'
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const entryCheck = report.checks.find(item => item.id === 'entry_portal')
+
+        assert.equal(report.ok, false)
+        assert.equal(entryCheck?.status, 'fail')
+        assert.match(entryCheck?.message || '', /AuthProvider/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check keeps app routes inside authentication', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'src/main.tsx', [
+        "import EntryPortal from './pages/EntryPortal'",
+        '<BrowserRouter>',
+        '  <Routes>',
+        '    <Route path="/entry" element={<EntryPortal />} />',
+        '    <Route path="/reports" element={<ReportList />} />',
+        '    <Route path="/settings" element={<Settings />} />',
+        '  </Routes>',
+        '</BrowserRouter>'
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const entryCheck = report.checks.find(item => item.id === 'entry_portal')
+
+        assert.equal(report.ok, false)
+        assert.equal(entryCheck?.status, 'fail')
+        assert.match(entryCheck?.message || '', /app routes/i)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires native local storage to win over Supabase config', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'src/patientRepository.ts', [
+        "import { getNativeBridge } from './nativeBridge'",
+        "export const isLocalPatientStorage = () => getPatientStorageMode() === 'local'"
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const storageCheck = report.checks.find(item => item.id === 'native_local_storage_priority')
+
+        assert.equal(report.ok, false)
+        assert.equal(storageCheck?.status, 'fail')
+        assert.match(storageCheck?.message || '', /patientRepository/)
+        assert.match(storageCheck?.message || '', /getNativeBridge/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires backup and save operational workflows', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'src/pages/ReportEdit.tsx', [
+        'export default function ReportEdit() {',
+        '  return <button>保存する</button>',
+        '}'
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const workflowCheck = report.checks.find(item => item.id === 'operational_workflows')
+
+        assert.equal(report.ok, false)
+        assert.equal(workflowCheck?.status, 'fail')
+        assert.match(workflowCheck?.message || '', /auto save/)
+        assert.match(workflowCheck?.message || '', /保存状態/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires previous report lookup to prefer visit date', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'src/reportRepository.ts', [
+        "import { getNativeBridge } from './nativeBridge'",
+        "export const isLocalReportStorage = () => Boolean(getNativeBridge()) || getReportStorageMode() === 'local'",
+        'const latest = reports.sort(compareReportsByNewestCreatedAt)[0]'
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const selectionCheck = report.checks.find(item => item.id === 'latest_report_selection')
+
+        assert.equal(report.ok, false)
+        assert.equal(selectionCheck?.status, 'fail')
+        assert.match(selectionCheck?.message || '', /selectLatestReportByVisitDate/)
+        assert.match(selectionCheck?.message || '', /created_at/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires Supabase previous report lookup to order by visit date first', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'src/reportRepository.ts', [
+        "import { selectLatestReportByVisitDate } from './reportSelection'",
+        "import { getNativeBridge } from './nativeBridge'",
+        "export const isLocalReportStorage = () => Boolean(getNativeBridge()) || getReportStorageMode() === 'local'",
+        'const localLatest = selectLatestReportByVisitDate(reports)',
+        "const supabaseLatest = supabase.from('reports').select('*').order('created_at', { ascending: false }).limit(1)"
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const selectionCheck = report.checks.find(item => item.id === 'latest_report_selection')
+
+        assert.equal(report.ok, false)
+        assert.equal(selectionCheck?.status, 'fail')
+        assert.match(selectionCheck?.message || '', /Supabase/)
+        assert.match(selectionCheck?.message || '', /visit_date/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires Windows workflow to save release check receipt', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, '.github/workflows/windows-installer.yml', [
+        'runs-on: windows-latest',
+        'node-version: 24',
+        'npm run dist:win',
+        'windows_pre_update_backup.ps1',
+        'actions/upload-artifact@v4'
+    ].join('\n'))
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const workflowCheck = report.checks.find(item => item.id === 'windows_installer_workflow')
+
+        assert.equal(report.ok, false)
+        assert.equal(workflowCheck?.status, 'fail')
+        assert.match(workflowCheck?.message || '', /release-readiness\.txt/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check fails incomplete Windows installer artifacts', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.1.0-x64.exe', '')
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const installerCheck = report.checks.find(item => item.id === 'windows_installer_artifact')
+
+        assert.equal(report.ok, false)
+        assert.equal(installerCheck?.status, 'fail')
+        assert.match(installerCheck?.message || '', /\.blockmap/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires Windows blockmap to match installer file name', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.1.0-x64.exe', '')
+    writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.1.0-ia32.exe.blockmap', '')
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const installerCheck = report.checks.find(item => item.id === 'windows_installer_artifact')
+
+        assert.equal(report.ok, false)
+        assert.equal(installerCheck?.status, 'fail')
+        assert.match(installerCheck?.message || '', /matching \.blockmap/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check fails when multiple Windows installer versions are present', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.1.0-x64.exe', '')
+    writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.1.0-x64.exe.blockmap', '')
+    writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.2.0-x64.exe', '')
+    writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.2.0-x64.exe.blockmap', '')
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const installerCheck = report.checks.find(item => item.id === 'windows_installer_artifact')
+
+        assert.equal(report.ok, false)
+        assert.equal(installerCheck?.status, 'fail')
+        assert.match(installerCheck?.message || '', /multiple/i)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check ignores unpacked Windows app executable', () => {
+    const tmpDir = createFixture({
+        windowsInstaller: true
+    })
+    writeFixtureFile(tmpDir, 'release/win-unpacked/在宅報告アプリ.exe', '')
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const installerCheck = report.checks.find(item => item.id === 'windows_installer_artifact')
+
+        assert.equal(installerCheck?.status, 'pass')
+        assert.match(installerCheck?.message || '', /pharmacy-report-setup-0\.1\.0-x64\.exe/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+test('release readiness check requires Windows installer version to match package version', () => {
+    const tmpDir = createFixture()
+    writeFixtureFile(tmpDir, 'package.json', JSON.stringify({
+        version: '0.2.0',
+        scripts: Object.fromEntries(REQUIRED_SCRIPTS.map(script => [script, `echo ${script}`]))
+    }))
+    writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.1.0-x64.exe', '')
+    writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.1.0-x64.exe.blockmap', '')
+
+    try {
+        const report = createReleaseReadinessReport({
+            rootDir: tmpDir,
+            env: {}
+        })
+        const installerCheck = report.checks.find(item => item.id === 'windows_installer_artifact')
+
+        assert.equal(report.ok, false)
+        assert.equal(installerCheck?.status, 'fail')
+        assert.match(installerCheck?.message || '', /0\.2\.0/)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+})
+
+function createFixture(options = {}) {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'report-release-readiness-'))
+
+    for (const file of REQUIRED_FILES) {
+        writeFixtureFile(tmpDir, file, fileContentFixture(file))
+    }
+    writeFixtureFile(tmpDir, 'package.json', JSON.stringify({
+        version: '0.1.0',
+        engines: {
+            node: '>=24 <25'
+        },
+        devDependencies: {
+            '@vercel/config': '^0.5.2'
+        },
+        scripts: packageScriptsFixture()
+    }))
+
+    if (options.macPackage) {
+        writeFixtureFile(tmpDir, 'release/mac-arm64/在宅報告アプリ.app/Contents/Resources/app.asar', '')
+    }
+    if (options.windowsInstaller) {
+        writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.1.0-x64.exe', '')
+        writeFixtureFile(tmpDir, 'release/pharmacy-report-setup-0.1.0-x64.exe.blockmap', '')
+    }
+
+    return tmpDir
+}
+
+function writeFixtureFile(rootDir, relativePath, content) {
+    const filePath = path.join(rootDir, relativePath)
+    fs.mkdirSync(path.dirname(filePath), { recursive: true })
+    fs.writeFileSync(filePath, content)
+}
+
+function aiReceiptFixture(overrides = {}) {
+    return {
+        created_at: '2026-06-11T09:00:00.000Z',
+        app_version: '0.1.0',
+        ok: true,
+        skipped: false,
+        ready: true,
+        ollama: {
+            status: 'ready',
+            url: 'http://127.0.0.1:11434',
+            requiredModel: 'llama3.1:8b',
+            installedModelCount: 1
+        },
+        whisper: {
+            status: 'ready',
+            url: 'http://127.0.0.1:8178/health'
+        },
+        draft: {
+            source: 'local_llm',
+            chiefComplaintPresent: true,
+            medicationInstructionPresent: true
+        },
+        audioTested: false,
+        audioPathProvided: false,
+        ...overrides
+    }
+}
+
+function sourceStatusFixture(overrides = {}) {
+    return {
+        ok: true,
+        ready: true,
+        clean: true,
+        branch: 'main',
+        upstream: 'origin/main',
+        remoteUrl: 'https://github.com/example/pharmacy-report.git',
+        ahead: 0,
+        behind: 0,
+        changedCount: 0,
+        modifiedCount: 0,
+        untrackedCount: 0,
+        publishState: 'synced',
+        message: 'Local source is clean and synchronized with upstream',
+        nextActions: [
+            'Run npm run release:github-status to compare the GitHub Actions artifact state'
+        ],
+        ...overrides
+    }
+}
+
+function workflowFixture() {
+    return `
+runs-on: windows-latest
+node-version: 24
+npm run dist:win
+windows_pre_update_backup.ps1
+npm run release:check -- --format text
+release-readiness.txt
+actions/upload-artifact@v4
+`
+}
+
+function electronMainFixture() {
+    return [
+        "ipcMain.handle('backups:create', () => createEncryptedSqliteBackup())",
+        "ipcMain.handle('backups:create-pre-update', () => createPreUpdateEncryptedSqliteBackup())",
+        "ipcMain.handle('backups:restore', () => restoreEncryptedSqliteBackup())"
+    ].join('\n')
+}
+
+function packageScriptsFixture() {
+    const scripts = Object.fromEntries(REQUIRED_SCRIPTS.map(script => [script, `echo ${script}`]))
+    scripts['test:local-app'] = [
+        'node --test --experimental-strip-types',
+        'tests/localSqliteBackupRepository.test.mjs',
+        'tests/preUpdateBackupCommand.test.mjs',
+        'tests/packageBuildConfig.test.mjs',
+        'tests/createInstallCodeRegistry.test.mjs',
+        'tests/githubReleaseStatus.test.mjs',
+        'tests/sourceReleaseStatus.test.mjs',
+        'tests/sourcePublicationChecklist.test.mjs',
+        'tests/macDemoReadiness.test.mjs',
+        'tests/macDemoSmoke.test.mjs',
+        'tests/releaseHandoff.test.mjs'
+    ].join(' ')
+    return scripts
+}
+
+function fileContentFixture(file) {
+    if (file.endsWith('windows-installer.yml')) return workflowFixture()
+    if (file === 'electron/main.mjs') return electronMainFixture()
+    if (file === 'vercel.ts') {
+        return [
+            "import { routes, type VercelConfig } from '@vercel/config/v1'",
+            '',
+            'export const config: VercelConfig = {',
+            "  framework: 'vite',",
+            "  buildCommand: 'npm run build',",
+            "  outputDirectory: 'dist',",
+            '  rewrites: [',
+            "    routes.rewrite('/api/(.*)', '/api/$1'),",
+            "    routes.rewrite('/(.*)', '/index.html')",
+            '  ]',
+            '}'
+        ].join('\n')
+    }
+    if (file === '.node-version') return '24\n'
+    if (file === 'src/main.tsx') {
+        return [
+            "import EntryPortal from './pages/EntryPortal'",
+            '<BrowserRouter>',
+            '  <Routes>',
+            '    <Route path="/entry" element={<EntryPortal />} />',
+            '    <Route path="/*" element=(',
+            '      <AuthProvider>',
+            '        <Routes>',
+            '          <Route path="/login" element={<Login />} />',
+            '          <Route path="/" element={<App />}>',
+            '            <Route path="reports" element={<ReportList />} />',
+            '            <Route path="settings" element={<Settings />} />',
+            '          </Route>',
+            '        </Routes>',
+            '      </AuthProvider>',
+            '    ) />',
+            '  </Routes>',
+            '</BrowserRouter>'
+        ].join('\n')
+    }
+    if (file === 'src/pages/EntryPortal.tsx') {
+        return [
+            "const INSTALLER_URL = import.meta.env.VITE_WINDOWS_INSTALLER_URL || ''",
+            "const DEMO_INSTALL_CODES = import.meta.env.VITE_DEMO_INSTALL_CODES || ''",
+            'export default function EntryPortal() {',
+            '  return <main>',
+            '    <h1>在宅報告アプリ 導入入口</h1>',
+            '    <input placeholder="導入コード" />',
+            '    <a href="/manual.html">マニュアル</a>',
+            '    <button>ローカルアプリを起動</button>',
+            '    <button>Windows版をインストール</button>',
+            '    <button>更新版をインストール</button>',
+            '    <button>接続を再確認</button>',
+            '  </main>',
+            '}'
+        ].join('\n')
+    }
+    if (file === 'src/pages/ReportEdit.tsx') {
+        return [
+            "import { canAutoSaveReportDraft, createReportAutoSaveFingerprint } from '../reportAutoSave'",
+            "const saveStatusLabel = { dirty: '未保存あり', saving: '保存中', saved: '保存済み', error: '保存失敗' }[saveStatus]",
+            'setTimeout(() => runAutoSave(), 2000)',
+            'async function persistReport() { return saveReport() }',
+            'export default function ReportEdit() { return <button>保存する</button> }'
+        ].join('\n')
+    }
+    if (file === 'src/pages/Settings.tsx') {
+        return [
+            "import { createEncryptedLocalBackup, restoreEncryptedLocalBackup } from '../localBackupRepository'",
+            'async function handleBackupExport() {',
+            '  const result = await bridge.backups.create(backupPassword)',
+            '  return createEncryptedLocalBackup(backupPassword)',
+            '}',
+            'async function handleBackupRestore() {',
+            '  const result = await bridge.backups.restore(restorePassword)',
+            '  return restoreEncryptedLocalBackup(file, restorePassword)',
+            '}',
+            'async function handlePreUpdateBackup() {',
+            '  return bridge.backups.createPreUpdate()',
+            '}'
+        ].join('\n')
+    }
+    if (file === 'src/localAppConnection.ts') {
+        return [
+            "export const LOCAL_APP_URI = 'pharmacy-report://open'",
+            'export const DEFAULT_LOCAL_APP_PORT_CANDIDATES = [47831, 47832, 47833]'
+        ].join('\n')
+    }
+    if (file === 'src/patientRepository.ts') {
+        return [
+            "import { getNativeBridge } from './nativeBridge'",
+            "export const isLocalPatientStorage = () => Boolean(getNativeBridge()) || getPatientStorageMode() === 'local'"
+        ].join('\n')
+    }
+    if (file === 'src/reportRepository.ts') {
+        return [
+            "import { getNativeBridge } from './nativeBridge'",
+            "import { selectLatestReportByVisitDate } from './reportSelection'",
+            "export const isLocalReportStorage = () => Boolean(getNativeBridge()) || getReportStorageMode() === 'local'",
+            'const latest = selectLatestReportByVisitDate(reports)',
+            "const supabaseLatest = supabase.from('reports').select('*').order('visit_date', { ascending: false }).order('created_at', { ascending: false }).limit(1)"
+        ].join('\n')
+    }
+    if (file === 'src/reportSelection.ts') {
+        return [
+            'export function selectLatestReportByVisitDate(reports) {',
+            '  return reports.sort((a, b) => Date.parse(b.visit_date) - Date.parse(a.visit_date) || Date.parse(b.created_at) - Date.parse(a.created_at))[0]',
+            '}'
+        ].join('\n')
+    }
+    if (file === 'src/institutionRepository.ts') {
+        return [
+            "import { getNativeBridge } from './nativeBridge'",
+            "export const isLocalInstitutionStorage = () => Boolean(getNativeBridge()) || getInstitutionStorageMode() === 'local'"
+        ].join('\n')
+    }
+    if (file === 'src/contexts/AuthProvider.tsx') {
+        return [
+            "import { shouldUseLocalAuthMode } from '../authMode'",
+            'const isLocalAuthMode = shouldUseLocalAuthMode({ hasNativeBridge: Boolean(getNativeBridge()) })'
+        ].join('\n')
+    }
+    if (file === 'public/manual.html') {
+        return [
+            '<h1>在宅報告アプリ かんたんマニュアル</h1>',
+            '<h2>初回インストール</h2>',
+            '<h2>更新が必要と表示されたら</h2>',
+            '<h2>バックアップと復元</h2>',
+            '<h2>AIモード</h2>',
+            '<h2>困ったとき</h2>'
+        ].join('\n')
+    }
+    return `${file}\n`
+}

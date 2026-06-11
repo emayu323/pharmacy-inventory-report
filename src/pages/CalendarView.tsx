@@ -1,38 +1,36 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { supabase } from '../supabase'
 import type { Report } from '../types'
+import { listReportsByNextVisitDateRange } from '../reportRepository'
 
 export default function CalendarView() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [reports, setReports] = useState<Report[]>([])
     const [, setLoading] = useState(true)
 
-    useEffect(() => {
-        fetchReports()
+    const fetchReports = useCallback(async () => {
+        setLoading(true)
+        const start = format(startOfMonth(currentDate), 'yyyy-MM-dd')
+        const end = format(endOfMonth(currentDate), 'yyyy-MM-dd')
+
+        try {
+            const data = await listReportsByNextVisitDateRange(start, end)
+            setReports(data)
+        } catch (error) {
+            console.error('Error fetching scheduled reports:', error)
+            setReports([])
+        } finally {
+            setLoading(false)
+        }
     }, [currentDate])
 
-    const fetchReports = async () => {
-        setLoading(true)
-        const start = startOfMonth(currentDate).toISOString()
-        const end = endOfMonth(currentDate).toISOString()
-
-        const { data } = await supabase
-            .from('reports')
-            .select('*')
-            .not('next_visit_date', 'is', null)
-            .gte('next_visit_date', start)
-            .lte('next_visit_date', end)
-
-        if (data) {
-            setReports(data as Report[])
-        }
-        setLoading(false)
-    }
+    useEffect(() => {
+        fetchReports()
+    }, [fetchReports])
 
     const nextMonth = () => setCurrentDate(addMonths(currentDate, 1))
     const prevMonth = () => setCurrentDate(subMonths(currentDate, 1))

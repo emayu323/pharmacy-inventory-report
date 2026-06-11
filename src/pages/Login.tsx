@@ -42,9 +42,9 @@ export default function Login() {
                     navigate('/')
                 }
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err)
-            setError(err.message || 'エラーが発生しました')
+            setError(err instanceof Error ? err.message : 'エラーが発生しました')
         } finally {
             setLoading(false)
         }

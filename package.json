@@ -1,13 +1,97 @@
 {
-  "name": "temp_app",
+  "name": "pharmacy-report",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "在宅訪問薬剤管理報告書のローカルファースト作成アプリ",
+  "author": "EM Pharmacy",
+  "main": "electron/main.mjs",
   "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "dev": "vite",
+    "dev:electron": "ELECTRON_START_URL=http://127.0.0.1:5174 electron electron/main.mjs",
+    "dev:local-health": "node scripts/local_health_server.js",
     "build": "tsc -b && vite build",
+    "build:electron": "npm run build && electron-builder --dir --publish never",
+    "dist:win": "npm run build && electron-builder --win nsis --x64 --publish never",
+    "verify:electron-package": "node scripts/verify_electron_package.mjs",
+    "verify:vercel-env": "node scripts/verify_vercel_production_env.mjs",
+    "release:check": "node scripts/release_readiness_check.mjs",
+    "release:check:full": "node scripts/release_readiness_check.mjs --source-status --ai-receipt output/local-ai-integration-result.json --format text",
+    "release:handoff": "node scripts/release_handoff.mjs",
+    "release:handoff:full": "node scripts/release_handoff.mjs --source-status --github-status --ai-receipt output/local-ai-integration-result.json",
+    "release:github-status": "node scripts/github_release_status.mjs",
+    "release:source-status": "node scripts/source_release_status.mjs",
+    "release:source-checklist": "node scripts/source_publication_checklist.mjs",
+    "create:install-codes": "node scripts/create_install_code_registry.mjs",
+    "check:release-readiness": "npm run release:check",
+    "demo:mac-readiness": "node scripts/mac_demo_readiness.mjs",
+    "demo:mac-smoke": "node scripts/mac_demo_smoke.mjs",
     "lint": "eslint .",
+    "build:drug-master": "node scripts/build_drug_master.js",
+    "test:drug-master": "node --test --experimental-strip-types tests/drugMaster.test.ts",
+    "test:local-app": "node --test --experimental-strip-types tests/authMode.test.ts tests/aiDraft.test.ts tests/aiSetupGuide.test.ts tests/appSettingsEvents.test.ts tests/backupKeyLedger.test.ts tests/drugMaster.test.ts tests/installCode.test.ts tests/installCodeApi.test.ts tests/localAppConnection.test.ts tests/localHealthService.test.mjs tests/localAiEnvironment.test.mjs tests/localAiDraftService.test.mjs tests/localAiIntegrationCheck.test.mjs tests/localAiArtifactRepository.test.mjs tests/localAiProcessManager.test.mjs tests/localDatabase.test.mjs tests/localPatientRepository.test.mjs tests/localReportRepository.test.mjs tests/localInstitutionRepository.test.mjs tests/localTemplateRepository.test.mjs tests/localAppSettingsRepository.test.mjs tests/localDrugMasterRepository.test.mjs tests/localSqliteBackupRepository.test.mjs tests/preUpdateBackupCommand.test.mjs tests/localVersionBackupRepository.test.mjs tests/localSecurityStatus.test.mjs tests/medicationCalculations.test.ts tests/packageBuildConfig.test.mjs tests/createInstallCodeRegistry.test.mjs tests/githubReleaseStatus.test.mjs tests/sourceReleaseStatus.test.mjs tests/sourcePublicationChecklist.test.mjs tests/macDemoReadiness.test.mjs tests/macDemoSmoke.test.mjs tests/releaseHandoff.test.mjs tests/reportPrintModel.test.ts tests/reportSaveModel.test.ts tests/reportSelection.test.ts tests/windowsAutoLaunch.test.mjs tests/reportAutoSave.test.ts tests/reportPatientMasterSync.test.ts tests/reportCopy.test.ts tests/verifyVercelProductionEnv.test.mjs tests/releaseReadinessCheck.test.mjs",
+    "test:local-ai-integration": "node scripts/local_ai_integration_check.mjs",
+    "test:local-ai-text": "node scripts/local_ai_integration_check.mjs --run --text-only --result-path output/local-ai-integration-result.json",
+    "test:local-ai-audio": "node scripts/local_ai_integration_check.mjs --run --result-path output/local-ai-integration-result.json",
+    "test:meds": "node --test --experimental-strip-types tests/medicationCalculations.test.ts",
+    "test:print": "node --test --experimental-strip-types tests/reportPrintModel.test.ts",
+    "test:backup": "node --test --experimental-strip-types tests/localSqliteBackupRepository.test.mjs",
     "preview": "vite preview"
+  },
+  "build": {
+    "appId": "jp.empharmacy.pharmacy-report",
+    "productName": "在宅報告アプリ",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "scripts/local_health_service.js",
+      "src/data/drug-master.generated.json",
+      "node_modules/csv-parse/**/*",
+      "node_modules/iconv-lite/**/*",
+      "!release/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "protocols": [
+      {
+        "name": "在宅報告アプリ",
+        "schemes": [
+          "pharmacy-report"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "pharmacy-report-setup-${version}-${arch}.${ext}",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "mac": {
+      "target": "dir",
+      "identity": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "在宅報告アプリ",
+      "deleteAppDataOnUninstall": false
+    }
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -32,7 +116,10 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@vercel/config": "^0.5.2",
     "@vitejs/plugin-react": "^5.1.1",
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.2",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

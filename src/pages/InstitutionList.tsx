@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Edit2, Building2, Stethoscope, Contact } from 'lucide-react'
-import { supabase } from '../supabase'
 import type { Institution, InstitutionType } from '../types'
+import { listInstitutions } from '../institutionRepository'
 import toast from 'react-hot-toast'
 
 export default function InstitutionList() {
@@ -18,13 +18,8 @@ export default function InstitutionList() {
     const fetchInstitutions = async () => {
         try {
             setLoading(true)
-            const { data, error } = await supabase
-                .from('institutions')
-                .select('*')
-                .order('name')
-
-            if (error) throw error
-            setInstitutions(data as Institution[])
+            const data = await listInstitutions()
+            setInstitutions(data)
         } catch (error) {
             console.error('Error fetching institutions:', error)
             toast.error('データの取得に失敗しました')

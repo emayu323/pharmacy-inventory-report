@@ -1,48 +1,45 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from '../supabase'
+import { hasSupabaseConfig, supabase } from '../supabase'
+import { AuthContext } from './authContext'
+import { getNativeBridge } from '../nativeBridge'
+import { shouldUseLocalAuthMode } from '../authMode'
 
-type AuthContextType = {
-    session: Session | null
-    user: User | null
-    loading: boolean
-    signOut: () => Promise<void>
-}
+const TEST_USER: User = {
+    id: '11111111-1111-1111-1111-111111111111',
+    email: 'test-user-1@example.com',
+    app_metadata: { provider: 'email' },
+    user_metadata: {},
+    aud: 'authenticated',
+    created_at: new Date().toISOString()
+} as User
 
-const AuthContext = createContext<AuthContextType>({
-    session: null,
-    user: null,
-    loading: true,
-    signOut: async () => { },
-})
-
-export const useAuth = () => useContext(AuthContext)
+const LOCAL_USER: User = {
+    id: '00000000-0000-0000-0000-000000000001',
+    email: 'local-user@example.local',
+    app_metadata: { provider: 'local' },
+    user_metadata: { display_name: 'ローカル利用者' },
+    aud: 'authenticated',
+    created_at: new Date().toISOString()
+} as User
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    // Check for Test Mode Env Var
     const isTestMode = import.meta.env.VITE_ENABLE_TEST_MODE === 'true'
+    const isLocalAuthMode = shouldUseLocalAuthMode({
+        isTestMode,
+        reportStorageMode: import.meta.env.VITE_REPORT_STORAGE,
+        hasNativeBridge: Boolean(getNativeBridge()),
+        hasSupabaseConfig
+    })
+    const initialUser = isTestMode ? TEST_USER : isLocalAuthMode ? LOCAL_USER : null
+    const initialSession = initialUser ? { user: initialUser } as Session : null
 
-
-
-    // MOCK USER for Testing
-    const TEST_USER: User = {
-        id: '11111111-1111-1111-1111-111111111111',
-        email: 'test-user-1@example.com',
-        app_metadata: { provider: 'email' },
-        user_metadata: {},
-        aud: 'authenticated',
-        created_at: new Date().toISOString()
-    } as User
-
-    // Synchronous Update for Test Mode
-    const [session, setSession] = useState<Session | null>(isTestMode ? { user: TEST_USER } as Session : null)
-    const [user, setUser] = useState<User | null>(isTestMode ? TEST_USER : null)
-    // If Test Mode, loading is FALSE immediately
-    const [loading, setLoading] = useState(!isTestMode)
+    const [session, setSession] = useState<Session | null>(initialSession)
+    const [user, setUser] = useState<User | null>(initialUser)
+    const [loading, setLoading] = useState(!isLocalAuthMode)
 
     useEffect(() => {
-        if (isTestMode) {
-            console.log('AuthProvider: Test Mode ENABLED (Sync). Logged in as:', TEST_USER.id)
+        if (isLocalAuthMode) {
             return
         }
 
@@ -60,11 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
 
         return () => subscription.unsubscribe()
-    }, [isTestMode])
+    }, [isLocalAuthMode])
 
     const signOut = async () => {
-        if (isTestMode) {
-            alert('テストモードのためログアウトできません')
+        if (isLocalAuthMode) {
+            alert('ローカルアプリはPINロックで保護されています')
             return
         }
         await supabase.auth.signOut()

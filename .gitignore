@@ -10,6 +10,12 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+release
+output
+.playwright-cli
+.env*
+!.env.example
+!.env.*.example
 *.local
 
 # Editor directories and files
@@ -23,4 +29,5 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
-src/data/y_ALL20251204.csv
+src/data/y_ALL*.csv
+src/data/y_ALL*.zip

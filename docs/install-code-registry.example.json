@@ -1,0 +1,14 @@
+{
+  "codes": [
+    {
+      "code": "ABCD-1234",
+      "label": "サンプル薬局",
+      "expiresAt": "2026-12-31",
+      "maxDevices": 3,
+      "usedDevicesCount": 0,
+      "note": "Supabase台数管理を使う場合、usedDevicesCountは不要です",
+      "installerUrl": "https://example.com/pharmacy-report-setup.exe",
+      "disabled": false
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+name: Windows Installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-installer:
+    name: Build Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    env:
+      CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run local app tests
+        run: npm run test:local-app
+
+      - name: Build Windows installer
+        run: npm run dist:win
+
+      - name: Verify pre-update backup CLI
+        shell: pwsh
+        run: |
+          $appPath = Join-Path $PWD "release\win-unpacked\在宅報告アプリ.exe"
+          $dbPath = Join-Path $env:RUNNER_TEMP "pre-update-smoke.sqlite"
+          $backupDir = Join-Path $env:RUNNER_TEMP "pre-update-backups"
+          $output = .\scripts\windows_pre_update_backup.ps1 `
+            -AppPath $appPath `
+            -DbPath $dbPath `
+            -BackupDir $backupDir `
+            -FromVersion "0.1.0-ci" `
+            -ToVersion "0.1.1-ci"
+          $result = $output | ConvertFrom-Json
+          if (-not $result.ok) {
+            throw "Pre-update backup did not return ok=true"
+          }
+          if (-not (Test-Path -LiteralPath $result.filePath)) {
+            throw "Pre-update backup file was not created: $($result.filePath)"
+          }
+
+      - name: Write release readiness receipt
+        shell: pwsh
+        run: |
+          npm run release:check -- --format text | Tee-Object -FilePath "release\release-readiness.txt"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pharmacy-report-windows-installer
+          path: |
+            release/*.exe
+            release/*.blockmap
+            release/release-readiness.txt
+          if-no-files-found: error
+          retention-days: 30

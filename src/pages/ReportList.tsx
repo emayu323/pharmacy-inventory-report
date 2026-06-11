@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Search, User, FilePlus, Copy, Plus } from 'lucide-react'
 import type { Patient, Report } from '../types'
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabase'
+import { getLatestReportByPatientId } from '../reportRepository'
+import { listPatients } from '../patientRepository'
 import toast from 'react-hot-toast'
 
 import { calculateAge } from '../utils'
@@ -24,13 +25,8 @@ export default function ReportList() {
     const fetchPatients = async () => {
         try {
             setLoading(true)
-            const { data, error } = await supabase
-                .from('patients')
-                .select('*')
-                .order('name', { ascending: true })
-
-            if (error) throw error
-            if (data) setPatients(data as Patient[])
+            const data = await listPatients()
+            setPatients(data)
         } catch (error) {
             console.error('Error fetching patients:', error)
             toast.error('データの取得に失敗しました')
@@ -44,18 +40,10 @@ export default function ReportList() {
 
         // Fetch latest report for this patient
         try {
-            const { data, error } = await supabase
-                .from('reports')
-                .select('*')
-                .eq('patient_id', patient.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle()
-
-            if (error) throw error
+            const data = await getLatestReportByPatientId(patient.id)
 
             if (data) {
-                setLatestReport(data as Report)
+                setLatestReport(data)
                 setConfirmModalOpen(true)
             } else {
                 // No previous report, create new directly

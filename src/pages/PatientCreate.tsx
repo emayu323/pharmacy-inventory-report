@@ -2,15 +2,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, User as UserIcon, Building2 } from 'lucide-react'
-import { supabase } from '../supabase'
-import { useAuth } from '../contexts/AuthProvider'
+import { useAuth } from '../contexts/authContext'
 import type { Institution, InstitutionType, Gender } from '../types'
+import { createPatient, isLocalPatientStorage } from '../patientRepository'
+import { listInstitutions } from '../institutionRepository'
 import toast from 'react-hot-toast'
 import { calculateAge } from '../utils'
 
 export default function PatientCreate() {
     const navigate = useNavigate()
     const { user } = useAuth()
+    const [isLocalStorageMode] = useState(isLocalPatientStorage)
     const [institutions, setInstitutions] = useState<Institution[]>([])
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
@@ -32,16 +34,21 @@ export default function PatientCreate() {
     })
 
     useEffect(() => {
-        fetchInstitutions()
-    }, [])
+        let cancelled = false
+        const fetchInstitutions = async () => {
+            try {
+                const data = await listInstitutions()
+                if (!cancelled) setInstitutions(data)
+            } catch (error) {
+                console.error('Error fetching institutions:', error)
+            }
+        }
 
-    const fetchInstitutions = async () => {
-        const { data } = await supabase
-            .from('institutions')
-            .select('*')
-            .order('name')
-        if (data) setInstitutions(data as Institution[])
-    }
+        fetchInstitutions()
+        return () => {
+            cancelled = true
+        }
+    }, [])
 
     const handleInstitutionSelect = (type: InstitutionType, institutionId: string) => {
         const institution = institutions.find(i => i.id === institutionId)
@@ -87,34 +94,27 @@ export default function PatientCreate() {
         try {
             setLoading(true)
 
-            // Get current user id
-            if (!user) throw new Error('No authenticated user')
+            if (!isLocalStorageMode && !user) throw new Error('No authenticated user')
 
-            const { data, error } = await supabase
-                .from('patients')
-                .insert([{
-                    id: crypto.randomUUID(),
-                    name: formData.name,
-                    kana: formData.kana,
-                    dob: formData.dob,
-                    gender: formData.gender,
-                    address: formData.address,
-                    contact1: formData.contact1,
-                    contact2: formData.contact2,
-                    contact2_memo: formData.contact2_memo,
-                    memo: formData.memo,
-                    medical_institution_name: formData.medical_institution_name,
-                    primary_doctor: formData.primary_doctor,
-                    home_care_office: formData.home_care_office,
-                    care_manager: formData.care_manager,
-                    visiting_nursing_station_name: formData.visiting_nursing_station_name,
-                    pharmacy_name: formData.pharmacy_name,
-                    user_id: user.id
-                }])
-                .select()
-                .single()
-
-            if (error) throw error
+            const data = await createPatient({
+                name: formData.name,
+                kana: formData.kana,
+                dob: formData.dob,
+                gender: formData.gender,
+                address: formData.address,
+                contact1: formData.contact1,
+                contact2: formData.contact2,
+                contact2_memo: formData.contact2_memo,
+                memo: formData.memo,
+                medical_institution_name: formData.medical_institution_name,
+                primary_doctor: formData.primary_doctor,
+                home_care_office: formData.home_care_office,
+                care_manager: formData.care_manager,
+                visiting_nursing_station_name: formData.visiting_nursing_station_name,
+                pharmacy_name: formData.pharmacy_name,
+                is_active: true,
+                user_id: user?.id
+            })
 
             toast.success('患者登録を行いました')
             if (data) {
@@ -212,14 +212,15 @@ export default function PatientCreate() {
 
                         <div>
                             <label className="label">住所</label>
-                            <input
-                                type="text"
-                                name="address"
-                                className="input"
-                                placeholder="例: 東京都渋谷区..."
-                                value={formData.address}
-                            />
-                        </div>
+                                <input
+                                    type="text"
+                                    name="address"
+                                    className="input"
+                                    placeholder="例: 東京都渋谷区..."
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                />
+                            </div>
 
                         {/* Contact Info */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>

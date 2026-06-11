@@ -1,8 +1,10 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, PlusCircle, Calendar, Save, Copy, Building2, Edit2, Phone, Printer } from 'lucide-react'
+import { ArrowLeft, User, PlusCircle, Calendar, Save, Copy, Building2, Edit2, Phone, Printer, Trash2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabase'
-import type { Patient, Report, Institution, InstitutionType } from '../types'
+import type { Patient, Report, Institution, InstitutionType, Gender } from '../types'
+import { deleteReport, listReportsByPatientId } from '../reportRepository'
+import { deletePatient, getPatientById, updatePatient } from '../patientRepository'
+import { listInstitutions } from '../institutionRepository'
 import toast from 'react-hot-toast'
 import ConfirmToast from '../components/ConfirmToast'
 
@@ -20,16 +22,21 @@ export default function PatientDetail() {
     const [showCreateReportModal, setShowCreateReportModal] = useState(false)
 
     useEffect(() => {
-        fetchInstitutions()
-    }, [])
+        let cancelled = false
+        const fetchInstitutions = async () => {
+            try {
+                const data = await listInstitutions()
+                if (!cancelled) setInstitutions(data)
+            } catch (error) {
+                console.error('Error fetching institutions:', error)
+            }
+        }
 
-    const fetchInstitutions = async () => {
-        const { data } = await supabase
-            .from('institutions')
-            .select('*')
-            .order('name')
-        if (data) setInstitutions(data as Institution[])
-    }
+        fetchInstitutions()
+        return () => {
+            cancelled = true
+        }
+    }, [])
 
     const handleInstitutionSelect = (type: InstitutionType, institutionId: string) => {
         const institution = institutions.find(i => i.id === institutionId)
@@ -67,27 +74,14 @@ export default function PatientDetail() {
         try {
             setLoading(true)
 
-            // Fetch Patient Info
-            const { data: pData, error: pError } = await supabase
-                .from('patients')
-                .select('*')
-                .eq('id', patientId)
-                .single()
-
-            if (pError) throw pError
-            const patientData = pData as Patient
+            const patientData = await getPatientById(patientId)
+            if (!patientData) throw new Error('患者が見つかりません')
             setPatient(patientData)
             setEditForm(patientData) // Initialize editForm
 
             // Fetch Reports History
-            const { data: rData, error: rError } = await supabase
-                .from('reports')
-                .select('*')
-                .eq('patient_id', patientId)
-                .order('visit_date', { ascending: false })
-
-            if (rError) throw rError
-            setReports(rData as Report[])
+            const rData = await listReportsByPatientId(patientId)
+            setReports(rData)
 
         } catch (error) {
             console.error('Error fetching data:', error)
@@ -105,30 +99,27 @@ export default function PatientDetail() {
 
         try {
             setSaving(true)
-            const { error } = await supabase
-                .from('patients')
-                .update({
-                    name: editForm.name,
-                    kana: editForm.kana,
-                    gender: editForm.gender,
-                    dob: editForm.dob,
-                    address: editForm.address,
-                    contact1: editForm.contact1,
-                    contact2: editForm.contact2,
-                    contact2_memo: editForm.contact2_memo,
-                    medical_institution_name: editForm.medical_institution_name,
-                    primary_doctor: editForm.primary_doctor,
-                    home_care_office: editForm.home_care_office,
-                    care_manager: editForm.care_manager,
-                    visiting_nursing_station_name: editForm.visiting_nursing_station_name,
-                    pharmacy_name: editForm.pharmacy_name,
-                    memo: editForm.memo
-                })
-                .eq('id', patient?.id)
+            if (!patient) throw new Error('患者が見つかりません')
+            const updatedPatient = await updatePatient(patient.id, {
+                name: editForm.name,
+                kana: editForm.kana,
+                gender: editForm.gender,
+                dob: editForm.dob,
+                address: editForm.address,
+                contact1: editForm.contact1,
+                contact2: editForm.contact2,
+                contact2_memo: editForm.contact2_memo,
+                medical_institution_name: editForm.medical_institution_name,
+                primary_doctor: editForm.primary_doctor,
+                home_care_office: editForm.home_care_office,
+                care_manager: editForm.care_manager,
+                visiting_nursing_station_name: editForm.visiting_nursing_station_name,
+                pharmacy_name: editForm.pharmacy_name,
+                memo: editForm.memo
+            })
 
-            if (error) throw error
-
-            setPatient({ ...patient!, ...editForm } as Patient)
+            setPatient(updatedPatient)
+            setEditForm(updatedPatient)
             toast.success('保存しました')
         } catch (error) {
             console.error(error)
@@ -154,17 +145,71 @@ export default function PatientDetail() {
                 type={newStatus ? 'info' : 'danger'}
                 onConfirm={async () => {
                     try {
-                        const { error } = await supabase
-                            .from('patients')
-                            .update({ is_active: newStatus })
-                            .eq('id', patient.id)
-
-                        if (error) throw error
-                        setPatient({ ...patient, is_active: newStatus })
+                        const updatedPatient = await updatePatient(patient.id, { is_active: newStatus })
+                        setPatient(updatedPatient)
+                        setEditForm(updatedPatient)
                         toast.success(newStatus ? '表示に戻しました' : '完了にしました')
                     } catch (e) {
                         console.error(e)
                         toast.error('更新に失敗しました')
+                    }
+                }}
+            />
+        ), {
+            duration: Infinity,
+            position: 'top-center'
+        })
+    }
+
+    const handlePatientDelete = async () => {
+        if (!patient) return
+
+        toast((t) => (
+            <ConfirmToast
+                t={t}
+                message={`患者「${patient.name}」を削除しますか？\n削除済みデータから復元できます。`}
+                confirmText="削除"
+                type="danger"
+                onConfirm={async () => {
+                    try {
+                        const result = await deletePatient(patient.id)
+                        if (!result.deleted) {
+                            toast.error('患者を削除できませんでした')
+                            return
+                        }
+                        toast.success('患者を削除しました')
+                        navigate('/reports')
+                    } catch (error) {
+                        console.error(error)
+                        toast.error('患者の削除に失敗しました')
+                    }
+                }}
+            />
+        ), {
+            duration: Infinity,
+            position: 'top-center'
+        })
+    }
+
+    const handleReportDelete = async (report: Report) => {
+        toast((t) => (
+            <ConfirmToast
+                t={t}
+                message={`${report.visit_date.replace(/-/g, '/')} の報告書を削除しますか？\n削除済みデータから復元できます。`}
+                confirmText="削除"
+                type="danger"
+                onConfirm={async () => {
+                    try {
+                        const result = await deleteReport(report.id)
+                        if (!result.deleted) {
+                            toast.error('報告書を削除できませんでした')
+                            return
+                        }
+                        setReports(prev => prev.filter(item => item.id !== report.id))
+                        toast.success('報告書を削除しました')
+                    } catch (error) {
+                        console.error(error)
+                        toast.error('報告書の削除に失敗しました')
                     }
                 }}
             />
@@ -266,6 +311,25 @@ export default function PatientDetail() {
                             >
                                 {patient.is_active !== false ? '完了にする' : '表示に戻す'}
                             </button>
+                            <button
+                                onClick={handlePatientDelete}
+                                className="btn btn-ghost"
+                                title="削除"
+                                style={{
+                                    padding: '0.4rem 0.8rem',
+                                    height: 'auto',
+                                    fontSize: '0.875rem',
+                                    color: 'var(--color-danger)',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem'
+                                }}
+                            >
+                                <Trash2 size={16} />
+                                削除
+                            </button>
                         </div>
                     </div>
 
@@ -299,7 +363,7 @@ export default function PatientDetail() {
                                         <select
                                             className="input"
                                             value={editForm.gender}
-                                            onChange={e => setEditForm({ ...editForm, gender: e.target.value as any })}
+                                            onChange={e => setEditForm({ ...editForm, gender: e.target.value as Gender })}
                                             style={{ display: 'block', width: '100%', padding: '0.625rem 0.875rem', fontSize: '1rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', appearance: 'none' }}
                                         >
                                             <option value="male">男性</option>
@@ -874,6 +938,14 @@ export default function PatientDetail() {
                             <Link to={`/reports/${report.id}/edit`} className="btn btn-ghost" title="編集">
                                 <Edit2 size={16} />
                             </Link>
+                            <button
+                                onClick={() => handleReportDelete(report)}
+                                className="btn btn-ghost"
+                                title="削除"
+                                style={{ color: 'var(--color-danger)' }}
+                            >
+                                <Trash2 size={16} />
+                            </button>
                         </div>
                     </div>
                 ))}

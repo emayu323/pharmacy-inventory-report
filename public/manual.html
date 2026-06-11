@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>在宅報告アプリ かんたんマニュアル</title>
+  <style>
+    :root {
+      color: #17202a;
+      background: #f7f8fb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+    body {
+      margin: 0;
+    }
+    main {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    header {
+      margin-bottom: 24px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.25;
+    }
+    h2 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+      border-left: 4px solid #2563eb;
+      padding-left: 10px;
+    }
+    p {
+      margin: 8px 0;
+    }
+    ol,
+    ul {
+      padding-left: 1.4rem;
+    }
+    li {
+      margin: 6px 0;
+    }
+    .panel {
+      background: #fff;
+      border: 1px solid #d9e0ea;
+      border-radius: 8px;
+      padding: 18px;
+      margin: 16px 0;
+    }
+    .note {
+      background: #fff7ed;
+      border-color: #fed7aa;
+    }
+    .ok {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+    code {
+      background: #eef2ff;
+      border-radius: 4px;
+      padding: 2px 5px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>在宅報告アプリ かんたんマニュアル</h1>
+      <p>初回導入、普段の起動、更新、困ったときの確認だけをまとめています。</p>
+    </header>
+
+    <section class="panel ok">
+      <h2>まず覚えること</h2>
+      <ul>
+        <li>患者宅でネットがなくても、Windowsアプリから報告書を作成できます。</li>
+        <li>Vercel入口は、インストール、更新案内、ローカルアプリの接続確認に使います。</li>
+        <li>導入コードは初回導入や更新時の確認に使います。毎回の報告書作成では入力しません。</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>初回インストール</h2>
+      <ol>
+        <li>管理者から案内されたVercel入口URLを開きます。</li>
+        <li>導入コードを入力して「確認」を押します。</li>
+        <li>「Windows版をインストール」が押せるようになったら、インストーラーをダウンロードします。</li>
+        <li>インストーラーを実行し、画面の案内に従ってインストールします。</li>
+        <li>インストール後、Vercel入口で「接続を再確認」を押し、接続OKになるか確認します。</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>普段の使い方</h2>
+      <ol>
+        <li>Windowsのショートカット、またはVercel入口からアプリを開きます。</li>
+        <li>患者一覧から患者を選びます。</li>
+        <li>前回報告書を引き継ぐか、新規で報告書を作成します。</li>
+        <li>訪問日、処方日数、残薬、指導内容を確認します。</li>
+        <li>保存後、「印刷 / PDFプレビュー」から医療機関向け、ケアマネ向け、または2通まとめて出力します。</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>更新が必要と表示されたら</h2>
+      <ol>
+        <li>Vercel入口の導入コード欄でコードを確認します。</li>
+        <li>「更新版をインストール」または「Windows版をインストール」から新しいインストーラーを実行します。</li>
+        <li>アプリはアップデート前バックアップを作成します。</li>
+        <li>更新後にVercel入口で「接続を再確認」を押します。</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>バックアップと復元</h2>
+      <ul>
+        <li>アプリは1日1回、自動で暗号化バックアップを作成します。</li>
+        <li>設定画面から手動バックアップと復元ができます。</li>
+        <li>薬局キーは復元に必要です。管理者台帳にも控えてください。</li>
+        <li>Google Drive同期フォルダを設定すると、暗号化バックアップのコピーを置けます。</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>AIモード</h2>
+      <ul>
+        <li>AIモードは補助機能です。AIなしでも保存、印刷、バックアップは使えます。</li>
+        <li>録音を使う場合は、薬局の運用ルールに従って同意確認を行ってください。</li>
+        <li>初期設定では音声と文字起こしは保存しません。</li>
+        <li>初回のOllamaモデルダウンロードにはインターネットが必要です。</li>
+      </ul>
+    </section>
+
+    <section class="panel note">
+      <h2>困ったとき</h2>
+      <ul>
+        <li>「未インストールまたは未起動」: Windowsアプリを起動してから、Vercel入口で再確認します。</li>
+        <li>「ローカルDB準備中」: 少し待ってから再確認します。</li>
+        <li>「AI未セットアップ」: 通常機能は使えます。設定画面のAIセットアップ手順を確認します。</li>
+        <li>印刷が2枚になりそうな場合: アプリが印刷前に注意を表示します。薬剤情報など削れない場合は2枚を許可します。</li>
+        <li>ケアマネ向け印刷で止まる場合: 居宅介護支援事業所と事業所FAXを入力します。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

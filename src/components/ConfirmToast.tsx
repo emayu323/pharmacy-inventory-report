@@ -1,4 +1,5 @@
 import toast from 'react-hot-toast';
+import type { Toast } from 'react-hot-toast';
 
 interface ConfirmToastProps {
     message: string;
@@ -7,7 +8,7 @@ interface ConfirmToastProps {
     confirmText?: string;
     cancelText?: string;
     type?: 'danger' | 'warning' | 'info';
-    t: any; // Toast instance
+    t: Toast;
 }
 
 export default function ConfirmToast({

@@ -1,8 +1,9 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { FileText, PlusCircle, User, Calendar, LogOut, Building2, Menu, X } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
-import { useAuth } from './contexts/AuthProvider'
+import { useAuth } from './contexts/authContext'
 import { useState, useEffect } from 'react'
+import LocalPinLock from './components/LocalPinLock'
 
 // Components for protected layout
 function ProtectedLayout() {
@@ -12,7 +13,7 @@ function ProtectedLayout() {
 
   // Close menu when route changes
   useEffect(() => {
-    setIsMenuOpen(false)
+    queueMicrotask(() => setIsMenuOpen(false))
   }, [location])
 
   return (
@@ -192,8 +193,9 @@ function ProtectedLayout() {
 
       <main style={{ flex: 1, padding: '1rem 0' }}>
         <div className="container">
-
-          <Outlet />
+          <LocalPinLock>
+            <Outlet />
+          </LocalPinLock>
         </div>
       </main>
     </div >

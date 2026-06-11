@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, Save, Trash2 } from 'lucide-react'
-import { supabase } from '../supabase'
-import { useAuth } from '../contexts/AuthProvider'
+import { useAuth } from '../contexts/authContext'
 import type { InstitutionType } from '../types'
+import { deleteInstitution, getInstitutionById, saveInstitution } from '../institutionRepository'
 import toast from 'react-hot-toast'
 import ConfirmToast from '../components/ConfirmToast'
 
@@ -16,7 +16,7 @@ export default function InstitutionEdit() {
     const { user } = useAuth()
 
     // Initial type from navigation state or default to hospital
-    const initialType: InstitutionType = (location.state as any)?.type || 'hospital'
+    const initialType: InstitutionType = (location.state as { type?: InstitutionType } | null)?.type || 'hospital'
 
     const [formData, setFormData] = useState({
         type: initialType,
@@ -27,19 +27,10 @@ export default function InstitutionEdit() {
         doctor_name: ''
     })
 
-    useEffect(() => {
-        if (id) fetchInstitution()
-    }, [id])
-
-    const fetchInstitution = async () => {
+    const fetchInstitution = useCallback(async () => {
         try {
-            const { data, error } = await supabase
-                .from('institutions')
-                .select('*')
-                .eq('id', id)
-                .single()
-
-            if (error) throw error
+            if (!id) return
+            const data = await getInstitutionById(id)
             if (data) setFormData({
                 type: data.type,
                 name: data.name,
@@ -55,7 +46,13 @@ export default function InstitutionEdit() {
         } finally {
             setFetching(false)
         }
-    }
+    }, [id, navigate])
+
+    useEffect(() => {
+        if (id) {
+            queueMicrotask(fetchInstitution)
+        }
+    }, [id, fetchInstitution])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -81,20 +78,7 @@ export default function InstitutionEdit() {
                 user_id: user?.id
             }
 
-            if (id) {
-                // Update
-                const { error } = await supabase
-                    .from('institutions')
-                    .update(payload)
-                    .eq('id', id)
-                if (error) throw error
-            } else {
-                // Create
-                const { error } = await supabase
-                    .from('institutions')
-                    .insert([payload])
-                if (error) throw error
-            }
+            await saveInstitution(id, payload)
 
             toast.success('保存しました')
             navigate('/institutions')
@@ -245,11 +229,7 @@ export default function InstitutionEdit() {
                                         type="danger"
                                         onConfirm={async () => {
                                             try {
-                                                const { error } = await supabase
-                                                    .from('institutions')
-                                                    .delete()
-                                                    .eq('id', id)
-                                                if (error) throw error
+                                                await deleteInstitution(id)
                                                 toast.success('削除しました')
                                                 navigate('/institutions')
                                             } catch (error) {
